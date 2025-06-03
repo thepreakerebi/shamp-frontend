@@ -83,7 +83,7 @@ export default function CreateAccountPage() {
   };
 
   return (
-    <main className="bg-background w-full flex items-center justify-center">
+    <main className="bg-background w-full flex items-center justify-center px-4">
       <section aria-label="Create account" className="w-full max-w-md">
         <header className="mb-6 w-full flex flex-col gap-2">
           <section className="w-full flex flex-col gap-1">
