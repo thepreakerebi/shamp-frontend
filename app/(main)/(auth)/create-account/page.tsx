@@ -33,8 +33,13 @@ export default function CreateAccountPage() {
   return (
     <main className="bg-background w-full flex items-center justify-center">
       <section aria-label="Create account" className="w-full max-w-md">
-        <header className="mb-6 w-full">
-          <h1 className="text-2xl font-medium mb-1 w-full text-center">Create your account</h1>
+        <header className="mb-6 w-full flex flex-col gap-2">
+          <section className="w-full flex flex-col gap-1">
+            <h1 className="text-2xl font-medium mb-1 w-full text-center">Transform usability testing with AI</h1>
+            <p className="text-sm w-full text-center">
+              Create and deploy AI agents with your user personas to test your web applications at scale.
+            </p>
+          </section>
           <p className="text-sm w-full text-center">
             Already have an account?{' '}
             <Link href="/login" className="text-secondary font-medium hover:underline">Sign In</Link>
