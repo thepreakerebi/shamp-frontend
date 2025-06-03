@@ -122,7 +122,7 @@ export default function CreateAccountPage() {
           </section>
           <Button
             type="submit"
-            className="w-full font-semibold text-base py-5 mt-2"
+            className="w-full font-semibold text-base py-5 mt-2 hover:border-secondary/30 hover:border-1"
             disabled={loading}
           >
             {loading ? 'Creating account...' : 'Create account'}
