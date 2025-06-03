@@ -7,27 +7,79 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CreateAccountWithGoogleButton } from './_components/google-button';
 import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/lib/auth';
+
+interface FieldErrors {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  password?: string;
+}
 
 export default function CreateAccountPage() {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { signup } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    setFieldErrors((prev) => ({ ...prev, [e.target.name]: undefined }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
+    setFieldErrors({});
     setLoading(true);
-    // TODO: Implement API call
-    setTimeout(() => {
+    // Custom required field validation
+    const newFieldErrors: FieldErrors = {};
+    if (!form.firstName) newFieldErrors.firstName = 'First name is required.';
+    if (!form.lastName) newFieldErrors.lastName = 'Last name is required.';
+    if (!form.email) newFieldErrors.email = 'Email is required.';
+    if (!form.password) newFieldErrors.password = 'Password is required.';
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors);
       setLoading(false);
-      setError('This is a demo. API not implemented.');
-    }, 1000);
+      return;
+    }
+    try {
+      await signup(form);
+      setSuccess('Account created! Please check your email to verify your account.');
+    } catch (err: unknown) {
+      let message = 'Signup failed. Please try again.';
+      const fieldErrs: FieldErrors = {};
+      if (err instanceof Error) {
+        message = err.message;
+        // Field-specific error parsing
+        if (message.toLowerCase().includes('password')) {
+          fieldErrs.password =
+            'Password must be at least 8 characters and include lowercase, uppercase, number, and special character.';
+        } else if (message.toLowerCase().includes('email') && message.toLowerCase().includes('exist')) {
+          fieldErrs.email = 'An account with this email already exists.';
+        } else if (message.toLowerCase().includes('first') && message.toLowerCase().includes('required')) {
+          fieldErrs.firstName = 'First name is required.';
+        } else if (message.toLowerCase().includes('last') && message.toLowerCase().includes('required')) {
+          fieldErrs.lastName = 'Last name is required.';
+        } else if (message.toLowerCase().includes('email') && message.toLowerCase().includes('required')) {
+          fieldErrs.email = 'Email is required.';
+        } else if (message.toLowerCase().includes('password') && message.toLowerCase().includes('required')) {
+          fieldErrs.password = 'Password is required.';
+        }
+      }
+      setFieldErrors(fieldErrs);
+      // Only show general error if not a field error
+      if (Object.keys(fieldErrs).length === 0) {
+        setError(message);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -53,12 +105,12 @@ export default function CreateAccountPage() {
           <p className="text-xs text-muted-foreground">or with email</p>
           <Separator className="flex-1" />
         </section>
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>{error}</AlertDescription>
+        {success && (
+          <Alert variant="default" className="mb-4">
+            <AlertDescription>{success}</AlertDescription>
           </Alert>
         )}
-        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
+        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on" noValidate>
           <fieldset className="flex gap-4 w-full">
             <legend className="sr-only">Name</legend>
             <section className="flex-1 w-full flex flex-col gap-2">
@@ -68,9 +120,16 @@ export default function CreateAccountPage() {
                 name="firstName"
                 value={form.firstName}
                 onChange={handleChange}
-                required
                 autoComplete="given-name"
+                aria-invalid={!!fieldErrors.firstName}
+                aria-describedby={fieldErrors.firstName ? 'firstName-error' : undefined}
               />
+              {fieldErrors.firstName && (
+                <div className="flex items-center gap-2 text-destructive text-xs mt-1" id="firstName-error">
+                  <AlertCircle className="size-4" />
+                  <span>{fieldErrors.firstName}</span>
+                </div>
+              )}
             </section>
             <section className="flex-1 w-full flex flex-col gap-2">
               <Label htmlFor="lastName">Last name</Label>
@@ -79,22 +138,36 @@ export default function CreateAccountPage() {
                 name="lastName"
                 value={form.lastName}
                 onChange={handleChange}
-                required
                 autoComplete="family-name"
+                aria-invalid={!!fieldErrors.lastName}
+                aria-describedby={fieldErrors.lastName ? 'lastName-error' : undefined}
               />
+              {fieldErrors.lastName && (
+                <div className="flex items-center gap-2 text-destructive text-xs mt-1" id="lastName-error">
+                  <AlertCircle className="size-4" />
+                  <span>{fieldErrors.lastName}</span>
+                </div>
+              )}
             </section>
           </fieldset>
           <section className="w-full flex flex-col gap-2">
-            <Label htmlFor="email">Work email</Label>
+            <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               name="email"
               type="email"
               value={form.email}
               onChange={handleChange}
-              required
               autoComplete="email"
+              aria-invalid={!!fieldErrors.email}
+              aria-describedby={fieldErrors.email ? 'email-error' : undefined}
             />
+            {fieldErrors.email && (
+              <div className="flex items-center gap-2 text-destructive text-xs mt-1" id="email-error">
+                <AlertCircle className="size-4" />
+                <span>{fieldErrors.email}</span>
+              </div>
+            )}
           </section>
           <section className="w-full flex flex-col gap-2">
             <div className="flex items-center justify-between">
@@ -110,9 +183,10 @@ export default function CreateAccountPage() {
                 type={showPassword ? 'text' : 'password'}
                 value={form.password}
                 onChange={handleChange}
-                required
                 autoComplete="new-password"
                 className="pr-10"
+                aria-invalid={!!fieldErrors.password}
+                aria-describedby={fieldErrors.password ? 'password-error' : undefined}
               />
               <button
                 type="button"
@@ -124,7 +198,18 @@ export default function CreateAccountPage() {
                 {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
               </button>
             </div>
+            {fieldErrors.password && (
+              <div className="flex items-center gap-2 text-destructive text-xs mt-1" id="password-error">
+                <AlertCircle className="size-4" />
+                <span>{fieldErrors.password}</span>
+              </div>
+            )}
           </section>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           <Button
             type="submit"
             className="w-full font-semibold text-base py-5 mt-2 hover:border-secondary/30 hover:border-1"
