@@ -28,6 +28,14 @@ interface SignupData {
   profilePicture?: string;
 }
 
+// Custom error for unverified email
+export class EmailNotVerifiedError extends Error {
+  constructor(message: string = 'Please verify your email address before logging in.') {
+    super(message);
+    this.name = 'EmailNotVerifiedError';
+  }
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function useAuth() {
@@ -86,8 +94,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       body: JSON.stringify({ email, password }),
     });
     if (!res.ok) {
+      const errorData = await res.json();
       setLoading(false);
-      throw new Error((await res.json()).error || 'Login failed');
+      if (
+        errorData.error &&
+        typeof errorData.error === 'string' &&
+        errorData.error.toLowerCase().includes('verify your email')
+      ) {
+        throw new EmailNotVerifiedError(errorData.error);
+      }
+      throw new Error(errorData.error || 'Login failed');
     }
     const authToken = res.headers.get('set-auth-token');
     if (!authToken) {
