@@ -6,7 +6,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background py-6">
+    <div className="min-h-screen flex flex-col items-start justify-center bg-background py-6">
       <div className="mb-8">
         <Image
           src="/Shamp-mark.svg"
