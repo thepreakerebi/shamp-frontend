@@ -9,6 +9,7 @@ import { CreateAccountWithGoogleButton } from './_components/google-button';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 
 interface FieldErrors {
   firstName?: string;
@@ -25,6 +26,7 @@ export default function CreateAccountPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { signup } = useAuth();
+  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -50,7 +52,7 @@ export default function CreateAccountPage() {
     }
     try {
       await signup(form);
-      setSuccess('Account created! Please check your email to verify your account.');
+      router.push('/account-created?created=1');
     } catch (err: unknown) {
       let message = 'Signup failed. Please try again.';
       const fieldErrs: FieldErrors = {};
