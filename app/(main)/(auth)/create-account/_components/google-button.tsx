@@ -1,12 +1,18 @@
 "use client";
 import { Button } from '@/components/ui/button';
+import { useSearchParams } from 'next/navigation';
 
 export function CreateAccountWithGoogleButton({ mode = 'signup' }: { mode?: 'signup' | 'login' }) {
   const buttonText = mode === 'login' ? 'Log in with Google' : 'Create account with Google';
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('token');
 
   const handleGoogle = () => {
-    // Redirect to backend's Google OAuth endpoint
-    window.location.href = 'http://localhost:4000/api/auth/google';
+    let url = 'http://localhost:4000/api/users/auth/google';
+    if (inviteToken) {
+      url += `?inviteToken=${encodeURIComponent(inviteToken)}`;
+    }
+    window.location.href = url;
   };
 
   return (
