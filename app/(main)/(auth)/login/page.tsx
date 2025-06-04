@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,8 +8,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth, EmailNotVerifiedError } from '@/lib/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { CreateAccountWithGoogleButton } from '../create-account/_components/google-button';
+import { toast } from 'sonner';
 
 interface FieldErrors {
   email?: string;
@@ -24,6 +25,18 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextRouter = useRouter();
+
+  useEffect(() => {
+    if (searchParams.get('verified') === '1') {
+      toast.success('Your email is verified');
+      // Clean the URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('verified');
+      nextRouter.replace(url.pathname, { scroll: false });
+    }
+  }, [searchParams, nextRouter]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
