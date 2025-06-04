@@ -94,7 +94,7 @@ export default function CreateAccountPage() {
           </section>
           <p className="text-sm w-full text-center">
             Already have an account?{' '}
-            <Link href="/login" className="text-secondary font-medium hover:underline">Sign In</Link>
+            <Link href="/login" className="text-secondary font-medium hover:underline">Log In</Link>
           </p>
         </header>
         <nav aria-label="Sign up options" className="mb-4">
