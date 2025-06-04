@@ -1,14 +1,15 @@
 "use client";
 import { Button } from '@/components/ui/button';
 
-export function CreateAccountWithGoogleButton({ onClick }: { onClick?: () => void }) {
+export function CreateAccountWithGoogleButton({ onClick, mode = 'signup' }: { onClick?: () => void; mode?: 'signup' | 'login' }) {
+  const buttonText = mode === 'login' ? 'Log in with Google' : 'Create account with Google';
   return (
     <Button
       type="button"
       variant="outline"
       className="w-full flex items-center justify-center gap-2 font-medium text-base border-muted-foreground/30 py-5"
       onClick={onClick}
-      data-testid="google-signup"
+      data-testid={mode === 'login' ? 'google-login' : 'google-signup'}
     >
       <span className="inline-block align-middle">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -25,7 +26,7 @@ export function CreateAccountWithGoogleButton({ onClick }: { onClick?: () => voi
           </defs>
         </svg>
       </span>
-      Create account with Google
+      {buttonText}
     </Button>
   );
 } 
