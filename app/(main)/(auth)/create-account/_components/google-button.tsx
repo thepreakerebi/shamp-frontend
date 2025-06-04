@@ -1,15 +1,12 @@
 "use client";
 import { Button } from '@/components/ui/button';
-import { authClient } from '@/lib/auth-client';
 
 export function CreateAccountWithGoogleButton({ mode = 'signup' }: { mode?: 'signup' | 'login' }) {
   const buttonText = mode === 'login' ? 'Log in with Google' : 'Create account with Google';
 
-  const handleGoogle = async () => {
-    await authClient.signIn.social({
-      provider: 'google',
-      callbackURL: '/home',
-    });
+  const handleGoogle = () => {
+    // Redirect to backend's Google OAuth endpoint
+    window.location.href = 'http://localhost:4000/api/auth/google';
   };
 
   return (
@@ -38,4 +35,6 @@ export function CreateAccountWithGoogleButton({ mode = 'signup' }: { mode?: 'sig
       {buttonText}
     </Button>
   );
-} 
+}
+
+// Note: signIn.social is used for both signup and login with Google. Better Auth will create an account if one does not exist. 
