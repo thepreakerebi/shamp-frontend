@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CreateAccountWithGoogleButton } from './_components/google-button';
 import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 
@@ -217,6 +217,7 @@ export default function CreateAccountPage() {
             className="w-full font-semibold text-base py-5 mt-2 hover:border-secondary/30 hover:border-1"
             disabled={loading}
           >
+            {loading && <Loader2 className="animate-spin mr-2 h-5 w-5" />}
             {loading ? 'Creating account...' : 'Create account'}
           </Button>
         </form>

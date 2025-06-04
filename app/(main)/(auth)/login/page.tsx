@@ -6,11 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth, EmailNotVerifiedError } from '@/lib/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CreateAccountWithGoogleButton } from '../create-account/_components/google-button';
-import { toast } from 'sonner';
 
 interface FieldErrors {
   email?: string;
@@ -28,15 +27,18 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const nextRouter = useRouter();
 
+  const showVerifiedAlert = searchParams.get('verified') === '1';
+
   useEffect(() => {
-    if (searchParams.get('verified') === '1') {
-      toast.success('Your email is verified');
-      // Clean the URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete('verified');
-      nextRouter.replace(url.pathname, { scroll: false });
+    if (showVerifiedAlert) {
+      const timeout = setTimeout(() => {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('verified');
+        nextRouter.replace(url.pathname, { scroll: false });
+      }, 3000);
+      return () => clearTimeout(timeout);
     }
-  }, [searchParams, nextRouter]);
+  }, [showVerifiedAlert, nextRouter]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -87,6 +89,11 @@ export default function LoginPage() {
   return (
     <main className="bg-background w-full flex items-center justify-center px-4">
       <section aria-label="Login" className="w-full max-w-md">
+        {showVerifiedAlert && (
+          <Alert variant="default" className="mb-4">
+            <AlertDescription>Your email is verified</AlertDescription>
+          </Alert>
+        )}
         <header className="mb-6 w-full flex flex-col gap-2">
           <section className="w-full flex flex-col gap-1">
             <h1 className="text-2xl font-medium mb-1 w-full text-center">Welcome back</h1>
@@ -173,6 +180,7 @@ export default function LoginPage() {
             className="w-full font-semibold text-base py-5 mt-2 hover:border-secondary/30 hover:border-1"
             disabled={loading}
           >
+            {loading && <Loader2 className="animate-spin mr-2 h-5 w-5" />}
             {loading ? 'Logging in...' : 'Log in'}
           </Button>
         </form>
