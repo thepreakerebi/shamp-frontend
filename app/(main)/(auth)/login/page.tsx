@@ -61,7 +61,10 @@ export default function LoginPage() {
     }
     try {
       await login(form.email, form.password);
-      router.push('/');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('showLoggedInToast', '1');
+      }
+      router.push('/home');
     } catch (err: unknown) {
       let message = 'Login failed. Please try again.';
       const fieldErrs: FieldErrors = {};
