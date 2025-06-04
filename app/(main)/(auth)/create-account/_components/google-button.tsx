@@ -1,14 +1,23 @@
 "use client";
 import { Button } from '@/components/ui/button';
+import { authClient } from '@/lib/auth-client';
 
-export function CreateAccountWithGoogleButton({ onClick, mode = 'signup' }: { onClick?: () => void; mode?: 'signup' | 'login' }) {
+export function CreateAccountWithGoogleButton({ mode = 'signup' }: { mode?: 'signup' | 'login' }) {
   const buttonText = mode === 'login' ? 'Log in with Google' : 'Create account with Google';
+
+  const handleGoogle = async () => {
+    await authClient.signIn.social({
+      provider: 'google',
+      callbackURL: '/home',
+    });
+  };
+
   return (
     <Button
       type="button"
       variant="outline"
       className="w-full flex items-center justify-center gap-2 font-medium text-base border-muted-foreground/30 py-5"
-      onClick={onClick}
+      onClick={handleGoogle}
       data-testid={mode === 'login' ? 'google-login' : 'google-signup'}
     >
       <span className="inline-block align-middle">
