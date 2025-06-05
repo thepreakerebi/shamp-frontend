@@ -9,6 +9,11 @@ export function TokenGate({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    // Skip TokenHandler logic on /reset-password route
+    if (pathname === "/reset-password") {
+      setReady(true);
+      return;
+    }
     const token = searchParams.get("token");
     if (token) {
       localStorage.setItem("authToken", token);
