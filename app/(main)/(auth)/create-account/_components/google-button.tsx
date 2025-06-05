@@ -1,6 +1,7 @@
 "use client";
 import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 
 export function CreateAccountWithGoogleButton({ mode = 'signup' }: { mode?: 'signup' | 'login' }) {
   const buttonText = mode === 'login' ? 'Log in with Google' : 'Create account with Google';
@@ -14,6 +15,12 @@ export function CreateAccountWithGoogleButton({ mode = 'signup' }: { mode?: 'sig
     }
     window.location.href = url;
   };
+
+  useEffect(() => {
+    const token = searchParams.get('token');
+    console.log('Token in URL:', token);
+    console.log('Token in localStorage:', localStorage.getItem('authToken'));
+  }, [searchParams]);
 
   return (
     <Button

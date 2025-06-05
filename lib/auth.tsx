@@ -67,11 +67,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
   const [loading, setLoading] = useState(true);
 
+  console.log('AuthProvider mounted, token:', token, 'API_BASE:', API_BASE);
+
   // On mount, try to fetch user if token exists
   useEffect(() => {
     if (token) {
+      console.log('Fetching /users/me with token:', token);
       fetchWithToken(`${API_BASE}/users/me`, token)
         .then(async (res) => {
+          console.log('Response from /users/me:', res.status);
           if (res.ok) {
             const data = await res.json();
             setUser(data);
