@@ -58,12 +58,13 @@ export default function CreateAccountPage() {
       const fieldErrs: FieldErrors = {};
       if (err instanceof Error) {
         message = err.message;
-        // Field-specific error parsing
-        if (message.toLowerCase().includes('password')) {
-          fieldErrs.password =
-            'Password must be at least 8 characters and include lowercase, uppercase, number, and special character.';
+        // Only set password field error for the exact backend password validation error
+        if (message === 'Password must be at least 8 characters and include lowercase, uppercase, number, and special character.') {
+          fieldErrs.password = message;
         } else if (message.toLowerCase().includes('email') && message.toLowerCase().includes('exist')) {
           fieldErrs.email = 'An account with this email already exists.';
+        } else if (message === "You already created an account with Google for this email. Please log in with Google or use the 'Forgot password' flow to set a password for this account.") {
+          fieldErrs.email = message;
         } else if (message.toLowerCase().includes('first') && message.toLowerCase().includes('required')) {
           fieldErrs.firstName = 'First name is required.';
         } else if (message.toLowerCase().includes('last') && message.toLowerCase().includes('required')) {

@@ -72,16 +72,14 @@ export default function LoginPage() {
         message = err.message || 'Please verify your email address before logging in.';
       } else if (err instanceof Error) {
         message = err.message;
-        if (message.toLowerCase().includes('password')) {
-          fieldErrs.password = 'Incorrect password. Please try again.';
+        if (message === 'Incorrect password. Please try again.') {
+          fieldErrs.password = message;
         } else if (message.toLowerCase().includes('email')) {
           fieldErrs.email = 'No account found with this email.';
         }
       }
       setFieldErrors(fieldErrs);
-      if (Object.keys(fieldErrs).length === 0) {
-        setError(message);
-      } else if (err instanceof EmailNotVerifiedError) {
+      if (Object.keys(fieldErrs).length === 0 || err instanceof EmailNotVerifiedError) {
         setError(message);
       }
     } finally {
