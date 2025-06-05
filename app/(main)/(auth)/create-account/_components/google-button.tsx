@@ -3,13 +3,15 @@ import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+
 export function CreateAccountWithGoogleButton({ mode = 'signup' }: { mode?: 'signup' | 'login' }) {
   const buttonText = mode === 'login' ? 'Log in with Google' : 'Create account with Google';
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get('token');
 
   const handleGoogle = () => {
-    let url = 'http://localhost:4000/api/users/auth/google';
+    let url = `${API_BASE}/users/auth/google`;
     if (inviteToken) {
       url += `?inviteToken=${encodeURIComponent(inviteToken)}`;
     }
