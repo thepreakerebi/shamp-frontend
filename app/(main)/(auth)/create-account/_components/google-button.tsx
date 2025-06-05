@@ -15,6 +15,10 @@ export function CreateAccountWithGoogleButton({ mode = 'signup' }: { mode?: 'sig
     if (inviteToken) {
       url += `?inviteToken=${encodeURIComponent(inviteToken)}`;
     }
+    // Set flag before redirecting to Google
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('showLoggedInToast', '1');
+    }
     window.location.href = url;
   };
 
