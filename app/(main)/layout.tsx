@@ -2,7 +2,6 @@
 import { TokenGate } from "@/components/TokenHandler";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AuthProvider } from "@/lib/auth";
-import { Toaster } from "sonner";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -15,7 +14,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       >
         <AuthProvider>
           {children}
-          <Toaster position="top-center" />
         </AuthProvider>
       </ThemeProvider>
     </TokenGate>

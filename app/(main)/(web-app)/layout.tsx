@@ -15,7 +15,7 @@ export default function WebAppLayout({ children }: { children: React.ReactNode }
     <CreateProjectModalProvider>
       <SidebarProvider>
         <ProtectedRoute>
-          <Toaster />
+          <Toaster position="top-center" />
           <AppSidebar />
           <main className="min-h-screen w-full">
             <section className="flex flex-row items-center justify-between p-4 w-full">
