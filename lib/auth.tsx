@@ -20,6 +20,7 @@ interface AuthContextType {
   logout: () => void;
   signup: (data: SignupData) => Promise<void>;
   refresh: () => Promise<void>;
+  getUser: () => Promise<User | null>;
 }
 
 interface SignupData {
@@ -166,8 +167,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   };
 
+  // Get current user info from backend
+  const getUser = async () => {
+    if (!token) return null;
+    const res = await fetchWithToken(`${API_BASE}/users/me`, token);
+    if (!res.ok) return null;
+    return res.json();
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, signup, refresh }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, signup, refresh, getUser }}>
       {children}
     </AuthContext.Provider>
   );
