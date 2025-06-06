@@ -1,4 +1,4 @@
-import { Home, ListChecks, PlayCircle, Settings, LogOut, HelpCircle } from "lucide-react";
+import { Home, ListChecks, PlayCircle, Settings, LogOut, HelpCircle, Users } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -30,6 +30,11 @@ const items = [
     title: "Home",
     url: "/home",
     icon: Home,
+  },
+  {
+    title: "Personas",
+    url: "/personas",
+    icon: Users,
   },
   {
     title: "Tests",
@@ -116,7 +121,10 @@ export function AppSidebar() {
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild isActive={isActive}>
                       <Link href={item.url} prefetch={false}>
-                        <item.icon className={cn(!isActive && "text-muted-foreground")} />
+                        <item.icon
+                          className={cn(!isActive && "text-muted-foreground")}
+                          strokeWidth={isActive ? 2.4 : 1.5}
+                        />
                         <span className={cn(!isActive && "text-muted-foreground")}>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
