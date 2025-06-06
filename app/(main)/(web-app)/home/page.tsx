@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 // import { useAuth } from '@/lib/auth';
 import { TotalProjectsCard } from "./_components/total-projects-card";
 import { TotalTestsCard } from "./_components/total-tests-card";
+import { TotalSuccessfulTestRunsCard } from "./_components/total-successful-test-runs-card";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -22,6 +23,9 @@ export default function HomePage() {
         <TotalProjectsCard />
         <Link href="/tests" className="focus:outline-none focus:ring-2 focus:ring-ring rounded-md hover:scale-[1.03] transition-transform">
           <TotalTestsCard />
+        </Link>
+        <Link href="/test-runs" className="focus:outline-none focus:ring-2 focus:ring-ring rounded-md hover:scale-[1.03] transition-transform">
+          <TotalSuccessfulTestRunsCard />
         </Link>
       </section>
       <section className="w-full" />
