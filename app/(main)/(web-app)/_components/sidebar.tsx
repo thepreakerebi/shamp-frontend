@@ -18,6 +18,8 @@ import { useAuth } from '@/lib/auth';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Notifications } from "./notifications";
 import { ThemeSwitcher } from "./theme-switcher";
+import { CreateProjectButton } from "./create-project-button";
+import { CreateTestButton } from "./create-test-button";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
@@ -59,8 +61,8 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="gap-4 border-b pb-4 mb-2">
         {/* User info and notifications */}
-        <div className="flex flex-row items-center justify-between gap-2">
-          <div className="flex flex-row items-center gap-3">
+        <section className="flex flex-row items-center justify-between gap-2">
+          <section className="flex flex-row items-center gap-3">
             {loading ? (
               <Skeleton className="size-8 rounded-full" />
             ) : (
@@ -74,7 +76,7 @@ export function AppSidebar() {
                 )}
               </Avatar>
             )}
-            <div className="flex flex-col min-w-0">
+            <section className="flex flex-col min-w-0">
               {loading ? (
                 <>
                   <Skeleton className="h-4 w-24 mb-1" />
@@ -88,14 +90,19 @@ export function AppSidebar() {
                   <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
                 </>
               )}
-            </div>
-          </div>
+            </section>
+          </section>
           {loading ? <Skeleton className="size-8 rounded-full" /> : <Notifications />}
-        </div>
+        </section>
+        {/* Create buttons */}
+        <section className="flex flex-col gap-2 mt-3">
+          <CreateProjectButton />
+          <CreateTestButton />
+        </section>
         {/* Search input */}
-        <div className="mt-3">
+        <section className="mt-3">
           {loading ? <Skeleton className="h-8 w-full rounded-md" /> : <SidebarInput placeholder="Search..." />}
-        </div>
+        </section>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
