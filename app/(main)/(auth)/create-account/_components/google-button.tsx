@@ -1,7 +1,6 @@
 "use client";
 import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
@@ -22,11 +21,7 @@ export function CreateAccountWithGoogleButton({ mode = 'signup' }: { mode?: 'sig
     window.location.href = url;
   };
 
-  useEffect(() => {
-    const token = searchParams.get('token');
-    console.log('Token in URL:', token);
-    console.log('Token in localStorage:', localStorage.getItem('authToken'));
-  }, [searchParams]);
+ 
 
   return (
     <Button

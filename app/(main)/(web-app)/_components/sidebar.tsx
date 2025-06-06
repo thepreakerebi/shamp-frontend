@@ -19,6 +19,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Notifications } from "./notifications";
 import { ThemeSwitcher } from "./theme-switcher";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const items = [
   {
@@ -51,34 +52,47 @@ function getInitials(firstName?: string, lastName?: string, email?: string) {
 }
 
 export function AppSidebar() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   return (
     <Sidebar>
       <SidebarHeader className="gap-4 border-b pb-4 mb-2">
         {/* User info and notifications */}
         <div className="flex flex-row items-center justify-between gap-2">
           <div className="flex flex-row items-center gap-3">
-            <Avatar>
-              {user?.profilePicture ? (
-                <AvatarImage src={user.profilePicture} alt={user.firstName || user.email || 'User'} />
+            {loading ? (
+              <Skeleton className="size-8 rounded-full" />
+            ) : (
+              <Avatar>
+                {user?.profilePicture ? (
+                  <AvatarImage src={user.profilePicture} alt={user.firstName || user.email || 'User'} />
+                ) : (
+                  <AvatarFallback>
+                    {getInitials(user?.firstName, user?.lastName, user?.email)}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+            )}
+            <div className="flex flex-col min-w-0">
+              {loading ? (
+                <>
+                  <Skeleton className="h-4 w-24 mb-1" />
+                  <Skeleton className="h-3 w-32" />
+                </>
               ) : (
-                <AvatarFallback>
-                  {getInitials(user?.firstName, user?.lastName, user?.email)}
-                </AvatarFallback>
+                <>
+                  <span className="font-medium text-sm truncate">
+                    {user?.firstName || ''} {user?.lastName || ''}
+                  </span>
+                  <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
+                </>
               )}
-            </Avatar>
-            <div className="flex flex-col">
-              <span className="font-medium text-sm">
-                {user?.firstName || ''} {user?.lastName || ''}
-              </span>
-              <span className="text-xs text-muted-foreground">{user?.email}</span>
             </div>
           </div>
-          <Notifications />
+          {loading ? <Skeleton className="size-8 rounded-full" /> : <Notifications />}
         </div>
         {/* Search input */}
         <div className="mt-3">
-          <SidebarInput placeholder="Search..." />
+          {loading ? <Skeleton className="h-8 w-full rounded-md" /> : <SidebarInput placeholder="Search..." />}
         </div>
       </SidebarHeader>
       <SidebarContent>
