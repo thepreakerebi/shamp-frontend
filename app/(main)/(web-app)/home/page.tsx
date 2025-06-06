@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { TotalProjectsCard } from "./_components/total-projects-card";
 import { TotalTestsCard } from "./_components/total-tests-card";
 import { TotalSuccessfulTestRunsCard } from "./_components/total-successful-test-runs-card";
+import { TotalFailedTestRunsCard } from "./_components/total-failed-test-runs-card";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -26,6 +27,9 @@ export default function HomePage() {
         </Link>
         <Link href="/test-runs" className="focus:outline-none focus:ring-2 focus:ring-ring rounded-md hover:scale-[1.03] transition-transform">
           <TotalSuccessfulTestRunsCard />
+        </Link>
+        <Link href="/test-runs" className="focus:outline-none focus:ring-2 focus:ring-ring rounded-md hover:scale-[1.03] transition-transform">
+          <TotalFailedTestRunsCard />
         </Link>
       </section>
       <section className="w-full" />
