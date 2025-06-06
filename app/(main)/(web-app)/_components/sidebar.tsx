@@ -96,8 +96,8 @@ export function AppSidebar() {
         </section>
         {/* Create buttons */}
         <section className="flex flex-col gap-2 mt-3">
-          <CreateProjectButton />
           <CreateTestButton />
+          <CreateProjectButton />
         </section>
         {/* Search input */}
         <section className="mt-3">
