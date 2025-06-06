@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Context for global modal control
@@ -45,10 +45,12 @@ function CreateProjectModal() {
   const [paymentCredentials, setPaymentCredentials] = React.useState<{ key: string; value: string }[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = React.useState<{ name?: string; url?: string }>({});
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    setFieldErrors((prev) => ({ ...prev, [e.target.name]: undefined }));
   };
 
   // Dynamic credentials handlers
@@ -76,12 +78,22 @@ function CreateProjectModal() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!form.name || !form.url) {
-      setError("Name and URL are required.");
+    setFieldErrors({});
+    let hasError = false;
+    const newFieldErrors: { name?: string; url?: string } = {};
+    if (!form.name) {
+      newFieldErrors.name = "Project name is required.";
+      hasError = true;
+    }
+    if (!form.url) {
+      newFieldErrors.url = "Project URL is required.";
+      hasError = true;
+    }
+    if (hasError) {
+      setFieldErrors(newFieldErrors);
       return;
     }
     setLoading(true);
-    // Convert credentials arrays to objects
     const authCredObj = Object.fromEntries(authCredentials.filter(c => c.key).map(c => [c.key, c.value]));
     const paymentCredObj = Object.fromEntries(paymentCredentials.filter(c => c.key).map(c => [c.key, c.value]));
     try {
@@ -114,15 +126,18 @@ function CreateProjectModal() {
           <DialogTitle>Create Project</DialogTitle>
           <DialogDescription>Fill in the details to create a new project.</DialogDescription>
         </DialogHeader>
+        {error && <div className="text-destructive text-sm mb-2">{error}</div>}
         <ScrollArea className="max-h-[60vh] pr-2">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" id="create-project-form">
             <section>
               <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
-              <Input id="name" name="name" value={form.name} onChange={handleChange} required disabled={loading} />
+              <Input id="name" name="name" value={form.name} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.name} aria-describedby={fieldErrors.name ? 'name-error' : undefined} />
+              {fieldErrors.name && <div id="name-error" className="text-destructive text-xs mt-1">{fieldErrors.name}</div>}
             </section>
             <section>
               <label htmlFor="url" className="block text-sm font-medium mb-1">URL</label>
-              <Input id="url" name="url" value={form.url} onChange={handleChange} required disabled={loading} />
+              <Input id="url" name="url" value={form.url} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.url} aria-describedby={fieldErrors.url ? 'url-error' : undefined} />
+              {fieldErrors.url && <div id="url-error" className="text-destructive text-xs mt-1">{fieldErrors.url}</div>}
             </section>
             <section>
               <label htmlFor="description" className="block text-sm font-medium mb-1">Description <span className="text-muted-foreground">(optional)</span></label>
@@ -198,15 +213,15 @@ function CreateProjectModal() {
                 </section>
               ))}
             </fieldset>
-            {error && <div className="text-destructive text-sm">{error}</div>}
           </form>
         </ScrollArea>
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={loading}>Cancel</Button>
           </DialogClose>
-          <Button variant="secondary" type="submit" form="create-project-form" disabled={loading}>
-            {loading ? "Creating..." : "Create Project"}
+          <Button variant="default" type="submit" form="create-project-form" disabled={loading}>
+            {loading && <Loader2 className="animate-spin mr-2 h-5 w-5" />}
+            {loading ? "Creating..." : "Create project"}
           </Button>
         </DialogFooter>
       </DialogContent>
