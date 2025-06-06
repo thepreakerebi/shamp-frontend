@@ -20,6 +20,7 @@ import { Notifications } from "./notifications";
 import { ThemeSwitcher } from "./theme-switcher";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePathname } from "next/navigation";
 
 const items = [
   {
@@ -53,6 +54,7 @@ function getInitials(firstName?: string, lastName?: string, email?: string) {
 
 export function AppSidebar() {
   const { user, logout, loading } = useAuth();
+  const pathname = usePathname();
   return (
     <Sidebar>
       <SidebarHeader className="gap-4 border-b pb-4 mb-2">
@@ -100,16 +102,19 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link href={item.url} prefetch={false}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {items.map((item) => {
+                const isActive = pathname === item.url;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive}>
+                      <Link href={item.url} prefetch={false}>
+                        <item.icon className={cn(!isActive && "text-muted-foreground")} />
+                        <span className={cn(!isActive && "text-muted-foreground")}>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
