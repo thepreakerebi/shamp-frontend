@@ -4,13 +4,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle2 } from "lucide-react";
 import { useAnalytics } from '@/hooks/use-analytics';
 import { CountCardSkeleton } from "./count-card-skeleton";
+import Link from "next/link";
 
-export function TotalSuccessfulTestRunsCard() {
+interface TotalSuccessfulTestRunsCardProps {
+  href?: string;
+}
+
+export function TotalSuccessfulTestRunsCard({ href }: TotalSuccessfulTestRunsCardProps) {
   const { data, loading, error } = useAnalytics<{ count: number }>('/testruns/count/successful');
 
-  if (loading) return <CountCardSkeleton />;
-
-  return (
+  const card = (
     <Card className="w-full max-w-[220px] shadow border border-muted bg-card/90 p-0">
       <CardContent className="flex flex-col items-center justify-center p-3 gap-2">
         <section className="flex items-center gap-2 w-full justify-center">
@@ -25,4 +28,14 @@ export function TotalSuccessfulTestRunsCard() {
       </CardContent>
     </Card>
   );
+
+  if (loading) return <CountCardSkeleton />;
+  if (href) {
+    return (
+      <Link href={href} className="focus:outline-none focus:ring-2 focus:ring-ring rounded-md hover:scale-[1.03] transition-transform">
+        {card}
+      </Link>
+    );
+  }
+  return card;
 } 
