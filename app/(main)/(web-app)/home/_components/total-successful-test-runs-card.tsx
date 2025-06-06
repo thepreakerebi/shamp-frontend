@@ -14,7 +14,7 @@ export function TotalSuccessfulTestRunsCard({ href }: TotalSuccessfulTestRunsCar
   const { data, loading, error } = useAnalytics<{ count: number }>('/testruns/count/successful');
 
   const card = (
-    <Card className="w-full md:max-w-sm shadow border border-muted bg-card/90 p-0">
+    <Card className="w-full md:max-w-sm lg:col-span-5 shadow border border-muted bg-card/90 p-0">
       <CardContent className="flex flex-col items-center justify-center p-3 gap-2">
         <section className="flex items-center gap-2 w-full justify-center">
           <CheckCircle2 className="text-foreground" size={18} />
