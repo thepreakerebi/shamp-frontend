@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
 
 // Context for global modal control
 const CreateProjectModalContext = React.createContext<{
@@ -106,6 +107,7 @@ function CreateProjectModal() {
         const data = await res.json();
         setError(data.error || "Failed to create project");
       } else {
+        toast.success("New project created!");
         setOpen(false);
         setForm({ name: "", description: "", url: "" });
         setAuthCredentials([]);
