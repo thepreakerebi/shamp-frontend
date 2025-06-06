@@ -1,4 +1,4 @@
-import { Home, ListChecks, PlayCircle, Settings, LogOut } from "lucide-react";
+import { Home, ListChecks, PlayCircle, Settings, LogOut, HelpCircle } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +23,7 @@ import { CreateTestButton } from "./create-test-button";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 const items = [
   {
@@ -128,6 +129,13 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="mt-auto flex flex-col gap-2 border-t pt-4">
         <ThemeSwitcher />
+        <Link
+          href="/help"
+          className={cn(sidebarMenuButtonVariants({ variant: "default", size: "default" }), "w-full flex items-center gap-2 justify-start")}
+        >
+          <HelpCircle className="size-5 mr-2" />
+          <span>Help</span>
+        </Link>
         <button
           type="button"
           aria-label="Logout"
@@ -137,6 +145,22 @@ export function AppSidebar() {
           <LogOut className="size-5 mr-2" />
           <span>Logout</span>
         </button>
+        <section className="w-full flex px-2 mt-2">
+          <Image
+            src="/Shamp-logo-light.svg"
+            alt="Shamp Logo"
+            width={64}
+            height={32}
+            className="dark:hidden"
+          />
+          <Image
+            src="/Shamp-logo-dark.svg"
+            alt="Shamp Logo"
+            width={64}
+            height={32}
+            className="hidden dark:block"
+          />
+        </section>
       </SidebarFooter>
     </Sidebar>
   );
