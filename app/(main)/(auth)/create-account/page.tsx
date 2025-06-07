@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CreateAccountWithGoogleButton } from './_components/google-button';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
-import { useAuth } from '@/lib/auth';
+import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from 'next/navigation';
 
 interface FieldErrors {
@@ -25,7 +25,7 @@ export default function CreateAccountPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { signup } = useAuth();
+  const { signIn } = useAuthActions();
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,15 +51,20 @@ export default function CreateAccountPage() {
       return;
     }
     try {
-      await signup(form);
+      await signIn("password", {
+        email: form.email,
+        password: form.password,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        flow: "signUp",
+      });
       router.push('/account-created?created=1');
     } catch (err: unknown) {
       let message = 'Signup failed. Please try again.';
       const fieldErrs: FieldErrors = {};
       if (err instanceof Error) {
         message = err.message;
-        // Only set password field error for the exact backend password validation error
-        if (message === 'Password must be at least 8 characters and include lowercase, uppercase, number, and special character.') {
+        if (message.includes('Password must be at least')) {
           fieldErrs.password = message;
         } else if (message.toLowerCase().includes('email') && message.toLowerCase().includes('exist')) {
           fieldErrs.email = 'An account with this email already exists.';
@@ -76,7 +81,6 @@ export default function CreateAccountPage() {
         }
       }
       setFieldErrors(fieldErrs);
-      // Only show general error if not a field error
       if (Object.keys(fieldErrs).length === 0) {
         setError(message);
       }

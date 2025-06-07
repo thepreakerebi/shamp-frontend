@@ -7,15 +7,15 @@ export const ResendEmailVerificationOTP = Resend({
   id: "resend-otp",
   apiKey: process.env.AUTH_RESEND_KEY,
   async generateVerificationToken() {
-    return generateRandomString(8, alphabet("0-9"));
+    return generateRandomString(6, alphabet("0-9"));
   },
   async sendVerificationRequest({ identifier: email, provider, token }) {
     const resend = new ResendAPI(provider.apiKey);
     const { error } = await resend.emails.send({
-      from: "My App <onboarding@resend.dev>",
+      from: "Shamp <onboarding@resend.dev>",
       to: [email],
-      subject: `Sign in to My App`,
-      text: "Your code is " + token,
+      subject: `Sign in to Shamp`,
+      text: "Your email verification code is " + token,
     });
     if (error) throw new Error("Could not send");
   },
@@ -25,14 +25,14 @@ export const ResendPasswordResetOTP = Resend({
   id: "resend-otp-password-reset",
   apiKey: process.env.AUTH_RESEND_KEY,
   async generateVerificationToken() {
-    return generateRandomString(8, alphabet("0-9"));
+    return generateRandomString(6, alphabet("0-9"));
   },
   async sendVerificationRequest({ identifier: email, provider, token }) {
     const resend = new ResendAPI(provider.apiKey);
     const { error } = await resend.emails.send({
-      from: "My App <onboarding@resend.dev>",
+      from: "Shamp <onboarding@resend.dev>",
       to: [email],
-      subject: `Reset your password in My App`,
+      subject: `Reset your password in Shamp`,
       text: "Your password reset code is " + token,
     });
     if (error) {
