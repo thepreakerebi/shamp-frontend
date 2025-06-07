@@ -17,8 +17,8 @@ export function TotalSuccessfulTestRunsCard({ href }: TotalSuccessfulTestRunsCar
     <Card className="w-full md:max-w-sm lg:col-span-5 bg-card/90 p-0">
       <CardContent className="flex flex-col items-center justify-center p-3 gap-2">
         <section className="flex items-center gap-2 w-full justify-center">
-          <CheckCircle2 className="text-foreground" size={18} />
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">{data?.count ?? 0}</h1>
+          <CheckCircle2 className="text-green-500 dark:text-green-400" size={18} />
+          <h1 className="text-2xl font-bold text-green-500 dark:text-green-400 tracking-tight">{data?.count ?? 0}</h1>
         </section>
         <section className="w-full text-center mt-1">
           <h2 className="block text-sm font-medium text-foreground">Successful Runs</h2>
