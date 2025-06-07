@@ -135,12 +135,10 @@ export default defineSchema({
     filterFields: ["testId", "testRunId", "personaId", "type"],
   }),
   users: defineTable({
-    firstName: v.optional(v.string()),
-    lastName: v.optional(v.string()),
+    fullName: v.optional(v.string()),
     invitedBy: v.optional(v.id("users")),
     profilePicture: v.optional(v.string()),
     role: v.optional(v.union(v.literal("admin"), v.literal("member"))),
-    emailVerified: v.optional(v.boolean()),
     email: v.optional(v.string()),
     // You can add more optional fields as needed
   }).index("by_email", ["email"]),

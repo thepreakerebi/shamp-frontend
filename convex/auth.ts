@@ -1,51 +1,25 @@
 import Google from "@auth/core/providers/google";
-import { Password } from "@convex-dev/auth/providers/Password";
+import Resend from "@auth/core/providers/resend";
 import { convexAuth } from "@convex-dev/auth/server";
-import { ConvexError } from "convex/values";
-import { z } from "zod";
-import { ResendEmailVerificationOTP, ResendPasswordResetOTP } from "./services/emailService";
-
-
-// Email validation schema
-const EmailSchema = z.object({
-  email: z.string().email(),
-  firstName: z.string().optional(),
-  profilePicture: z.string().optional(),
-  lastName: z.string().optional(),
-  role: z.string().optional(),
-  invitedBy: z.string().optional(),
-});
-
-// Custom password validation
-function validatePasswordRequirements(password: string) {
-  // Define allowed special characters
-  const specialCharRegex = /[!@#$%^&*()_\-+=]/;
-  if (
-    password.length < 8 ||
-    !/\d/.test(password) ||
-    !/[a-z]/.test(password) ||
-    !/[A-Z]/.test(password) ||
-    !specialCharRegex.test(password) // must include at least one allowed special character
-  ) {
-    throw new ConvexError("Password must be at least 8 characters, include a number, a lowercase, an uppercase letter, and a special character (!@#$%^&*()_-+=).");
-  }
-}
-
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     Google({
       async profile(profile) {
-        // Extract profile picture and names from Google profile
+        // Extract profile picture from Google profile
         const extra: Record<string, string> = {};
         if (typeof profile.picture === "string") {
           extra.profilePicture = profile.picture;
         }
-        if (typeof profile.given_name === "string") {
-          extra.firstName = profile.given_name;
-        }
-        if (typeof profile.family_name === "string") {
-          extra.lastName = profile.family_name;
+        // Determine fullName
+        let fullName: string | undefined = undefined;
+        if (typeof profile.name === "string" && profile.name.length > 0) {
+          fullName = profile.name;
+        } else if (typeof profile.given_name === "string" && typeof profile.family_name === "string" && profile.given_name.length > 0 && profile.family_name.length > 0) {
+          fullName = profile.given_name + " " + profile.family_name;
+        } else if (typeof profile.email === "string") {
+          const emailName = profile.email.split("@")[0];
+          fullName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
         }
         // Determine role and invitedBy
         let role: "admin" | "member" = "admin";
@@ -57,41 +31,17 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         if (invitedBy) extra.invitedBy = invitedBy;
         extra.role = role;
         // Google always provides email
-        return { email: profile.email, ...extra };
+        return { email: profile.email, fullName, ...extra };
       },
     }),
-    Password({
-      profile(params) {
-        const result = EmailSchema.safeParse(params);
-        if (!result.success) throw new ConvexError(result.error.format());
-        const data = result.data;
-
-        // Determine role
-        let role: "admin" | "member" = "admin";
-        let invitedBy: string | undefined = undefined;
-        if (data.invitedBy) {
-          role = "member";
-          invitedBy = data.invitedBy;
-        }
-
-        // Only return defined string fields, with explicit email property
-        const extra: Record<string, string> = {};
-        if (typeof data.firstName === "string") extra.firstName = data.firstName;
-        if (typeof data.lastName === "string") extra.lastName = data.lastName;
-        if (invitedBy) extra.invitedBy = invitedBy;
-        extra.role = role;
-
-        return { email: data.email, ...extra };
-      },
-      validatePasswordRequirements,
-      verify: ResendEmailVerificationOTP, // Require email verification
-      reset: ResendPasswordResetOTP, // Password reset OTP
+    Resend({
+      // No profile callback for Resend; handle in createOrUpdateUser
     }),
   ],
   callbacks: {
     async createOrUpdateUser(ctx, args) {
+      console.log("Profile received:", args.profile);
       if (args.existingUserId) {
-        // Optionally merge updated fields into the existing user object here
         return args.existingUserId;
       }
       // Find user by email
@@ -102,9 +52,28 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         .withIndex("by_email", (q: any) => q.eq("email", args.profile.email))
         .unique();
       if (existingUser) return existingUser._id;
-      // Create new user
+      // Extract invitedBy and set role
+      const { fullName, invitedBy, ...rest } = args.profile;
+      let role: "admin" | "member" = "admin";
+      let invitedByValue: string | undefined = undefined;
+      if (typeof invitedBy === "string") {
+        role = "member";
+        invitedByValue = invitedBy;
+      }
+      // Determine fullName
+      let computedFullName: string | undefined = undefined;
+      if (typeof fullName === "string" && fullName.length > 0) {
+        computedFullName = fullName;
+      } else if (typeof args.profile.email === "string") {
+        // Fallback: use the part before @ in the email
+        const emailName = args.profile.email.split("@")[0];
+        computedFullName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+      }
       return ctx.db.insert("users", {
-        ...args.profile,
+        ...rest,
+        fullName: computedFullName,
+        invitedBy: invitedByValue,
+        role,
       });
     },
   },
