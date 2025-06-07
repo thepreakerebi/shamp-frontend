@@ -1,20 +1,9 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
-  users: defineTable({
-    email: v.string(),
-    password: v.optional(v.string()),
-    provider: v.union(v.literal("google"), v.literal("email")), // 'google' | 'email'
-    role: v.union(v.literal("admin"), v.literal("member")), // 'admin' | 'member'
-    firstName: v.string(),
-    lastName: v.string(),
-    profilePicture: v.optional(v.string()),
-    invitedBy: v.optional(v.id('users')),
-    emailVerified: v.optional(v.boolean()),
-    verificationToken: v.optional(v.string()),
-    resetPasswordToken: v.optional(v.string()),
-  }).index("by_email", ["email"]),
+  ...authTables,
   projects: defineTable({
     name: v.string(),
     createdBy: v.id('users'),
@@ -144,5 +133,13 @@ export default defineSchema({
     vectorField: "embedding",
     dimensions: 1536, // OpenAI text-embedding-3-small is 1536 dims
     filterFields: ["testId", "testRunId", "personaId", "type"],
+  }),
+  users: defineTable({
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    profilePicture: v.optional(v.string()),
+    invitedBy: v.optional(v.id("users")),
+    role: v.optional(v.union(v.literal("admin"), v.literal("member"))),
+    // You can add more optional fields as needed
   }),
 }); 
