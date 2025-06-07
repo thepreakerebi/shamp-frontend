@@ -14,7 +14,7 @@ export default defineSchema({
     emailVerified: v.optional(v.boolean()),
     verificationToken: v.optional(v.string()),
     resetPasswordToken: v.optional(v.string()),
-  }),
+  }).index("by_email", ["email"]),
   projects: defineTable({
     name: v.string(),
     createdBy: v.id('users'),
