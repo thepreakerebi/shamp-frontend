@@ -40,7 +40,7 @@ export default function LoginPage() {
       return;
     }
     try {
-      await signIn("resend", { email, redirectTo: window.location.origin + "/home" });
+      await signIn("resend", { email });
       setSuccess("Check your email for a magic sign-in link!");
       setEmail("");
     } catch (err: unknown) {
@@ -77,7 +77,7 @@ export default function LoginPage() {
           <Separator className="flex-1" />
         </section>
         {success && (
-          <Alert variant="default" className="mb-4">
+          <Alert variant="default" className="mb-4 border-green-500 dark:border-green-500">
             <AlertDescription>{success}</AlertDescription>
           </Alert>
         )}
