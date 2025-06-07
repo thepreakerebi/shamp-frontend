@@ -138,9 +138,10 @@ export default defineSchema({
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
     invitedBy: v.optional(v.id("users")),
+    profilePicture: v.optional(v.string()),
     role: v.optional(v.union(v.literal("admin"), v.literal("member"))),
     emailVerified: v.optional(v.boolean()),
-    
+    email: v.optional(v.string()),
     // You can add more optional fields as needed
-  }),
+  }).index("by_email", ["email"]),
 }); 

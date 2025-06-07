@@ -33,7 +33,32 @@ function validatePasswordRequirements(password: string) {
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
-    Google,
+    Google({
+      async profile(profile) {
+        // Extract profile picture and names from Google profile
+        const extra: Record<string, string> = {};
+        if (typeof profile.picture === "string") {
+          extra.profilePicture = profile.picture;
+        }
+        if (typeof profile.given_name === "string") {
+          extra.firstName = profile.given_name;
+        }
+        if (typeof profile.family_name === "string") {
+          extra.lastName = profile.family_name;
+        }
+        // Determine role and invitedBy
+        let role: "admin" | "member" = "admin";
+        let invitedBy: string | undefined = undefined;
+        if (typeof profile.invitedBy === "string") {
+          role = "member";
+          invitedBy = profile.invitedBy;
+        }
+        if (invitedBy) extra.invitedBy = invitedBy;
+        extra.role = role;
+        // Google always provides email
+        return { email: profile.email, ...extra };
+      },
+    }),
     Password({
       profile(params) {
         const result = EmailSchema.safeParse(params);
