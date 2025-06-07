@@ -137,9 +137,10 @@ export default defineSchema({
   users: defineTable({
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
-    profilePicture: v.optional(v.string()),
     invitedBy: v.optional(v.id("users")),
     role: v.optional(v.union(v.literal("admin"), v.literal("member"))),
+    emailVerified: v.optional(v.boolean()),
+    
     // You can add more optional fields as needed
   }),
 }); 
