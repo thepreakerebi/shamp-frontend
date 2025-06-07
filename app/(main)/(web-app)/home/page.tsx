@@ -21,7 +21,7 @@ export default function HomePage() {
   return (
     <main className="flex flex-col bg-background p-4 gap-4 h-screen w-full">
       <section className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 w-full">
-        <TotalProjectsCard href="/projects" />
+        <TotalProjectsCard />
         <TotalPersonasCard href="/personas" />
         <TotalTestsCard href="/tests" />
         <TotalSuccessfulTestRunsCard href="/test-runs" />

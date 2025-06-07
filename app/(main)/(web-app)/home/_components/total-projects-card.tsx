@@ -4,13 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FolderKanban } from "lucide-react";
 import { useAnalytics } from '@/hooks/use-analytics';
 import { CountCardSkeleton } from "./count-card-skeleton";
-import Link from "next/link";
 
-interface TotalProjectsCardProps {
-  href?: string;
-}
-
-export function TotalProjectsCard({ href }: TotalProjectsCardProps) {
+export function TotalProjectsCard() {
   const { data, loading, error } = useAnalytics<{ count: number }>('/projects/count');
 
   const card = (
@@ -30,12 +25,6 @@ export function TotalProjectsCard({ href }: TotalProjectsCardProps) {
   );
 
   if (loading) return <CountCardSkeleton />;
-  if (href) {
-    return (
-      <Link href={href} className="focus:outline-none focus:ring-2 focus:ring-ring rounded-md hover:scale-[1.03] transition-transform">
-        {card}
-      </Link>
-    );
-  }
+  
   return card;
 } 
