@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
-import { useAuth, EmailNotVerifiedError } from '@/lib/auth';
+import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CreateAccountWithGoogleButton } from '../create-account/_components/google-button';
 
@@ -19,11 +18,10 @@ interface FieldErrors {
 export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  // const [error, setError] = useState<string | null>(null);
+  // const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
-  const router = useRouter();
+  // const router = useRouter();
   const searchParams = useSearchParams();
   const nextRouter = useRouter();
 
@@ -45,47 +43,46 @@ export default function LoginPage() {
     setFieldErrors((prev) => ({ ...prev, [e.target.name]: undefined }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setFieldErrors({});
-    setLoading(true);
-    // Required field validation
-    const newFieldErrors: FieldErrors = {};
-    if (!form.email) newFieldErrors.email = 'Email is required.';
-    if (!form.password) newFieldErrors.password = 'Password is required.';
-    if (Object.keys(newFieldErrors).length > 0) {
-      setFieldErrors(newFieldErrors);
-      setLoading(false);
-      return;
-    }
-    try {
-      await login(form.email, form.password);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('showLoggedInToast', '1');
-      }
-      router.push('/home');
-    } catch (err: unknown) {
-      let message = 'Login failed. Please try again.';
-      const fieldErrs: FieldErrors = {};
-      if (err instanceof EmailNotVerifiedError) {
-        message = err.message || 'Please verify your email address before logging in.';
-      } else if (err instanceof Error) {
-        message = err.message;
-        if (message === 'Incorrect password. Please try again.') {
-          fieldErrs.password = message;
-        } else if (message.toLowerCase().includes('email')) {
-          fieldErrs.email = 'No account found with this email.';
-        }
-      }
-      setFieldErrors(fieldErrs);
-      if (Object.keys(fieldErrs).length === 0 || err instanceof EmailNotVerifiedError) {
-        setError(message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setError(null);
+  //   setFieldErrors({});
+  //   setLoading(true);
+  //   // Required field validation
+  //   const newFieldErrors: FieldErrors = {};
+  //   if (!form.email) newFieldErrors.email = 'Email is required.';
+  //   if (!form.password) newFieldErrors.password = 'Password is required.';
+  //   if (Object.keys(newFieldErrors).length > 0) {
+  //     setFieldErrors(newFieldErrors);
+  //     setLoading(false);
+  //     return;
+  //   }
+  //   try {
+  //     if (typeof window !== 'undefined') {
+  //       localStorage.setItem('showLoggedInToast', '1');
+  //     }
+  //     router.push('/home');
+  //   } catch (err: unknown) {
+  //     let message = 'Login failed. Please try again.';
+  //     const fieldErrs: FieldErrors = {};
+  //     if (err instanceof EmailNotVerifiedError) {
+  //       message = err.message || 'Please verify your email address before logging in.';
+  //     } else if (err instanceof Error) {
+  //       message = err.message;
+  //       if (message === 'Incorrect password. Please try again.') {
+  //         fieldErrs.password = message;
+  //       } else if (message.toLowerCase().includes('email')) {
+  //         fieldErrs.email = 'No account found with this email.';
+  //       }
+  //     }
+  //     setFieldErrors(fieldErrs);
+  //     if (Object.keys(fieldErrs).length === 0 || err instanceof EmailNotVerifiedError) {
+  //       setError(message);
+  //     }
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <main className="bg-background w-full flex items-center justify-center px-4">
@@ -115,7 +112,7 @@ export default function LoginPage() {
           <p className="text-xs text-muted-foreground">or with email</p>
           <Separator className="flex-1" />
         </section>
-        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on" noValidate>
+        <form onSubmit={() => {}} className="space-y-4" autoComplete="on" noValidate>
           <section className="w-full flex flex-col gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -171,19 +168,19 @@ export default function LoginPage() {
               </div>
             )}
           </section>
-          {error && (
+          {/* {error && (
             <Alert variant="destructive" className="mb-4">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
-          )}
-          <Button
+          )} */}
+          {/* <Button
             type="submit"
             className="w-full font-semibold text-base py-5 mt-2 hover:border-secondary/30 hover:border-1"
             disabled={loading}
           >
             {loading && <Loader2 className="animate-spin mr-2 h-5 w-5" />}
             {loading ? 'Logging in...' : 'Log in'}
-          </Button>
+          </Button> */}
         </form>
         <footer className="text-xs text-muted-foreground mt-4 text-center">
           By logging in you agree to our{' '}

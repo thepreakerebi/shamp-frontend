@@ -10,6 +10,7 @@ import { ResendEmailVerificationOTP, ResendPasswordResetOTP } from "./services/e
 const EmailSchema = z.object({
   email: z.string().email(),
   firstName: z.string().optional(),
+  profilePicture: z.string().optional(),
   lastName: z.string().optional(),
   role: z.string().optional(),
   invitedBy: z.string().optional(),
@@ -87,4 +88,48 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       reset: ResendPasswordResetOTP, // Password reset OTP
     }),
   ],
+  callbacks: {
+    async createOrUpdateUser(ctx, args) {
+      // Check if a user with this email already exists
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const existingUser = await (ctx.db as any)
+        .query("users")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .withIndex("by_email", (q: any) => q.eq("email", args.profile.email))
+        .unique();
+
+      if (existingUser) {
+        // Check authAccounts for this user
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const authAccounts = await (ctx.db as any)
+          .query("authAccounts")
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .withIndex("by_userId", (q: any) => q.eq("userId", existingUser._id))
+          .collect();
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const hasGoogle = authAccounts.some((acc: any) => acc.providerId === "google");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const hasPassword = authAccounts.some((acc: any) => acc.providerId === "password");
+
+        if (args.type === "email" && hasGoogle && !hasPassword) {
+          throw new Error(
+            "You already created an account with Google for this email. Please log in with Google or use the 'Forgot password' flow to set a password for this account."
+          );
+        }
+        if (args.type === "oauth" && hasPassword && !hasGoogle) {
+          throw new Error(
+            "You already created an account with email/password for this email. Please log in with your password or use the 'Sign in with Google' button."
+          );
+        }
+        // Otherwise, link the account
+        return existingUser._id;
+      }
+
+      // No existing user, create a new one
+      return ctx.db.insert("users", {
+        ...args.profile,
+      });
+    },
+  },
 });
