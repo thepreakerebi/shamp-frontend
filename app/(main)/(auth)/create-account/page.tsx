@@ -65,7 +65,9 @@ export default function CreateAccountPage() {
       if (err instanceof Error) {
         message = err.message;
         if (message.includes('Password must be at least')) {
-          fieldErrs.password = message;
+          fieldErrs.password = 'Password must be at least 8 characters and include a number, a lowercase letter, an uppercase letter, and a special character (!@#$%^&*()_-+=).';
+        } else if (message.toLowerCase().includes('invalid email')) {
+          fieldErrs.email = 'Please enter a valid email address (e.g. name@example.com).';
         } else if (message.toLowerCase().includes('email') && message.toLowerCase().includes('exist')) {
           fieldErrs.email = 'An account with this email already exists.';
         } else if (message === "You already created an account with Google for this email. Please log in with Google or use the 'Forgot password' flow to set a password for this account.") {

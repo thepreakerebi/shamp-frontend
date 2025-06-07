@@ -14,7 +14,7 @@ export const ResendEmailVerificationOTP = Resend({
     const { error } = await resend.emails.send({
       from: "Shamp <onboarding@resend.dev>",
       to: [email],
-      subject: `Sign in to Shamp`,
+      subject: `Verify your email address`,
       text: "Your email verification code is " + token,
     });
     if (error) throw new Error("Could not send");
