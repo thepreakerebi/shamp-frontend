@@ -25,7 +25,12 @@ export const createAccount = mutation({
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .unique();
-    if (existing) throw new Error(" already exists.");
+    if (existing) {
+      if (existing.provider === "google") {
+        throw new Error("You already created an account with Google for this email. Please log in with Google or use the 'Forgot password' flow to set a password for this account.");
+      }
+      throw new Error("An account with this email already exists.");
+    }
 
     // Insert user
     const userId = await ctx.db.insert("users", {

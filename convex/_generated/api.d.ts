@@ -14,6 +14,8 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as actions_createAccountAction from "../actions/createAccountAction.js";
+import type * as actions_emailLoginAction from "../actions/emailLoginAction.js";
+import type * as queries_getUserByEmail from "../queries/getUserByEmail.js";
 import type * as services_emailService from "../services/emailService.js";
 import type * as users_createAccount from "../users/createAccount.js";
 import type * as utils_name from "../utils/name.js";
@@ -29,6 +31,8 @@ import type * as utils_validation from "../utils/validation.js";
  */
 declare const fullApi: ApiFromModules<{
   "actions/createAccountAction": typeof actions_createAccountAction;
+  "actions/emailLoginAction": typeof actions_emailLoginAction;
+  "queries/getUserByEmail": typeof queries_getUserByEmail;
   "services/emailService": typeof services_emailService;
   "users/createAccount": typeof users_createAccount;
   "utils/name": typeof utils_name;

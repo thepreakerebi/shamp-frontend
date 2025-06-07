@@ -5,7 +5,7 @@ export default defineSchema({
   users: defineTable({
     email: v.string(),
     password: v.optional(v.string()),
-    provider: v.string(), // 'google' | 'email'
+    provider: v.union(v.literal("google"), v.literal("email")), // 'google' | 'email'
     role: v.union(v.literal("admin"), v.literal("member")), // 'admin' | 'member'
     firstName: v.string(),
     lastName: v.string(),
