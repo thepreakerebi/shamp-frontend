@@ -1,29 +1,34 @@
-import { useAuth } from "@/lib/auth";
+import { useAuth, type User } from "@/lib/auth";
 import { useEffect, useState, useCallback } from "react";
 import io from "socket.io-client";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
 
-export interface Project {
+export interface Persona {
   _id: string;
   name: string;
   description?: string;
-  url?: string;
-  authCredentials?: Record<string, string>;
-  paymentCredentials?: Record<string, string>;
-  testRunsCount?: number;
-  testsCount?: number;
-  lastTestRunAt?: string | null;
+  goals?: string[];
+  frustrations?: string[];
+  traits?: Record<string, string | number | boolean> | string[];
+  background?: string;
+  preferredDevices?: string[];
+  gender?: string;
+  createdBy?: User | string;
+  avatarUrl?: string;
   // Add other fields as needed
 }
 
-type ProjectPayload = {
+type PersonaPayload = {
   name: string;
-  description?: string;
-  url?: string;
-  authCredentials?: Record<string, string>;
-  paymentCredentials?: Record<string, string>;
+  description: string;
+  goals?: string[];
+  frustrations?: string[];
+  traits?: Record<string, string | number | boolean> | string[];
+  background?: string;
+  preferredDevices?: string[];
+  gender?: string;
 };
 
 const fetcher = (url: string, token: string) =>
@@ -35,30 +40,30 @@ const fetcher = (url: string, token: string) =>
     return res.json();
   });
 
-export function useProjects() {
+export function usePersonas() {
   const { token } = useAuth();
-  const [projects, setProjects] = useState<Project[] | null>(null);
-  const [projectsLoading, setProjectsLoading] = useState(true);
-  const [projectsError, setProjectsError] = useState<string | null>(null);
+  const [personas, setPersonas] = useState<Persona[] | null>(null);
+  const [personasLoading, setPersonasLoading] = useState(true);
+  const [personasError, setPersonasError] = useState<string | null>(null);
   const [count, setCount] = useState(0);
   const [countLoading, setCountLoading] = useState(true);
   const [countError, setCountError] = useState<string | null>(null);
 
-  const fetchProjects = useCallback(async () => {
+  const fetchPersonas = useCallback(async () => {
     if (!token) return;
-    setProjectsLoading(true);
-    setProjectsError(null);
+    setPersonasLoading(true);
+    setPersonasError(null);
     try {
-      const data = await fetcher("/projects", token);
-      setProjects(data);
+      const data = await fetcher("/personas", token);
+      setPersonas(data);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setProjectsError(err.message);
+        setPersonasError(err.message);
       } else {
-        setProjectsError("Failed to fetch projects");
+        setPersonasError("Failed to fetch personas");
       }
     } finally {
-      setProjectsLoading(false);
+      setPersonasLoading(false);
     }
   }, [token]);
 
@@ -67,30 +72,30 @@ export function useProjects() {
     setCountLoading(true);
     setCountError(null);
     try {
-      const data = await fetcher("/projects/count", token);
+      const data = await fetcher("/personas/count", token);
       setCount(data.count ?? 0);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setCountError(err.message);
       } else {
-        setCountError("Failed to fetch project count");
+        setCountError("Failed to fetch persona count");
       }
     } finally {
       setCountLoading(false);
     }
   }, [token]);
 
-  // Refetch both projects and count
+  // Refetch both personas and count
   const refetch = useCallback(() => {
-    fetchProjects();
+    fetchPersonas();
     fetchCount();
-  }, [fetchProjects, fetchCount]);
+  }, [fetchPersonas, fetchCount]);
 
   useEffect(() => {
     if (!token) return;
-    fetchProjects();
+    fetchPersonas();
     fetchCount();
-  }, [token, fetchProjects, fetchCount]);
+  }, [token, fetchPersonas, fetchCount]);
 
   useEffect(() => {
     if (!token) return;
@@ -101,34 +106,32 @@ export function useProjects() {
     const handleUpdate = () => {
       refetch();
     };
-    socket.on("project:created", handleUpdate);
-    socket.on("project:deleted", handleUpdate);
-    socket.on("project:updated", handleUpdate);
-    socket.on("project:trashed", handleUpdate);
+    socket.on("persona:created", handleUpdate);
+    socket.on("persona:deleted", handleUpdate);
+    socket.on("persona:updated", handleUpdate);
     return () => {
-      socket.off("project:created", handleUpdate);
-      socket.off("project:deleted", handleUpdate);
-      socket.off("project:updated", handleUpdate);
-      socket.off("project:trashed", handleUpdate);
+      socket.off("persona:created", handleUpdate);
+      socket.off("persona:deleted", handleUpdate);
+      socket.off("persona:updated", handleUpdate);
       socket.disconnect();
     };
   }, [refetch, token]);
 
-  // Get a single project by ID
-  const getProjectById = async (id: string): Promise<Project> => {
+  // Get a single persona by ID
+  const getPersonaById = async (id: string): Promise<Persona> => {
     if (!token) throw new Error("Not authenticated");
-    const res = await fetch(`${API_BASE}/projects/${id}`, {
+    const res = await fetch(`${API_BASE}/personas/${id}`, {
       credentials: "include",
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) throw new Error("Failed to fetch project");
+    if (!res.ok) throw new Error("Failed to fetch persona");
     return res.json();
   };
 
-  // Create a project
-  const createProject = async (payload: ProjectPayload) => {
+  // Create a persona
+  const createPersona = async (payload: PersonaPayload) => {
     if (!token) throw new Error("Not authenticated");
-    const res = await fetch(`${API_BASE}/projects`, {
+    const res = await fetch(`${API_BASE}/personas`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -137,15 +140,15 @@ export function useProjects() {
       },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error("Failed to create project");
+    if (!res.ok) throw new Error("Failed to create persona");
     return res.json();
   };
 
-  // Update a project
-  const updateProject = async (id: string, payload: ProjectPayload) => {
+  // Update a persona
+  const updatePersona = async (id: string, payload: PersonaPayload) => {
     if (!token) throw new Error("Not authenticated");
-    const res = await fetch(`${API_BASE}/projects/${id}`, {
-      method: "PUT",
+    const res = await fetch(`${API_BASE}/personas/${id}`, {
+      method: "PATCH",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
@@ -153,33 +156,33 @@ export function useProjects() {
       },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error("Failed to update project");
+    if (!res.ok) throw new Error("Failed to update persona");
     return res.json();
   };
 
-  // Delete a project
-  const deleteProject = async (id: string) => {
+  // Delete a persona
+  const deletePersona = async (id: string) => {
     if (!token) throw new Error("Not authenticated");
-    const res = await fetch(`${API_BASE}/projects/${id}`, {
+    const res = await fetch(`${API_BASE}/personas/${id}`, {
       method: "DELETE",
       credentials: "include",
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) throw new Error("Failed to delete project");
+    if (!res.ok) throw new Error("Failed to delete persona");
     return res.json();
   };
 
   return {
-    projects,
-    projectsError,
-    projectsLoading,
+    personas,
+    personasError,
+    personasLoading,
     count,
     countError,
     countLoading,
-    createProject,
-    updateProject,
-    deleteProject,
-    getProjectById,
+    createPersona,
+    updatePersona,
+    deletePersona,
+    getPersonaById,
     refetch,
   };
 } 
