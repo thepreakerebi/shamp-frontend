@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Trash2, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { useProjects } from "@/hooks/use-projects";
 
 // Context for global modal control
 const CreateProjectModalContext = React.createContext<{
@@ -48,6 +49,7 @@ function CreateProjectModal() {
   const [error, setError] = React.useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<{ name?: string; url?: string }>({});
   const router = useRouter();
+  const { createProject } = useProjects();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -98,24 +100,21 @@ function CreateProjectModal() {
     const authCredObj = Object.fromEntries(authCredentials.filter(c => c.key).map(c => [c.key, c.value]));
     const paymentCredObj = Object.fromEntries(paymentCredentials.filter(c => c.key).map(c => [c.key, c.value]));
     try {
-      const res = await fetch("/api/projects", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, authCredentials: authCredObj, paymentCredentials: paymentCredObj }),
+      await createProject({
+        name: form.name,
+        description: form.description,
+        url: form.url,
+        authCredentials: authCredObj,
+        paymentCredentials: paymentCredObj,
       });
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || "Failed to create project");
-      } else {
-        toast.success("New project created!");
-        setOpen(false);
-        setForm({ name: "", description: "", url: "" });
-        setAuthCredentials([]);
-        setPaymentCredentials([]);
-        router.refresh();
-      }
-    } catch {
-      setError("Failed to create project");
+      toast.success("New project created!");
+      setOpen(false);
+      setForm({ name: "", description: "", url: "" });
+      setAuthCredentials([]);
+      setPaymentCredentials([]);
+      router.refresh();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to create project");
     } finally {
       setLoading(false);
     }
@@ -130,7 +129,22 @@ function CreateProjectModal() {
         </DialogHeader>
         {error && <div className="text-destructive text-sm mb-2">{error}</div>}
         <ScrollArea className="max-h-[60vh] pr-2">
-          <form onSubmit={handleSubmit} className="space-y-4" id="create-project-form">
+          <form 
+            onSubmit={handleSubmit} 
+            className="space-y-4" 
+            id="create-project-form"
+            onKeyDown={e => {
+              // Only submit on Enter if not inside a textarea
+              if (
+                (e.key === "Enter" || e.key === "Return") &&
+                e.target instanceof HTMLElement &&
+                e.target.tagName !== "TEXTAREA"
+              ) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+          >
             <section>
               <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
               <Input id="name" name="name" value={form.name} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.name} aria-describedby={fieldErrors.name ? 'name-error' : undefined} />
