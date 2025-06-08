@@ -27,7 +27,7 @@ export default function HomePage() {
         <TotalSuccessfulTestRunsCard href="/test-runs" />
         <TotalFailedTestRunsCard href="/test-runs" />
       </section>
-      <section className="w-full" />
+      <section className="w-full"></section>
     </main>
   );
 }

@@ -1,6 +1,5 @@
 import { useAuth } from "@/lib/auth";
-import { useBackendPolling } from "./use-backend-polling";
-import useSWR from "swr";
+import { useSmartPolling } from "./use-smart-polling";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
@@ -34,14 +33,31 @@ const fetcher = (url: string, token: string) =>
 export function useProjects() {
   const { token } = useAuth();
 
-  // Get all projects (SWR)
-  const { data: projects, error: projectsError, isLoading: projectsLoading, mutate: mutateProjects } = useSWR<Project[]>(
-    token ? ["/projects", token] as [string, string] : null,
-    ([url, token]: [string, string]) => fetcher(url, token)
+  // Get all projects (polling)
+  const {
+    data: projects,
+    error: projectsError,
+    loading: projectsLoading,
+  } = useSmartPolling<Project[]>(
+    async () => {
+      if (!token) throw new Error("Not authenticated");
+      return fetcher("/projects", token);
+    },
+    2000
   );
 
   // Get project count (polling)
-  const { data: countData, error: countError, isLoading: countLoading } = useBackendPolling<{ count: number }>("/projects/count", 5000);
+  const {
+    data: countData,
+    error: countError,
+    loading: countLoading,
+  } = useSmartPolling<{ count: number }>(
+    async () => {
+      if (!token) throw new Error("Not authenticated");
+      return fetcher("/projects/count", token);
+    },
+    2000
+  );
 
   // Get a single project by ID
   const getProjectById = async (id: string): Promise<Project> => {
@@ -67,7 +83,6 @@ export function useProjects() {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to create project");
-    mutateProjects(); // Refresh project list
     return res.json();
   };
 
@@ -84,7 +99,6 @@ export function useProjects() {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to update project");
-    mutateProjects();
     return res.json();
   };
 
@@ -97,7 +111,6 @@ export function useProjects() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to delete project");
-    mutateProjects();
     return res.json();
   };
 
@@ -112,6 +125,5 @@ export function useProjects() {
     updateProject,
     deleteProject,
     getProjectById,
-    mutateProjects,
   };
 } 
