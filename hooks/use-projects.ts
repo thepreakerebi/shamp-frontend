@@ -15,6 +15,7 @@ export interface Project {
   testRunsCount?: number;
   testsCount?: number;
   lastTestRunAt?: string | null;
+  previewImageUrl?: string;
   // Add other fields as needed
 }
 

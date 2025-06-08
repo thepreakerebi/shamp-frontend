@@ -7,7 +7,7 @@ import { TotalTestsCard } from "./_components/total-tests-card";
 import { TotalSuccessfulTestRunsCard } from "./_components/total-successful-test-runs-card";
 import { TotalFailedTestRunsCard } from "./_components/total-failed-test-runs-card";
 import { TotalPersonasCard } from "./_components/total-personas-card";
-// import { ProjectsList } from '@/_components/projects-list';
+import { ProjectsList } from '@/_components/projects-list';
 
 export default function HomePage() {
   // const { user } = useAuth();
@@ -29,7 +29,7 @@ export default function HomePage() {
         <TotalFailedTestRunsCard href="/test-runs" />
       </section>
       <section className="w-full">
-        {/* <ProjectsList /> */}
+        <ProjectsList />
       </section>
     </main>
   );

@@ -80,6 +80,16 @@ function CreateProjectModal() {
     else setPaymentCredentials((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  // Simple client-side URL validation
+  function validateUrl(url: string): boolean {
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -92,6 +102,9 @@ function CreateProjectModal() {
     }
     if (!form.url) {
       newFieldErrors.url = "Project URL is required.";
+      hasError = true;
+    } else if (!validateUrl(form.url)) {
+      newFieldErrors.url = "Please enter a valid URL (must start with http:// or https://).";
       hasError = true;
     }
     if (hasError) {
