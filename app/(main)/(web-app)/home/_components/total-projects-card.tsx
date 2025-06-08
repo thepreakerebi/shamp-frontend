@@ -3,10 +3,26 @@ import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { FolderKanban } from "lucide-react";
 import { CountCardSkeleton } from "./count-card-skeleton";
-import { useAnalytics } from "@/hooks/use-analytics";
+import { useSmartPolling } from "@/hooks/use-smart-polling";
+import { useAuth } from "@/lib/auth";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") || "";
 
 export function TotalProjectsCard() {
-  const { data, loading, error } = useAnalytics<{ count: number }>("/projects/count");
+  const { token } = useAuth();
+  const { data, loading, error } = useSmartPolling<{ count: number }>(
+    async () => {
+      if (!token) throw new Error("Not authenticated");
+      const url = `${API_BASE}/projects/count`;
+      const res = await fetch(url, {
+        credentials: "include",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch");
+      return res.json();
+    },
+    2000 // poll every 2 seconds
+  );
 
   // Show skeleton only on first load
   if (loading && !data) return <CountCardSkeleton />;
