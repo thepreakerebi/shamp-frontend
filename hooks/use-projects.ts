@@ -1,7 +1,9 @@
 import { useAuth } from "@/lib/auth";
-import { useSmartPolling } from "./use-smart-polling";
+import { useEffect, useState, useCallback } from "react";
+import io from "socket.io-client";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
 
 export interface Project {
   _id: string;
@@ -10,6 +12,9 @@ export interface Project {
   url?: string;
   authCredentials?: Record<string, string>;
   paymentCredentials?: Record<string, string>;
+  testRunsCount?: number;
+  testsCount?: number;
+  lastTestRunAt?: string | null;
   // Add other fields as needed
 }
 
@@ -32,32 +37,80 @@ const fetcher = (url: string, token: string) =>
 
 export function useProjects() {
   const { token } = useAuth();
+  const [projects, setProjects] = useState<Project[] | null>(null);
+  const [projectsLoading, setProjectsLoading] = useState(true);
+  const [projectsError, setProjectsError] = useState<string | null>(null);
+  const [count, setCount] = useState(0);
+  const [countLoading, setCountLoading] = useState(true);
+  const [countError, setCountError] = useState<string | null>(null);
 
-  // Get all projects (polling)
-  const {
-    data: projects,
-    error: projectsError,
-    loading: projectsLoading,
-  } = useSmartPolling<Project[]>(
-    async () => {
-      if (!token) throw new Error("Not authenticated");
-      return fetcher("/projects", token);
-    },
-    2000
-  );
+  const fetchProjects = useCallback(async () => {
+    if (!token) return;
+    setProjectsLoading(true);
+    setProjectsError(null);
+    try {
+      const data = await fetcher("/projects", token);
+      setProjects(data);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setProjectsError(err.message);
+      } else {
+        setProjectsError("Failed to fetch projects");
+      }
+    } finally {
+      setProjectsLoading(false);
+    }
+  }, [token]);
 
-  // Get project count (polling)
-  const {
-    data: countData,
-    error: countError,
-    loading: countLoading,
-  } = useSmartPolling<{ count: number }>(
-    async () => {
-      if (!token) throw new Error("Not authenticated");
-      return fetcher("/projects/count", token);
-    },
-    2000
-  );
+  const fetchCount = useCallback(async () => {
+    if (!token) return;
+    setCountLoading(true);
+    setCountError(null);
+    try {
+      const data = await fetcher("/projects/count", token);
+      setCount(data.count ?? 0);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setCountError(err.message);
+      } else {
+        setCountError("Failed to fetch project count");
+      }
+    } finally {
+      setCountLoading(false);
+    }
+  }, [token]);
+
+  // Refetch both projects and count
+  const refetch = useCallback(() => {
+    fetchProjects();
+    fetchCount();
+  }, [fetchProjects, fetchCount]);
+
+  useEffect(() => {
+    if (!token) return;
+    fetchProjects();
+    fetchCount();
+  }, [token, fetchProjects, fetchCount]);
+
+  useEffect(() => {
+    if (!token) return;
+    const socket = io(SOCKET_URL, {
+      transports: ["websocket"],
+      auth: { token },
+    });
+    const handleUpdate = () => {
+      refetch();
+    };
+    socket.on("project:created", handleUpdate);
+    socket.on("project:deleted", handleUpdate);
+    socket.on("project:updated", handleUpdate);
+    return () => {
+      socket.off("project:created", handleUpdate);
+      socket.off("project:deleted", handleUpdate);
+      socket.off("project:updated", handleUpdate);
+      socket.disconnect();
+    };
+  }, [refetch, token]);
 
   // Get a single project by ID
   const getProjectById = async (id: string): Promise<Project> => {
@@ -118,12 +171,13 @@ export function useProjects() {
     projects,
     projectsError,
     projectsLoading,
-    count: countData?.count ?? 0,
+    count,
     countError,
     countLoading,
     createProject,
     updateProject,
     deleteProject,
     getProjectById,
+    refetch,
   };
 } 

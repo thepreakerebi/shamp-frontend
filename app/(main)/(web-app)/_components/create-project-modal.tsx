@@ -115,7 +115,9 @@ function CreateProjectModal() {
       setForm({ name: "", description: "", url: "" });
       setAuthCredentials([]);
       setPaymentCredentials([]);
-      router.refresh();
+      setTimeout(() => {
+        router.refresh();
+      }, 300); // Wait for modal close animation
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to create project");
     } finally {

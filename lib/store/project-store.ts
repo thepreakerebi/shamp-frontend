@@ -3,6 +3,11 @@ import { create } from 'zustand';
 export type Project = {
   _id: string;
   name: string;
+  url?: string;
+  description?: string;
+  testRunsCount?: number;
+  testsCount?: number;
+  lastTestRunAt?: string | null;
   // ...other fields as needed
 };
 
