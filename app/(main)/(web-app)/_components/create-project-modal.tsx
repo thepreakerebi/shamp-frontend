@@ -17,6 +17,7 @@ import { Plus, Trash2, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { useProjects } from "@/hooks/use-projects";
+import { useProjectStore } from "@/lib/store/project-store";
 
 // Context for global modal control
 const CreateProjectModalContext = React.createContext<{
@@ -50,6 +51,7 @@ function CreateProjectModal() {
   const [fieldErrors, setFieldErrors] = React.useState<{ name?: string; url?: string }>({});
   const router = useRouter();
   const { createProject } = useProjects();
+  const addProject = useProjectStore((s) => s.addProject);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -100,13 +102,14 @@ function CreateProjectModal() {
     const authCredObj = Object.fromEntries(authCredentials.filter(c => c.key).map(c => [c.key, c.value]));
     const paymentCredObj = Object.fromEntries(paymentCredentials.filter(c => c.key).map(c => [c.key, c.value]));
     try {
-      await createProject({
+      const created = await createProject({
         name: form.name,
         description: form.description,
         url: form.url,
         authCredentials: authCredObj,
         paymentCredentials: paymentCredObj,
       });
+      addProject(created);
       toast.success("New project created!");
       setOpen(false);
       setForm({ name: "", description: "", url: "" });
