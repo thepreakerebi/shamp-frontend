@@ -4,8 +4,8 @@ import { toast } from 'sonner';
 // import { useAuth } from '@/lib/auth';
 import { TotalProjectsCard } from "./_components/total-projects-card";
 import { TotalTestsCard } from "./_components/total-tests-card";
-  // import { TotalSuccessfulTestRunsCard } from "./_components/total-successful-test-runs-card";
-  // import { TotalFailedTestRunsCard } from "./_components/total-failed-test-runs-card";
+import { TotalSuccessfulTestRunsCard } from "./_components/total-successful-test-runs-card";
+import { TotalFailedTestRunsCard } from "./_components/total-failed-test-runs-card";
 import { TotalPersonasCard } from "./_components/total-personas-card";
 // import { ProjectsList } from '@/_components/projects-list';
 
@@ -25,8 +25,8 @@ export default function HomePage() {
         <TotalProjectsCard />
         <TotalPersonasCard href="/personas" />
         <TotalTestsCard href="/tests" />
-        {/* <TotalSuccessfulTestRunsCard href="/test-runs" /> */}
-        {/* <TotalFailedTestRunsCard href="/test-runs" /> */}
+        <TotalSuccessfulTestRunsCard href="/test-runs" />
+        <TotalFailedTestRunsCard href="/test-runs" />
       </section>
       <section className="w-full">
         {/* <ProjectsList /> */}
