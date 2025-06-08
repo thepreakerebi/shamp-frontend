@@ -2,16 +2,32 @@
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ListChecks } from "lucide-react";
-import { useAnalytics } from '@/hooks/use-analytics';
 import { CountCardSkeleton } from "./count-card-skeleton";
 import Link from "next/link";
+import { useSmartPolling } from "@/hooks/use-smart-polling";
+import { useAuth } from "@/lib/auth";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") || "";
 
 interface TotalTestsCardProps {
   href?: string;
 }
 
 export function TotalTestsCard({ href }: TotalTestsCardProps) {
-  const { data, loading, error } = useAnalytics<{ count: number }>('/tests/count');
+  const { token } = useAuth();
+  const { data, loading, error } = useSmartPolling<{ count: number }>(
+    async () => {
+      if (!token) throw new Error("Not authenticated");
+      const url = `${API_BASE}/tests/count`;
+      const res = await fetch(url, {
+        credentials: "include",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch");
+      return res.json();
+    },
+    2000
+  );
 
   const card = (
     <Card className="w-full md:max-w-sm bg-card/90 p-0">
@@ -29,7 +45,7 @@ export function TotalTestsCard({ href }: TotalTestsCardProps) {
     </Card>
   );
 
-  if (loading) return <CountCardSkeleton />;
+  if (loading && !data) return <CountCardSkeleton />;
   if (href) {
     return (
       <Link href={href} className="focus:outline-none focus:ring-2 focus:ring-ring rounded-md hover:scale-[1.03] transition-transform">
