@@ -207,6 +207,28 @@ export function useProjects() {
     return res.json();
   };
 
+  // Get all tests for a project
+  const getProjectTests = async (projectId: string) => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/projects/${projectId}/tests`, {
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to fetch project tests");
+    return res.json();
+  };
+
+  // Get all testruns for a project
+  const getProjectTestruns = async (projectId: string) => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/projects/${projectId}/testruns`, {
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to fetch project testruns");
+    return res.json();
+  };
+
   return {
     projects,
     projectsError,
@@ -224,5 +246,7 @@ export function useProjects() {
     trashedProjectsError,
     refetchTrashed,
     moveProjectToTrash,
+    getProjectTests,
+    getProjectTestruns,
   };
 } 
