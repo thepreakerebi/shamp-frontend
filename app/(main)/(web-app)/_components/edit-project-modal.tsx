@@ -34,9 +34,10 @@ export function EditProjectModal({ open, setOpen, project, onSuccess }: EditProj
   const [fieldErrors, setFieldErrors] = React.useState<{ name?: string; url?: string }>({});
   const router = useRouter();
   const { updateProject } = useProjects();
+  const prevOpen = React.useRef(false);
 
   React.useEffect(() => {
-    if (project) {
+    if (open && !prevOpen.current && project) {
       setForm({
         name: project.name || "",
         description: project.description || "",
@@ -53,7 +54,8 @@ export function EditProjectModal({ open, setOpen, project, onSuccess }: EditProj
           : []
       );
     }
-  }, [project]);
+    prevOpen.current = open;
+  }, [open, project]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
