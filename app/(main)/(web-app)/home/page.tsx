@@ -7,7 +7,7 @@ import { TotalTestsCard } from "./_components/total-tests-card";
 import { TotalSuccessfulTestRunsCard } from "./_components/total-successful-test-runs-card";
 import { TotalFailedTestRunsCard } from "./_components/total-failed-test-runs-card";
 import { TotalPersonasCard } from "./_components/total-personas-card";
-import { ProjectsList } from '@/_components/projects-list';
+import { ProjectsList } from '@/app/(main)/(web-app)/home/_components/projects-list';
 
 export default function HomePage() {
   // const { user } = useAuth();
@@ -27,6 +27,11 @@ export default function HomePage() {
         <TotalTestsCard href="/tests" />
         <TotalSuccessfulTestRunsCard href="/test-runs" />
         <TotalFailedTestRunsCard href="/test-runs" />
+      </section>
+      <section className="w-full flex items-center gap-2">
+        <section className="flex-1 border-b border-zinc-200 dark:border-zinc-800" />
+        <h2 className="text-lg font-medium">Projects</h2>
+        <section className="flex-1 border-b border-zinc-200 dark:border-zinc-800" />
       </section>
       <section className="w-full">
         <ProjectsList />

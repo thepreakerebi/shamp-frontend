@@ -16,7 +16,7 @@ function ProjectCard({ project }: { project: Project }) {
 
   return (
     <article
-      className="rounded-2xl overflow-hidden flex flex-col bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
+      className="rounded-2xl overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
     >
       {/* URL Preview */}
       <figure className="relative h-32 w-full bg-muted flex items-center justify-center">
