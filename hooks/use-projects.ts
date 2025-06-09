@@ -1,6 +1,7 @@
 import { useAuth } from "@/lib/auth";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import io from "socket.io-client";
+import { useProjectsStore } from "@/lib/store/projects";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
@@ -39,70 +40,66 @@ const fetcher = (url: string, token: string) =>
 
 export function useProjects() {
   const { token } = useAuth();
-  const [projects, setProjects] = useState<Project[] | null>(null);
-  const [projectsLoading, setProjectsLoading] = useState(true);
-  const [projectsError, setProjectsError] = useState<string | null>(null);
-  const [count, setCount] = useState(0);
-  const [countLoading, setCountLoading] = useState(true);
-  const [countError, setCountError] = useState<string | null>(null);
-  const [trashedProjects, setTrashedProjects] = useState<Project[] | null>(null);
-  const [trashedProjectsLoading, setTrashedProjectsLoading] = useState(true);
-  const [trashedProjectsError, setTrashedProjectsError] = useState<string | null>(null);
+  const store = useProjectsStore();
 
+  // Fetch all projects
   const fetchProjects = useCallback(async () => {
     if (!token) return;
-    setProjectsLoading(true);
-    setProjectsError(null);
+    store.setProjectsLoading(true);
+    store.setProjectsError(null);
     try {
       const data = await fetcher("/projects", token);
-      setProjects(Array.isArray(data) ? data.filter((p: Project) => p.trashed !== true) : data);
+      store.setProjects(Array.isArray(data) ? data.filter((p: Project) => p.trashed !== true) : data);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setProjectsError(err.message);
+        store.setProjectsError(err.message);
       } else {
-        setProjectsError("Failed to fetch projects");
+        store.setProjectsError("Failed to fetch projects");
       }
     } finally {
-      setProjectsLoading(false);
+      store.setProjectsLoading(false);
     }
-  }, [token]);
+  }, [token, store]);
 
+  // Fetch trashed projects
   const fetchTrashedProjects = useCallback(async () => {
     if (!token) return;
-    setTrashedProjectsLoading(true);
-    setTrashedProjectsError(null);
+    store.setTrashedProjectsLoading(true);
+    store.setTrashedProjectsError(null);
     try {
       const data = await fetcher("/projects/trashed", token);
-      setTrashedProjects(Array.isArray(data) ? data : []);
+      store.setTrashedProjects(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setTrashedProjectsError(err.message);
+        store.setTrashedProjectsError(err.message);
       } else {
-        setTrashedProjectsError("Failed to fetch trashed projects");
+        store.setTrashedProjectsError("Failed to fetch trashed projects");
       }
     } finally {
-      setTrashedProjectsLoading(false);
+      store.setTrashedProjectsLoading(false);
     }
-  }, [token]);
+  }, [token, store]);
 
+  // Fetch project count
   const fetchCount = useCallback(async () => {
     if (!token) return;
-    setCountLoading(true);
-    setCountError(null);
+    store.setCountLoading(true);
+    store.setCountError(null);
     try {
       const data = await fetcher("/projects/count", token);
-      setCount(data.count ?? 0);
+      store.setCount(data.count ?? 0);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setCountError(err.message);
+        store.setCountError(err.message);
       } else {
-        setCountError("Failed to fetch project count");
+        store.setCountError("Failed to fetch project count");
       }
     } finally {
-      setCountLoading(false);
+      store.setCountLoading(false);
     }
-  }, [token]);
+  }, [token, store]);
 
+  // Refetch all
   const refetch = useCallback(() => {
     fetchProjects();
     fetchCount();
@@ -116,7 +113,8 @@ export function useProjects() {
     fetchProjects();
     fetchCount();
     fetchTrashedProjects();
-  }, [token, fetchProjects, fetchCount, fetchTrashedProjects]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
@@ -148,7 +146,9 @@ export function useProjects() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to fetch project");
-    return res.json();
+    const project = await res.json();
+    store.updateProjectInList(project);
+    return project;
   };
 
   // Create a project
@@ -164,7 +164,9 @@ export function useProjects() {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to create project");
-    return res.json();
+    const project = await res.json();
+    store.addProjectToList(project);
+    return project;
   };
 
   // Update a project
@@ -180,7 +182,9 @@ export function useProjects() {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to update project");
-    return res.json();
+    const project = await res.json();
+    store.updateProjectInList(project);
+    return project;
   };
 
   // Delete a project
@@ -192,6 +196,7 @@ export function useProjects() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to delete project");
+    store.removeProjectFromList(id);
     return res.json();
   };
 
@@ -204,7 +209,10 @@ export function useProjects() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to move project to trash");
-    return res.json();
+    const project = await res.json();
+    store.updateProjectInList(project);
+    refetch();
+    return project;
   };
 
   // Get all tests for a project
@@ -230,20 +238,20 @@ export function useProjects() {
   };
 
   return {
-    projects,
-    projectsError,
-    projectsLoading,
-    count,
-    countError,
-    countLoading,
+    projects: store.projects,
+    projectsError: store.projectsError,
+    projectsLoading: store.projectsLoading,
+    count: store.count,
+    countError: store.countError,
+    countLoading: store.countLoading,
     createProject,
     updateProject,
     deleteProject,
     getProjectById,
     refetch,
-    trashedProjects,
-    trashedProjectsLoading,
-    trashedProjectsError,
+    trashedProjects: store.trashedProjects,
+    trashedProjectsLoading: store.trashedProjectsLoading,
+    trashedProjectsError: store.trashedProjectsError,
     refetchTrashed,
     moveProjectToTrash,
     getProjectTests,

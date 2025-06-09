@@ -1,17 +1,20 @@
 import Image from "next/image";
 import { useState } from "react";
-import { Project } from "@/hooks/use-projects";
+import { useProjectsStore } from "@/lib/store/projects";
 import { ProjectCardDropdown } from "../../_components/project-card-dropdown";
 import { EditProjectModal } from "../../../_components/edit-project-modal";
 import { MoveProjectToTrashModal } from "../../../_components/move-project-to-trash-modal";
 
 interface ProjectDetailsTabContentProps {
-  project: Project;
+  projectId: string;
 }
 
-export function ProjectDetailsTabContent({ project }: ProjectDetailsTabContentProps) {
+export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContentProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [trashOpen, setTrashOpen] = useState(false);
+  const project = useProjectsStore((s) => s.projects?.find((p) => p._id === projectId) || null);
+
+  if (!project) return null;
 
   // TODO: Implement actual move to trash logic
   const handleMoveToTrash = () => {

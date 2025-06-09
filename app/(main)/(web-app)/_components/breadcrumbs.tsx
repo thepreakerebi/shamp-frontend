@@ -4,6 +4,7 @@ import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbP
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useProjects } from "@/hooks/use-projects";
+import { useProjectsStore } from "@/lib/store/projects";
 import { useEffect, useState } from "react";
 
 export function Breadcrumbs() {
@@ -14,23 +15,30 @@ export function Breadcrumbs() {
   const homeIdx = segments.indexOf("home");
   const projectId = homeIdx !== -1 && segments.length > homeIdx + 1 ? segments[homeIdx + 1] : undefined;
   const { getProjectById } = useProjects();
+  const projects = useProjectsStore((s) => s.projects);
   const [projectName, setProjectName] = useState<string | null>(null);
 
   useEffect(() => {
     let ignore = false;
     if (projectId) {
-      getProjectById(projectId)
-        .then((project) => {
-          if (!ignore) setProjectName(project?.name || null);
-        })
-        .catch(() => {
-          if (!ignore) setProjectName(null);
-        });
+      // Try to get project from store first
+      const projectFromStore = projects?.find((p) => p._id === projectId);
+      if (projectFromStore) {
+        setProjectName(projectFromStore.name);
+      } else {
+        getProjectById(projectId)
+          .then((project) => {
+            if (!ignore) setProjectName(project?.name || null);
+          })
+          .catch(() => {
+            if (!ignore) setProjectName(null);
+          });
+      }
     } else {
       setProjectName(null);
     }
     return () => { ignore = true; };
-  }, [projectId, getProjectById]);
+  }, [projectId, getProjectById, projects]);
 
   return (
     <Breadcrumb>

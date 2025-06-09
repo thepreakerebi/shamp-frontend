@@ -95,7 +95,7 @@ function ProjectCard({ project, onEdit, onTrash }: { project: Project, onEdit?: 
 }
 
 export function ProjectsList() {
-  const { projects, projectsLoading, projectsError, refetch, moveProjectToTrash, getProjectById } = useProjects();
+  const { projects, projectsLoading, projectsError, moveProjectToTrash, getProjectById } = useProjects();
   const [editModalOpen, setEditModalOpen] = React.useState(false);
   const [editingProject, setEditingProject] = React.useState<Project | null>(null);
   const [editLoading, setEditLoading] = React.useState(false);
@@ -108,15 +108,26 @@ export function ProjectsList() {
   if (!projects || projects.length === 0) return <div className="text-muted-foreground">No projects found. Create your first project to get started!</div>;
 
   const handleEdit = async (projectId: string) => {
-    setEditLoading(true);
-    try {
-      const project = await getProjectById(projectId);
-      setEditingProject(project);
+    // Try to get project from store first
+    const projectFromStore = projects?.find((p) => p._id === projectId) || null;
+    if (projectFromStore) {
+      setEditingProject(projectFromStore);
       setEditModalOpen(true);
-    } catch {
-      // Optionally show error toast
-    } finally {
-      setEditLoading(false);
+      // Optionally, fetch latest in background and update modal if needed
+      getProjectById(projectId).then((freshProject) => {
+        setEditingProject(freshProject);
+      });
+    } else {
+      setEditLoading(true);
+      try {
+        const project = await getProjectById(projectId);
+        setEditingProject(project);
+        setEditModalOpen(true);
+      } catch {
+        // Optionally show error toast
+      } finally {
+        setEditLoading(false);
+      }
     }
   };
 
@@ -127,7 +138,6 @@ export function ProjectsList() {
       await moveProjectToTrash(trashingProject._id);
       setTrashModalOpen(false);
       setTrashingProject(null);
-      refetch();
       toast.success("Project moved to trash");
     } catch {
       // Optionally show error toast
@@ -158,7 +168,7 @@ export function ProjectsList() {
         open={editModalOpen}
         setOpen={setEditModalOpen}
         project={editingProject}
-        onSuccess={refetch}
+        onSuccess={() => {}}
       />
       <MoveProjectToTrashModal
         open={trashModalOpen}
