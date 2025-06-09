@@ -39,7 +39,7 @@ function ProjectCard({ project, onEdit, onTrash }: { project: Project, onEdit?: 
       {/* URL Preview (clickable) */}
       <button
         type="button"
-        className="relative h-32 w-full bg-muted flex items-center justify-center cursor-pointer outline-none focus:ring-2 focus:ring-secondary group/image"
+        className="relative h-32 w-full bg-muted flex items-center justify-center cursor-pointer outline-none group/image"
         onClick={handleOpen}
         tabIndex={0}
         aria-label={`Open project ${project.name}`}
