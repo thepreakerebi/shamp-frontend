@@ -1,0 +1,63 @@
+{
+  "meta": {
+    "generator": "FontScale",
+    "version": "1.0.0",
+    "timestamp": "2025-06-09T08:57:34.085Z"
+  },
+  "font": {
+    "family": "Inter",
+    "category": "sans-serif",
+    "variants": [
+      "100",
+      "200",
+      "300",
+      "400",
+      "500",
+      "600",
+      "700",
+      "800",
+      "900"
+    ],
+    "selectedVariant": "100",
+    "googleFontsUrl": "https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
+  },
+  "typography": {
+    "breakpoints": {
+      "mobile": "max-width: 767px",
+      "tablet": "min-width: 768px and max-width: 1023px",
+      "desktop": "min-width: 1024px"
+    },
+    "sizes": {
+      "desktop": {
+        "h1": "3.815rem",
+        "h2": "3.052rem",
+        "h3": "2.441rem",
+        "h4": "1.953rem",
+        "h5": "1.563rem",
+        "h6": "1.250rem",
+        "body": "1.000rem",
+        "small": "0.800rem"
+      },
+      "tablet": {
+        "h1": "3.052rem",
+        "h2": "2.441rem",
+        "h3": "2.184rem",
+        "h4": "1.747rem",
+        "h5": "1.398rem",
+        "h6": "1.118rem",
+        "body": "1.000rem",
+        "small": "0.800rem"
+      },
+      "mobile": {
+        "h1": "2.441rem",
+        "h2": "1.953rem",
+        "h3": "1.747rem",
+        "h4": "1.563rem",
+        "h5": "1.250rem",
+        "h6": "1.118rem",
+        "body": "1.000rem",
+        "small": "0.800rem"
+      }
+    }
+  }
+}
