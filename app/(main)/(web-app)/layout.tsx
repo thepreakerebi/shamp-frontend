@@ -16,7 +16,9 @@ export default function WebAppLayout({ children }: { children: React.ReactNode }
           <AppSidebar />
           <main className="min-h-screen w-full">
             <Topbar />
-            {children}
+            <section className="flex flex-col w-full h-full pt-16">
+              {children}
+            </section>
           </main>
         </ProtectedRoute>
       </SidebarProvider>
