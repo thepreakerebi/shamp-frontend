@@ -80,9 +80,9 @@ export function ProjectDetailsTabContent({ project }: ProjectDetailsTabContentPr
         {/* Section 3: Credentials */}
         <section className="flex flex-col gap-4 w-full min-w-0">
           {/* Auth Credentials */}
-          <section className="flex-1 min-w-0">
-            <header className="mb-1 font-semibold text-base">Auth Credentials</header>
-            {project.authCredentials && Object.keys(project.authCredentials).length > 0 ? (
+          {project.authCredentials && Object.keys(project.authCredentials).length > 0 && (
+            <section className="flex-1 min-w-0">
+              <header className="mb-1 font-semibold text-base">Auth Credentials</header>
               <div className="flex flex-col">
                 {Object.entries(project.authCredentials).map(([key, value]) => (
                   <section key={key} className="flex flex-row items-center py-1 min-w-0">
@@ -91,14 +91,12 @@ export function ProjectDetailsTabContent({ project }: ProjectDetailsTabContentPr
                   </section>
                 ))}
               </div>
-            ) : (
-              <p className="text-muted-foreground">No auth credentials provided.</p>
-            )}
-          </section>
+            </section>
+          )}
           {/* Payment Credentials */}
-          <section className="flex-1 min-w-0">
-            <header className="mb-1 font-semibold text-base">Payment Credentials</header>
-            {project.paymentCredentials && Object.keys(project.paymentCredentials).length > 0 ? (
+          {project.paymentCredentials && Object.keys(project.paymentCredentials).length > 0 && (
+            <section className="flex-1 min-w-0">
+              <header className="mb-1 font-semibold text-base">Payment Credentials</header>
               <div className="flex flex-col">
                 {Object.entries(project.paymentCredentials).map(([key, value]) => (
                   <section key={key} className="flex flex-row items-center py-1 min-w-0">
@@ -107,10 +105,8 @@ export function ProjectDetailsTabContent({ project }: ProjectDetailsTabContentPr
                   </section>
                 ))}
               </div>
-            ) : (
-              <p className="text-muted-foreground">No payment credentials provided.</p>
-            )}
-          </section>
+            </section>
+          )}
         </section>
       </section>
     </section>

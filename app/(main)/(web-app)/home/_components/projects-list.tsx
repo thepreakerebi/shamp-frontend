@@ -95,9 +95,10 @@ function ProjectCard({ project, onEdit, onTrash }: { project: Project, onEdit?: 
 }
 
 export function ProjectsList() {
-  const { projects, projectsLoading, projectsError, refetch, moveProjectToTrash } = useProjects();
+  const { projects, projectsLoading, projectsError, refetch, moveProjectToTrash, getProjectById } = useProjects();
   const [editModalOpen, setEditModalOpen] = React.useState(false);
   const [editingProject, setEditingProject] = React.useState<Project | null>(null);
+  const [editLoading, setEditLoading] = React.useState(false);
   const [trashModalOpen, setTrashModalOpen] = React.useState(false);
   const [trashingProject, setTrashingProject] = React.useState<Project | null>(null);
   const [trashLoading, setTrashLoading] = React.useState(false);
@@ -105,6 +106,19 @@ export function ProjectsList() {
   if (projectsLoading && (!projects || projects.length === 0)) return <ProjectListSkeleton count={3} />;
   if (projectsError) return <div className="text-destructive">Error loading projects: {projectsError}</div>;
   if (!projects || projects.length === 0) return <div className="text-muted-foreground">No projects found. Create your first project to get started!</div>;
+
+  const handleEdit = async (projectId: string) => {
+    setEditLoading(true);
+    try {
+      const project = await getProjectById(projectId);
+      setEditingProject(project);
+      setEditModalOpen(true);
+    } catch {
+      // Optionally show error toast
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
   const handleMoveToTrash = async () => {
     if (!trashingProject) return;
@@ -132,10 +146,7 @@ export function ProjectsList() {
           <ProjectCard
             key={project._id}
             project={project}
-            onEdit={() => {
-              setEditingProject(project);
-              setEditModalOpen(true);
-            }}
+            onEdit={() => handleEdit(project._id)}
             onTrash={() => {
               setTrashingProject(project);
               setTrashModalOpen(true);
@@ -156,6 +167,14 @@ export function ProjectsList() {
         onConfirm={handleMoveToTrash}
         loading={trashLoading}
       />
+      {editLoading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <div className="bg-background rounded-xl p-6 flex items-center gap-2">
+            <span className="loader mr-2" />
+            Loading project details...
+          </div>
+        </div>
+      )}
     </>
   );
 } 
