@@ -1,4 +1,4 @@
-import { Home, ListChecks, PlayCircle, Settings, LogOut, HelpCircle, Users } from "lucide-react";
+import { Home, ListChecks, PlayCircle, Settings, LogOut, HelpCircle, Users, Trash2, Calendar } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -47,9 +47,19 @@ const items = [
     icon: PlayCircle,
   },
   {
+    title: "Schedules",
+    url: "/schedules",
+    icon: Calendar,
+  },
+  {
     title: "Settings",
     url: "/settings",
     icon: Settings,
+  },
+  {
+    title: "Trash",
+    url: "/trash",
+    icon: Trash2,
   },
 ];
 
