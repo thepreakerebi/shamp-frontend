@@ -171,7 +171,7 @@ export function useProjects() {
   const updateProject = async (id: string, payload: ProjectPayload) => {
     if (!token) throw new Error("Not authenticated");
     const res = await fetch(`${API_BASE}/projects/${id}`, {
-      method: "PUT",
+      method: "PATCH",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",

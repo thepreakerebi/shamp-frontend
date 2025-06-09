@@ -5,8 +5,9 @@ import Image from "next/image";
 import React from "react";
 import { ProjectListSkeleton } from "./project-list-skeleton";
 import { ProjectCardDropdown } from "./project-card-dropdown";
+import { EditProjectModal } from "../../_components/edit-project-modal";
 
-function ProjectCard({ project }: { project: Project }) {
+function ProjectCard({ project, onEdit }: { project: Project, onEdit?: () => void }) {
   // Fallback logic for image: previewImageUrl -> favicon -> placeholder
   const [imgSrc, setImgSrc] = React.useState(
     project.previewImageUrl
@@ -22,7 +23,7 @@ function ProjectCard({ project }: { project: Project }) {
   };
   const handleEdit = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    alert('Edit project: ' + project.name);
+    if (onEdit) onEdit();
   };
   const handleTrash = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -92,20 +93,37 @@ function ProjectCard({ project }: { project: Project }) {
 }
 
 export function ProjectsList() {
-  const { projects, projectsLoading, projectsError } = useProjects();
+  const { projects, projectsLoading, projectsError, refetch } = useProjects();
+  const [editModalOpen, setEditModalOpen] = React.useState(false);
+  const [editingProject, setEditingProject] = React.useState<Project | null>(null);
 
   if (projectsLoading && (!projects || projects.length === 0)) return <ProjectListSkeleton count={3} />;
   if (projectsError) return <div className="text-destructive">Error loading projects: {projectsError}</div>;
   if (!projects || projects.length === 0) return <div className="text-muted-foreground">No projects found. Create your first project to get started!</div>;
 
   return (
-    <section
-      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full"
-      aria-label="Projects list"
-    >
-      {projects.map((project: Project) => (
-        <ProjectCard key={project._id} project={project} />
-      ))}
-    </section>
+    <>
+      <section
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full"
+        aria-label="Projects list"
+      >
+        {projects.map((project: Project) => (
+          <ProjectCard
+            key={project._id}
+            project={project}
+            onEdit={() => {
+              setEditingProject(project);
+              setEditModalOpen(true);
+            }}
+          />
+        ))}
+      </section>
+      <EditProjectModal
+        open={editModalOpen}
+        setOpen={setEditModalOpen}
+        project={editingProject}
+        onSuccess={refetch}
+      />
+    </>
   );
 } 
