@@ -16,6 +16,7 @@ export interface Project {
   testsCount?: number;
   lastTestRunAt?: string | null;
   previewImageUrl?: string;
+  trashed?: boolean;
   // Add other fields as needed
 }
 
@@ -44,6 +45,9 @@ export function useProjects() {
   const [count, setCount] = useState(0);
   const [countLoading, setCountLoading] = useState(true);
   const [countError, setCountError] = useState<string | null>(null);
+  const [trashedProjects, setTrashedProjects] = useState<Project[] | null>(null);
+  const [trashedProjectsLoading, setTrashedProjectsLoading] = useState(true);
+  const [trashedProjectsError, setTrashedProjectsError] = useState<string | null>(null);
 
   const fetchProjects = useCallback(async () => {
     if (!token) return;
@@ -51,7 +55,7 @@ export function useProjects() {
     setProjectsError(null);
     try {
       const data = await fetcher("/projects", token);
-      setProjects(data);
+      setProjects(Array.isArray(data) ? data.filter((p: Project) => p.trashed !== true) : data);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setProjectsError(err.message);
@@ -60,6 +64,24 @@ export function useProjects() {
       }
     } finally {
       setProjectsLoading(false);
+    }
+  }, [token]);
+
+  const fetchTrashedProjects = useCallback(async () => {
+    if (!token) return;
+    setTrashedProjectsLoading(true);
+    setTrashedProjectsError(null);
+    try {
+      const data = await fetcher("/projects/trashed", token);
+      setTrashedProjects(Array.isArray(data) ? data : []);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setTrashedProjectsError(err.message);
+      } else {
+        setTrashedProjectsError("Failed to fetch trashed projects");
+      }
+    } finally {
+      setTrashedProjectsLoading(false);
     }
   }, [token]);
 
@@ -81,17 +103,20 @@ export function useProjects() {
     }
   }, [token]);
 
-  // Refetch both projects and count
   const refetch = useCallback(() => {
     fetchProjects();
     fetchCount();
-  }, [fetchProjects, fetchCount]);
+    fetchTrashedProjects();
+  }, [fetchProjects, fetchCount, fetchTrashedProjects]);
+
+  const refetchTrashed = fetchTrashedProjects;
 
   useEffect(() => {
     if (!token) return;
     fetchProjects();
     fetchCount();
-  }, [token, fetchProjects, fetchCount]);
+    fetchTrashedProjects();
+  }, [token, fetchProjects, fetchCount, fetchTrashedProjects]);
 
   useEffect(() => {
     if (!token) return;
@@ -182,5 +207,9 @@ export function useProjects() {
     deleteProject,
     getProjectById,
     refetch,
+    trashedProjects,
+    trashedProjectsLoading,
+    trashedProjectsError,
+    refetchTrashed,
   };
 } 
