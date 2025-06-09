@@ -4,6 +4,7 @@ import { EllipsisVerticalIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import React from "react";
+import { ProjectListSkeleton } from "./project-list-skeleton";
 
 function ProjectCard({ project }: { project: Project }) {
   // Fallback logic for image: previewImageUrl -> favicon -> placeholder
@@ -70,7 +71,7 @@ function ProjectCard({ project }: { project: Project }) {
 export function ProjectsList() {
   const { projects, projectsLoading, projectsError } = useProjects();
 
-  if (projectsLoading && (!projects || projects.length === 0)) return <div>Loading projects...</div>;
+  if (projectsLoading && (!projects || projects.length === 0)) return <ProjectListSkeleton count={3} />;
   if (projectsError) return <div className="text-destructive">Error loading projects: {projectsError}</div>;
   if (!projects || projects.length === 0) return <div className="text-muted-foreground">No projects found. Create your first project to get started!</div>;
 
