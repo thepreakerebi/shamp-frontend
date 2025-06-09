@@ -195,6 +195,18 @@ export function useProjects() {
     return res.json();
   };
 
+  // Move a project to trash
+  const moveProjectToTrash = async (id: string) => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/projects/${id}/trash`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to move project to trash");
+    return res.json();
+  };
+
   return {
     projects,
     projectsError,
@@ -211,5 +223,6 @@ export function useProjects() {
     trashedProjectsLoading,
     trashedProjectsError,
     refetchTrashed,
+    moveProjectToTrash,
   };
 } 

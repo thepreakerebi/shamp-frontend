@@ -6,8 +6,10 @@ import React from "react";
 import { ProjectListSkeleton } from "./project-list-skeleton";
 import { ProjectCardDropdown } from "./project-card-dropdown";
 import { EditProjectModal } from "../../_components/edit-project-modal";
+import { MoveProjectToTrashModal } from "../../_components/move-project-to-trash-modal";
+import { toast } from "sonner";
 
-function ProjectCard({ project, onEdit }: { project: Project, onEdit?: () => void }) {
+function ProjectCard({ project, onEdit, onTrash }: { project: Project, onEdit?: () => void, onTrash?: () => void }) {
   // Fallback logic for image: previewImageUrl -> favicon -> placeholder
   const [imgSrc, setImgSrc] = React.useState(
     project.previewImageUrl
@@ -27,7 +29,7 @@ function ProjectCard({ project, onEdit }: { project: Project, onEdit?: () => voi
   };
   const handleTrash = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    alert('Move to trash: ' + project.name);
+    if (onTrash) onTrash();
   };
 
   return (
@@ -93,13 +95,32 @@ function ProjectCard({ project, onEdit }: { project: Project, onEdit?: () => voi
 }
 
 export function ProjectsList() {
-  const { projects, projectsLoading, projectsError, refetch } = useProjects();
+  const { projects, projectsLoading, projectsError, refetch, moveProjectToTrash } = useProjects();
   const [editModalOpen, setEditModalOpen] = React.useState(false);
   const [editingProject, setEditingProject] = React.useState<Project | null>(null);
+  const [trashModalOpen, setTrashModalOpen] = React.useState(false);
+  const [trashingProject, setTrashingProject] = React.useState<Project | null>(null);
+  const [trashLoading, setTrashLoading] = React.useState(false);
 
   if (projectsLoading && (!projects || projects.length === 0)) return <ProjectListSkeleton count={3} />;
   if (projectsError) return <div className="text-destructive">Error loading projects: {projectsError}</div>;
   if (!projects || projects.length === 0) return <div className="text-muted-foreground">No projects found. Create your first project to get started!</div>;
+
+  const handleMoveToTrash = async () => {
+    if (!trashingProject) return;
+    setTrashLoading(true);
+    try {
+      await moveProjectToTrash(trashingProject._id);
+      setTrashModalOpen(false);
+      setTrashingProject(null);
+      refetch();
+      toast.success("Project moved to trash");
+    } catch {
+      // Optionally show error toast
+    } finally {
+      setTrashLoading(false);
+    }
+  };
 
   return (
     <>
@@ -115,6 +136,10 @@ export function ProjectsList() {
               setEditingProject(project);
               setEditModalOpen(true);
             }}
+            onTrash={() => {
+              setTrashingProject(project);
+              setTrashModalOpen(true);
+            }}
           />
         ))}
       </section>
@@ -123,6 +148,13 @@ export function ProjectsList() {
         setOpen={setEditModalOpen}
         project={editingProject}
         onSuccess={refetch}
+      />
+      <MoveProjectToTrashModal
+        open={trashModalOpen}
+        setOpen={setTrashModalOpen}
+        project={trashingProject}
+        onConfirm={handleMoveToTrash}
+        loading={trashLoading}
       />
     </>
   );
