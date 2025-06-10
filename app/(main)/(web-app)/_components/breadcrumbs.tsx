@@ -5,17 +5,25 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useProjects } from "@/hooks/use-projects";
 import { useProjectsStore } from "@/lib/store/projects";
+import { usePersonas } from "@/hooks/use-personas";
+import { usePersonasStore } from "@/lib/store/personas";
 
 export function Breadcrumbs() {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
   let path = "";
+  console.log('Breadcrumbs pathname:', pathname, 'segments:', segments);
   // Find the projectId if present (first segment after 'home')
   const homeIdx = segments.indexOf("home");
   const projectId = homeIdx !== -1 && segments.length > homeIdx + 1 ? segments[homeIdx + 1] : undefined;
+  const personasIdx = segments.indexOf("personas");
+  const personaId = personasIdx !== -1 && segments.length > personasIdx + 1 ? segments[personasIdx + 1] : undefined;
   const { getProjectById } = useProjects();
   const projects = useProjectsStore((s) => s.projects);
   const [projectName, setProjectName] = useState<string | null>(null);
+  const { getPersonaById } = usePersonas();
+  const personas = usePersonasStore((s) => s.personas);
+  const [personaName, setPersonaName] = useState<string | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -38,51 +46,59 @@ export function Breadcrumbs() {
     return () => { ignore = true; };
   }, [projectId, getProjectById, projects]);
 
-  // If the first segment is 'home', show Home as root, else show only the current page
-  const isHomeRoot = segments[0] === "home";
+  useEffect(() => {
+    let ignore = false;
+    if (personaId) {
+      const personaFromStore = personas?.find((p) => p._id === personaId);
+      console.log('Breadcrumbs personaId:', personaId, 'Found in store:', personaFromStore);
+      if (personaFromStore) {
+        setPersonaName(personaFromStore.name);
+      } else {
+        getPersonaById(personaId)
+          .then((persona) => {
+            if (!ignore) setPersonaName(persona?.name || null);
+          })
+          .catch(() => {
+            if (!ignore) setPersonaName(null);
+          });
+      }
+    } else {
+      setPersonaName(null);
+    }
+    return () => { ignore = true; };
+  }, [personaId, getPersonaById, personas]);
 
   return (
     <Breadcrumb>
       <BreadcrumbList>
-        {isHomeRoot ? (
-          <>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link href="/home">Home</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            {segments.slice(1).map((segment, idx) => {
-              path += `/${segment}`;
-              const isLast = idx === segments.length - 2;
-              let display = segment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-              if (segment === projectId && projectName) {
-                display = projectName;
-              }
-              return (
-                <React.Fragment key={segment}>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbItem>
-                    {isLast ? (
-                      <BreadcrumbPage>{display}</BreadcrumbPage>
-                    ) : (
-                      <BreadcrumbLink asChild>
-                        <Link href={path}>{display}</Link>
-                      </BreadcrumbLink>
-                    )}
-                  </BreadcrumbItem>
-                </React.Fragment>
-              );
-            })}
-          </>
-        ) : (
-          <BreadcrumbItem>
-            <BreadcrumbPage>
-              {segments[0]
-                ? segments[0].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-                : "Home"}
-            </BreadcrumbPage>
-          </BreadcrumbItem>
-        )}
+        {segments.map((segment, idx) => {
+          path += `/${segment}`;
+          const isLast = idx === segments.length - 1;
+          let display = segment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          if (segment === projectId && projectName) {
+            display = projectName;
+          }
+          if (segment === "personas") {
+            display = "Personas";
+          }
+          if (segment === personaId && personaName) {
+            display = personaName;
+          }
+          return (
+            <React.Fragment key={segment}>
+              {idx > 0 && <BreadcrumbSeparator />}
+              <BreadcrumbItem>
+                {isLast ? (
+                  <BreadcrumbPage>{display}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink asChild>
+                    <Link href={path}>{display}</Link>
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+            </React.Fragment>
+          );
+        })}
       </BreadcrumbList>
     </Breadcrumb>
   );

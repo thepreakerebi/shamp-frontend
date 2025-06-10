@@ -7,6 +7,7 @@ import { DeletePersonaModal } from "./delete-persona-modal";
 import React from "react";
 import type { Persona } from "@/hooks/use-personas";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 function PersonaCard({ persona, onEdit, onOpen, onDelete }: {
   persona: Persona,
@@ -14,20 +15,29 @@ function PersonaCard({ persona, onEdit, onOpen, onDelete }: {
   onOpen?: () => void,
   onDelete?: () => void,
 }) {
+  const router = useRouter();
   return (
     <section
       className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border hover:bg-muted/60 transition-colors"
     >
       <section className="flex-shrink-0">
         {persona.avatarUrl ? (
-          <Image
-            src={persona.avatarUrl}
-            alt={persona.name}
-            className="rounded-full object-cover w-16 h-16 border border-border bg-muted"
-            width={64}
-            height={64}
-            unoptimized
-          />
+          <button
+            type="button"
+            className="p-0 m-0 border-none bg-transparent cursor-pointer"
+            onClick={() => router.push(`/personas/${persona._id}`)}
+            tabIndex={0}
+            aria-label={`View persona ${persona.name}`}
+          >
+            <Image
+              src={persona.avatarUrl}
+              alt={persona.name}
+              className="rounded-full object-cover w-16 h-16 border border-border bg-muted"
+              width={64}
+              height={64}
+              unoptimized
+            />
+          </button>
         ) : (
           <section className="rounded-full w-16 h-16 flex items-center justify-center bg-muted text-muted-foreground border border-border text-2xl font-bold">
             {persona.name?.[0]?.toUpperCase() || "?"}
