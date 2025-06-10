@@ -46,7 +46,11 @@ export function usePersonas() {
   const store = usePersonasStore();
 
   const fetchPersonas = useCallback(async () => {
-    if (!token) return;
+    if (!token) {
+      store.setPersonasLoading(false);
+      store.setPersonas([]);
+      return;
+    }
     store.setPersonasLoading(true);
     store.setPersonasError(null);
     try {
@@ -64,7 +68,11 @@ export function usePersonas() {
   }, [token, store]);
 
   const fetchCount = useCallback(async () => {
-    if (!token) return;
+    if (!token) {
+      store.setCountLoading(false);
+      store.setCount(0);
+      return;
+    }
     store.setCountLoading(true);
     store.setCountError(null);
     try {
