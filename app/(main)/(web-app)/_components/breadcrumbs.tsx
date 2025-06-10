@@ -1,11 +1,10 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useProjects } from "@/hooks/use-projects";
 import { useProjectsStore } from "@/lib/store/projects";
-import { useEffect, useState } from "react";
 
 export function Breadcrumbs() {
   const pathname = usePathname();
@@ -21,7 +20,6 @@ export function Breadcrumbs() {
   useEffect(() => {
     let ignore = false;
     if (projectId) {
-      // Try to get project from store first
       const projectFromStore = projects?.find((p) => p._id === projectId);
       if (projectFromStore) {
         setProjectName(projectFromStore.name);
@@ -40,38 +38,51 @@ export function Breadcrumbs() {
     return () => { ignore = true; };
   }, [projectId, getProjectById, projects]);
 
+  // If the first segment is 'home', show Home as root, else show only the current page
+  const isHomeRoot = segments[0] === "home";
+
   return (
     <Breadcrumb>
       <BreadcrumbList>
-        <BreadcrumbItem>
-          <BreadcrumbLink asChild>
-            <Link href="/home">Home</Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        {segments.map((segment, idx) => {
-          path += `/${segment}`;
-          const isLast = idx === segments.length - 1;
-          if (segment === "home") return null; // skip duplicate Home
-          // If this is the projectId segment, show the project name if available
-          let display = segment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-          if (segment === projectId && projectName) {
-            display = projectName;
-          }
-          return (
-            <React.Fragment key={segment}>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                {isLast ? (
-                  <BreadcrumbPage>{display}</BreadcrumbPage>
-                ) : (
-                  <BreadcrumbLink asChild>
-                    <Link href={path}>{display}</Link>
-                  </BreadcrumbLink>
-                )}
-              </BreadcrumbItem>
-            </React.Fragment>
-          );
-        })}
+        {isHomeRoot ? (
+          <>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/home">Home</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            {segments.slice(1).map((segment, idx) => {
+              path += `/${segment}`;
+              const isLast = idx === segments.length - 2;
+              let display = segment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+              if (segment === projectId && projectName) {
+                display = projectName;
+              }
+              return (
+                <React.Fragment key={segment}>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    {isLast ? (
+                      <BreadcrumbPage>{display}</BreadcrumbPage>
+                    ) : (
+                      <BreadcrumbLink asChild>
+                        <Link href={path}>{display}</Link>
+                      </BreadcrumbLink>
+                    )}
+                  </BreadcrumbItem>
+                </React.Fragment>
+              );
+            })}
+          </>
+        ) : (
+          <BreadcrumbItem>
+            <BreadcrumbPage>
+              {segments[0]
+                ? segments[0].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                : "Home"}
+            </BreadcrumbPage>
+          </BreadcrumbItem>
+        )}
       </BreadcrumbList>
     </Breadcrumb>
   );
