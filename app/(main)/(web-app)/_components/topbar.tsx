@@ -7,10 +7,12 @@ import { usePathname } from 'next/navigation';
 import { useSidebar } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Plus, Users } from 'lucide-react';
+import { useCreatePersonaModal } from '@/app/(main)/(web-app)/personas/_components/create-persona-modal';
 
 export function Topbar() {
   const pathname = usePathname();
   const { state, isMobile } = useSidebar();
+  const { setOpen: setCreatePersonaOpen } = useCreatePersonaModal();
 
   // Only shift when expanded on desktop
   const isExpandedDesktop = !isMobile && state === 'expanded';
@@ -36,7 +38,7 @@ export function Topbar() {
             <Button variant="ghost" size="icon" aria-label="Personas">
               <Users className="size-5" />
             </Button>
-            <Button variant="outline"><Plus className="size-4 mr-2" /> Create persona</Button>
+            <Button variant="outline" onClick={() => setCreatePersonaOpen(true)}><Plus className="size-4 mr-2" /> Create persona</Button>
           </section>
         )}
         {/* Add more buttons for other pages here as needed */}
