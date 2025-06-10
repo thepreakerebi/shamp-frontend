@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { usePersonas } from "@/hooks/use-personas";
+import { PersonasList } from "./_components/personas-list";
 
 export default function PersonasPage() {
   const { personas } = usePersonas();
@@ -16,11 +17,8 @@ export default function PersonasPage() {
   }, [personas]);
 
   return (
-      <main className="p-8 w-full flex flex-col items-center justify-center min-h-[60vh]">
-        <h1 className="text-3xl md:text-4xl font-bold mb-4 text-center">Personas</h1>
-        <p className="text-lg text-muted-foreground text-center max-w-xl">
-          This is the Personas page. Here you will be able to view, create, and manage user personas for your workspace. More features and UI coming soon!
-        </p>
+      <main className="p-4 w-full flex flex-col gap-8">
+        <PersonasList />
       </main>
   );
 }
