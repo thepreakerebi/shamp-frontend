@@ -3,8 +3,10 @@ import { usePersonas } from "@/hooks/use-personas";
 import Image from "next/image";
 import { PersonaCardDropdown } from "./persona-card-dropdown";
 import { EditPersonaModal } from "./edit-persona-modal";
+import { DeletePersonaModal } from "./delete-persona-modal";
 import React from "react";
 import type { Persona } from "@/hooks/use-personas";
+import { toast } from "sonner";
 
 function PersonaCard({ persona, onEdit, onOpen, onDelete }: {
   persona: Persona,
@@ -32,9 +34,9 @@ function PersonaCard({ persona, onEdit, onOpen, onDelete }: {
           </section>
         )}
       </section>
-      <section className="flex flex-col min-w-0">
-        <h3 className="font-semibold text-lg truncate" title={persona.name}>{persona.name}</h3>
-        <p className="text-sm text-muted-foreground mt-1 truncate" title={persona.gender}>{persona.gender || "-"}</p>
+      <section className="flex flex-col w-full min-w-0 gap-1">
+        <h3 className="font-semibold text-lg truncate w-full" title={persona.name}>{persona.name}</h3>
+        <p className="text-sm text-muted-foreground truncate w-full" title={persona.gender}>{persona.gender || "-"}</p>
       </section>
       <PersonaCardDropdown
         onOpen={onOpen}
@@ -46,9 +48,27 @@ function PersonaCard({ persona, onEdit, onOpen, onDelete }: {
 }
 
 function PersonasListInner() {
-  const { personas, personasLoading, personasError } = usePersonas();
+  const { personas, personasLoading, personasError, deletePersona } = usePersonas();
   const [editOpen, setEditOpen] = React.useState(false);
   const [editingPersona, setEditingPersona] = React.useState<Persona | null>(null);
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [deletingPersona, setDeletingPersona] = React.useState<Persona | null>(null);
+  const [deleteLoading, setDeleteLoading] = React.useState(false);
+
+  const handleDelete = async () => {
+    if (!deletingPersona) return;
+    setDeleteLoading(true);
+    try {
+      await deletePersona(deletingPersona._id);
+      toast.success("Persona deleted!");
+      setDeleteOpen(false);
+      setDeletingPersona(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete persona");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   if (personasLoading && (!personas || personas.length === 0)) return <div className="py-8 text-center text-muted-foreground">Loading personas...</div>;
   if (personasError) return <div className="py-8 text-center text-destructive">{personasError}</div>;
@@ -66,11 +86,15 @@ function PersonasListInner() {
               setEditOpen(true);
             }}
             onOpen={() => {}}
-            onDelete={() => {}}
+            onDelete={() => {
+              setDeletingPersona(persona);
+              setDeleteOpen(true);
+            }}
           />
         ))}
       </section>
       <EditPersonaModal open={editOpen} setOpen={setEditOpen} persona={editingPersona} />
+      <DeletePersonaModal open={deleteOpen} setOpen={setDeleteOpen} persona={deletingPersona} onConfirm={handleDelete} loading={deleteLoading} />
     </>
   );
 }
