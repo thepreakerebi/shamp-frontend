@@ -1,14 +1,14 @@
 "use client";
 import * as React from "react";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-  SheetClose,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,12 +34,12 @@ export function CreatePersonaModalProvider({ children }: { children: React.React
   return (
     <CreatePersonaModalContext.Provider value={{ open, setOpen }}>
       {children}
-      <CreatePersonaSheet />
+      <CreatePersonaModal />
     </CreatePersonaModalContext.Provider>
   );
 }
 
-function CreatePersonaSheet() {
+function CreatePersonaModal() {
   const { open, setOpen } = useCreatePersonaModal();
   const [form, setForm] = React.useState({
     name: "",
@@ -113,157 +113,155 @@ function CreatePersonaSheet() {
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetContent side="right" className="max-w-lg w-full md:w-[800px] rounded-l-3xl p-0 flex flex-col h-full">
-        <form 
-          onSubmit={handleSubmit} 
-          className="flex flex-col h-full" 
-          id="create-persona-form"
-          onKeyDown={e => {
-            if (
-              (e.key === "Enter" || e.key === "Return") &&
-              e.target instanceof HTMLElement &&
-              e.target.tagName !== "TEXTAREA"
-            ) {
-              e.preventDefault();
-              handleSubmit(e);
-            }
-          }}
-        >
-          <SheetHeader className="p-6 pb-2">
-            <SheetTitle>Create Persona</SheetTitle>
-            <SheetDescription>Fill in the details to create a new persona.</SheetDescription>
-            {error && <div className="text-destructive text-sm mt-2">{error}</div>}
-          </SheetHeader>
-          <ScrollArea className="flex-1 px-6 pb-4 max-h-[82vh]">
-            <div className="flex flex-col gap-y-4">
-              <section>
-                <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
-                <Input id="name" name="name" value={form.name} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.name} aria-describedby={fieldErrors.name ? 'name-error' : undefined} />
-                {fieldErrors.name && <div id="name-error" className="text-destructive text-xs mt-1">{fieldErrors.name}</div>}
-              </section>
-              <section>
-                <label htmlFor="description" className="block text-sm font-medium mb-1">Description <span className="text-muted-foreground">(optional)</span></label>
-                <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} />
-              </section>
-              <section>
-                <label htmlFor="background" className="block text-sm font-medium mb-1">Background <span className="text-muted-foreground">(optional)</span></label>
-                <Textarea id="background" name="background" value={form.background} onChange={handleChange} disabled={loading} />
-              </section>
-              <section>
-                <label htmlFor="gender" className="block text-sm font-medium mb-1">Gender <span className="text-muted-foreground">(optional)</span></label>
-                <Input id="gender" name="gender" value={form.gender} onChange={handleChange} disabled={loading} />
-              </section>
-              {/* Dynamic lists: Goals, Frustrations, Traits, Preferred Devices */}
-              <fieldset className="border rounded-md p-3">
-                <legend className="text-sm font-medium px-1">Goals <span className="text-muted-foreground">(optional)</span></legend>
-                <div className="flex items-center justify-between mb-1 mt-2">
-                  <span className="block text-xs text-muted-foreground">Add goals for this persona.</span>
-                  <Button type="button" size="icon" variant="ghost" onClick={() => addListItem(setGoals)} disabled={loading}>
-                    <Plus className="size-4" />
-                    <span className="sr-only">Add Goal</span>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="rounded-3xl">
+        <DialogHeader>
+          <DialogTitle>Create Persona</DialogTitle>
+          <DialogDescription>Fill in the details to create a new persona.</DialogDescription>
+        </DialogHeader>
+        {error && <div className="text-destructive text-sm mb-2">{error}</div>}
+        <ScrollArea className="max-h-[60vh] pr-2">
+          <form 
+            onSubmit={handleSubmit} 
+            className="space-y-4" 
+            id="create-persona-form"
+            onKeyDown={e => {
+              if (
+                (e.key === "Enter" || e.key === "Return") &&
+                e.target instanceof HTMLElement &&
+                e.target.tagName !== "TEXTAREA"
+              ) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+          >
+            <section>
+              <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
+              <Input id="name" name="name" value={form.name} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.name} aria-describedby={fieldErrors.name ? 'name-error' : undefined} />
+              {fieldErrors.name && <div id="name-error" className="text-destructive text-xs mt-1">{fieldErrors.name}</div>}
+            </section>
+            <section>
+              <label htmlFor="description" className="block text-sm font-medium mb-1">Description <span className="text-muted-foreground">(optional)</span></label>
+              <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} />
+            </section>
+            <section>
+              <label htmlFor="background" className="block text-sm font-medium mb-1">Background <span className="text-muted-foreground">(optional)</span></label>
+              <Textarea id="background" name="background" value={form.background} onChange={handleChange} disabled={loading} />
+            </section>
+            <section>
+              <label htmlFor="gender" className="block text-sm font-medium mb-1">Gender <span className="text-muted-foreground">(optional)</span></label>
+              <Input id="gender" name="gender" value={form.gender} onChange={handleChange} disabled={loading} />
+            </section>
+            {/* Dynamic lists: Goals, Frustrations, Traits, Preferred Devices */}
+            <fieldset className="border rounded-md p-3">
+              <legend className="text-sm font-medium px-1">Goals <span className="text-muted-foreground">(optional)</span></legend>
+              <div className="flex items-center justify-between mb-1 mt-2">
+                <span className="block text-xs text-muted-foreground">Add goals for this persona.</span>
+                <Button type="button" size="icon" variant="ghost" onClick={() => addListItem(setGoals)} disabled={loading}>
+                  <Plus className="size-4" />
+                  <span className="sr-only">Add Goal</span>
+                </Button>
+              </div>
+              {goals.map((goal, idx) => (
+                <section key={idx} className="flex gap-2 mb-2">
+                  <Input
+                    placeholder="Goal"
+                    value={goal}
+                    onChange={e => handleListChange(setGoals, idx, e.target.value)}
+                    disabled={loading}
+                  />
+                  <Button type="button" size="icon" variant="ghost" onClick={() => removeListItem(setGoals, idx)} disabled={loading}>
+                    <span className="sr-only">Remove</span>
+                    <Trash className="size-4" />
                   </Button>
-                </div>
-                {goals.map((goal, idx) => (
-                  <section key={idx} className="flex gap-2 mb-2">
-                    <Input
-                      placeholder="Goal"
-                      value={goal}
-                      onChange={e => handleListChange(setGoals, idx, e.target.value)}
-                      disabled={loading}
-                    />
-                    <Button type="button" size="icon" variant="ghost" onClick={() => removeListItem(setGoals, idx)} disabled={loading}>
-                      <span className="sr-only">Remove</span>
-                      <Trash className="size-4" />
-                    </Button>
-                  </section>
-                ))}
-              </fieldset>
-              <fieldset className="border rounded-md p-3">
-                <legend className="text-sm font-medium px-1">Frustrations <span className="text-muted-foreground">(optional)</span></legend>
-                <div className="flex items-center justify-between mb-1 mt-2">
-                  <span className="block text-xs text-muted-foreground">Add frustrations for this persona.</span>
-                  <Button type="button" size="icon" variant="ghost" onClick={() => addListItem(setFrustrations)} disabled={loading}>
-                    <Plus className="size-4" />
-                    <span className="sr-only">Add Frustration</span>
+                </section>
+              ))}
+            </fieldset>
+            <fieldset className="border rounded-md p-3">
+              <legend className="text-sm font-medium px-1">Frustrations <span className="text-muted-foreground">(optional)</span></legend>
+              <div className="flex items-center justify-between mb-1 mt-2">
+                <span className="block text-xs text-muted-foreground">Add frustrations for this persona.</span>
+                <Button type="button" size="icon" variant="ghost" onClick={() => addListItem(setFrustrations)} disabled={loading}>
+                  <Plus className="size-4" />
+                  <span className="sr-only">Add Frustration</span>
+                </Button>
+              </div>
+              {frustrations.map((frustration, idx) => (
+                <section key={idx} className="flex gap-2 mb-2">
+                  <Input
+                    placeholder="Frustration"
+                    value={frustration}
+                    onChange={e => handleListChange(setFrustrations, idx, e.target.value)}
+                    disabled={loading}
+                  />
+                  <Button type="button" size="icon" variant="ghost" onClick={() => removeListItem(setFrustrations, idx)} disabled={loading}>
+                    <span className="sr-only">Remove</span>
+                    <Trash className="size-4" />
                   </Button>
-                </div>
-                {frustrations.map((frustration, idx) => (
-                  <section key={idx} className="flex gap-2 mb-2">
-                    <Input
-                      placeholder="Frustration"
-                      value={frustration}
-                      onChange={e => handleListChange(setFrustrations, idx, e.target.value)}
-                      disabled={loading}
-                    />
-                    <Button type="button" size="icon" variant="ghost" onClick={() => removeListItem(setFrustrations, idx)} disabled={loading}>
-                      <span className="sr-only">Remove</span>
-                      <Trash className="size-4" />
-                    </Button>
-                  </section>
-                ))}
-              </fieldset>
-              <fieldset className="border rounded-md p-3">
-                <legend className="text-sm font-medium px-1">Traits <span className="text-muted-foreground">(optional)</span></legend>
-                <div className="flex items-center justify-between mb-1 mt-2">
-                  <span className="block text-xs text-muted-foreground">Add traits for this persona.</span>
-                  <Button type="button" size="icon" variant="ghost" onClick={() => addListItem(setTraits)} disabled={loading}>
-                    <Plus className="size-4" />
-                    <span className="sr-only">Add Trait</span>
+                </section>
+              ))}
+            </fieldset>
+            <fieldset className="border rounded-md p-3">
+              <legend className="text-sm font-medium px-1">Traits <span className="text-muted-foreground">(optional)</span></legend>
+              <div className="flex items-center justify-between mb-1 mt-2">
+                <span className="block text-xs text-muted-foreground">Add traits for this persona.</span>
+                <Button type="button" size="icon" variant="ghost" onClick={() => addListItem(setTraits)} disabled={loading}>
+                  <Plus className="size-4" />
+                  <span className="sr-only">Add Trait</span>
+                </Button>
+              </div>
+              {traits.map((trait, idx) => (
+                <section key={idx} className="flex gap-2 mb-2">
+                  <Input
+                    placeholder="Trait"
+                    value={trait}
+                    onChange={e => handleListChange(setTraits, idx, e.target.value)}
+                    disabled={loading}
+                  />
+                  <Button type="button" size="icon" variant="ghost" onClick={() => removeListItem(setTraits, idx)} disabled={loading}>
+                    <span className="sr-only">Remove</span>
+                    <Trash className="size-4" />
                   </Button>
-                </div>
-                {traits.map((trait, idx) => (
-                  <section key={idx} className="flex gap-2 mb-2">
-                    <Input
-                      placeholder="Trait"
-                      value={trait}
-                      onChange={e => handleListChange(setTraits, idx, e.target.value)}
-                      disabled={loading}
-                    />
-                    <Button type="button" size="icon" variant="ghost" onClick={() => removeListItem(setTraits, idx)} disabled={loading}>
-                      <span className="sr-only">Remove</span>
-                      <Trash className="size-4" />
-                    </Button>
-                  </section>
-                ))}
-              </fieldset>
-              <fieldset className="border rounded-md p-3">
-                <legend className="text-sm font-medium px-1">Preferred Devices <span className="text-muted-foreground">(optional)</span></legend>
-                <div className="flex items-center justify-between mb-1 mt-2">
-                  <span className="block text-xs text-muted-foreground">Add preferred devices for this persona.</span>
-                  <Button type="button" size="icon" variant="ghost" onClick={() => addListItem(setPreferredDevices)} disabled={loading}>
-                    <Plus className="size-4" />
-                    <span className="sr-only">Add Device</span>
+                </section>
+              ))}
+            </fieldset>
+            <fieldset className="border rounded-md p-3">
+              <legend className="text-sm font-medium px-1">Preferred Devices <span className="text-muted-foreground">(optional)</span></legend>
+              <div className="flex items-center justify-between mb-1 mt-2">
+                <span className="block text-xs text-muted-foreground">Add preferred devices for this persona.</span>
+                <Button type="button" size="icon" variant="ghost" onClick={() => addListItem(setPreferredDevices)} disabled={loading}>
+                  <Plus className="size-4" />
+                  <span className="sr-only">Add Device</span>
+                </Button>
+              </div>
+              {preferredDevices.map((device, idx) => (
+                <section key={idx} className="flex gap-2 mb-2">
+                  <Input
+                    placeholder="Device"
+                    value={device}
+                    onChange={e => handleListChange(setPreferredDevices, idx, e.target.value)}
+                    disabled={loading}
+                  />
+                  <Button type="button" size="icon" variant="ghost" onClick={() => removeListItem(setPreferredDevices, idx)} disabled={loading}>
+                    <span className="sr-only">Remove</span>
+                    <Trash className="size-4" />
                   </Button>
-                </div>
-                {preferredDevices.map((device, idx) => (
-                  <section key={idx} className="flex gap-2 mb-2">
-                    <Input
-                      placeholder="Device"
-                      value={device}
-                      onChange={e => handleListChange(setPreferredDevices, idx, e.target.value)}
-                      disabled={loading}
-                    />
-                    <Button type="button" size="icon" variant="ghost" onClick={() => removeListItem(setPreferredDevices, idx)} disabled={loading}>
-                      <span className="sr-only">Remove</span>
-                      <Trash className="size-4" />
-                    </Button>
-                  </section>
-                ))}
-              </fieldset>
-            </div>
-          </ScrollArea>
-          <SheetFooter className="p-6 pt-0 flex flex-row gap-2 justify-end">
-            <SheetClose asChild>
-              <Button type="button" variant="outline" disabled={loading}>Cancel</Button>
-            </SheetClose>
-            <Button variant="default" type="submit" form="create-persona-form" disabled={loading}>
-              {loading && <Loader2 className="animate-spin mr-2 h-5 w-5" />}
-              {loading ? "Creating..." : "Create persona"}
-            </Button>
-          </SheetFooter>
-        </form>
-      </SheetContent>
-    </Sheet>
+                </section>
+              ))}
+            </fieldset>
+          </form>
+        </ScrollArea>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="outline" disabled={loading}>Cancel</Button>
+          </DialogClose>
+          <Button variant="default" type="submit" form="create-persona-form" disabled={loading}>
+            {loading && <Loader2 className="animate-spin mr-2 h-5 w-5" />}
+            {loading ? "Creating..." : "Create persona"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 } 
