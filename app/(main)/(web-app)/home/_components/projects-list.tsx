@@ -5,9 +5,10 @@ import Image from "next/image";
 import React from "react";
 import { ProjectListSkeleton } from "./project-list-skeleton";
 import { ProjectCardDropdown } from "./project-card-dropdown";
-import { EditProjectModal } from "../../_components/edit-project-modal";
 import { MoveProjectToTrashModal } from "../../_components/move-project-to-trash-modal";
 import { toast } from "sonner";
+import { ProjectListEmpty } from "./project-list-empty";
+import { CreateProjectModalProvider, useCreateProjectModal } from "../../_components/create-project-modal";
 
 function ProjectCard({ project, onEdit, onTrash }: { project: Project, onEdit?: () => void, onTrash?: () => void }) {
   // Fallback logic for image: previewImageUrl -> favicon -> placeholder
@@ -94,42 +95,16 @@ function ProjectCard({ project, onEdit, onTrash }: { project: Project, onEdit?: 
   );
 }
 
-export function ProjectsList() {
-  const { projects, projectsLoading, projectsError, moveProjectToTrash, getProjectById } = useProjects();
-  const [editModalOpen, setEditModalOpen] = React.useState(false);
-  const [editingProject, setEditingProject] = React.useState<Project | null>(null);
-  const [editLoading, setEditLoading] = React.useState(false);
+function ProjectsListInner() {
+  const { projects, projectsLoading, projectsError, moveProjectToTrash } = useProjects();
+  const { setOpen: setCreateOpen } = useCreateProjectModal();
   const [trashModalOpen, setTrashModalOpen] = React.useState(false);
   const [trashingProject, setTrashingProject] = React.useState<Project | null>(null);
   const [trashLoading, setTrashLoading] = React.useState(false);
 
   if (projectsLoading && (!projects || projects.length === 0)) return <ProjectListSkeleton count={3} />;
   if (projectsError) return <div className="text-destructive">Error loading projects: {projectsError}</div>;
-  if (!projects || projects.length === 0) return <div className="text-muted-foreground">No projects found. Create your first project to get started!</div>;
-
-  const handleEdit = async (projectId: string) => {
-    // Try to get project from store first
-    const projectFromStore = projects?.find((p) => p._id === projectId) || null;
-    if (projectFromStore) {
-      setEditingProject(projectFromStore);
-      setEditModalOpen(true);
-      // Optionally, fetch latest in background and update modal if needed
-      getProjectById(projectId).then((freshProject) => {
-        setEditingProject(freshProject);
-      });
-    } else {
-      setEditLoading(true);
-      try {
-        const project = await getProjectById(projectId);
-        setEditingProject(project);
-        setEditModalOpen(true);
-      } catch {
-        // Optionally show error toast
-      } finally {
-        setEditLoading(false);
-      }
-    }
-  };
+  if (!projects || projects.length === 0) return <ProjectListEmpty onCreate={() => setCreateOpen(true)} />;
 
   const handleMoveToTrash = async () => {
     if (!trashingProject) return;
@@ -156,7 +131,7 @@ export function ProjectsList() {
           <ProjectCard
             key={project._id}
             project={project}
-            onEdit={() => handleEdit(project._id)}
+            onEdit={() => {}}
             onTrash={() => {
               setTrashingProject(project);
               setTrashModalOpen(true);
@@ -164,12 +139,6 @@ export function ProjectsList() {
           />
         ))}
       </section>
-      <EditProjectModal
-        open={editModalOpen}
-        setOpen={setEditModalOpen}
-        project={editingProject}
-        onSuccess={() => {}}
-      />
       <MoveProjectToTrashModal
         open={trashModalOpen}
         setOpen={setTrashModalOpen}
@@ -177,14 +146,14 @@ export function ProjectsList() {
         onConfirm={handleMoveToTrash}
         loading={trashLoading}
       />
-      {editLoading && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
-          <div className="bg-background rounded-xl p-6 flex items-center gap-2">
-            <span className="loader mr-2" />
-            Loading project details...
-          </div>
-        </div>
-      )}
     </>
+  );
+}
+
+export function ProjectsList() {
+  return (
+    <CreateProjectModalProvider>
+      <ProjectsListInner />
+    </CreateProjectModalProvider>
   );
 } 
