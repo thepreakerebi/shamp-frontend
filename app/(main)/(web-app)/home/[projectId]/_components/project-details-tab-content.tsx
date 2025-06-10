@@ -4,6 +4,7 @@ import { useProjectsStore } from "@/lib/store/projects";
 import { ProjectCardDropdown } from "../../_components/project-card-dropdown";
 import { EditProjectModal } from "../../../_components/edit-project-modal";
 import { MoveProjectToTrashModal } from "../../../_components/move-project-to-trash-modal";
+import { ProjectDetailsTabContentSkeleton } from "./project-details-tab-content-skeleton";
 
 interface ProjectDetailsTabContentProps {
   projectId: string;
@@ -14,7 +15,7 @@ export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContent
   const [trashOpen, setTrashOpen] = useState(false);
   const project = useProjectsStore((s) => s.projects?.find((p) => p._id === projectId) || null);
 
-  if (!project) return null;
+  if (!project) return <ProjectDetailsTabContentSkeleton />;
 
   // TODO: Implement actual move to trash logic
   const handleMoveToTrash = () => {
