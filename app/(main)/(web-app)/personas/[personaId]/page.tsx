@@ -5,13 +5,18 @@ import { usePersonas } from "@/hooks/use-personas";
 import type { Persona } from "@/hooks/use-personas";
 import Image from "next/image";
 import { PersonaCardDropdown } from "../_components/persona-card-dropdown";
+import { EditPersonaModal } from "../_components/edit-persona-modal";
+import { DeletePersonaModal } from "../_components/delete-persona-modal";
 
 export default function PersonaPage() {
   const { personaId } = useParams();
-  const { personas, personasLoading, getPersonaById } = usePersonas();
+  const { personas, personasLoading, getPersonaById, deletePersona } = usePersonas();
   const [persona, setPersona] = useState<Persona | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     if (!personaId) return;
@@ -29,6 +34,19 @@ export default function PersonaPage() {
       .catch((err) => setError(err.message || "Failed to load persona"))
       .finally(() => setLoading(false));
   }, [personaId, personas, getPersonaById]);
+
+  const handleDelete = async () => {
+    if (!persona) return;
+    setDeleteLoading(true);
+    try {
+      await deletePersona(persona._id);
+      setDeleteOpen(false);
+    } catch {
+      // Optionally show a toast here
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   if (!personasLoading && !loading && (!persona || error)) {
     notFound();
@@ -67,7 +85,11 @@ export default function PersonaPage() {
             </section>
             {/* Dropdown */}
             <section className="flex-shrink-0">
-              <PersonaCardDropdown showOpen={false} onEdit={() => {}} onDelete={() => {}} />
+              <PersonaCardDropdown
+                showOpen={false}
+                onEdit={() => setEditOpen(true)}
+                onDelete={() => setDeleteOpen(true)}
+              />
             </section>
           </section>
 
@@ -151,6 +173,10 @@ export default function PersonaPage() {
               </ul>
             </section>
           )}
+
+          {/* Modals */}
+          <EditPersonaModal open={editOpen} setOpen={setEditOpen} persona={persona} />
+          <DeletePersonaModal open={deleteOpen} setOpen={setDeleteOpen} persona={persona} onConfirm={handleDelete} loading={deleteLoading} />
         </>
       )}
     </main>
