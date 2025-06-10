@@ -53,7 +53,7 @@ function CreatePersonaModal() {
   const [preferredDevices, setPreferredDevices] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = React.useState<{ name?: string }>({});
+  const [fieldErrors, setFieldErrors] = React.useState<{ name?: string; description?: string }>({});
   const { createPersona } = usePersonas();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -77,9 +77,13 @@ function CreatePersonaModal() {
     setError(null);
     setFieldErrors({});
     let hasError = false;
-    const newFieldErrors: { name?: string } = {};
+    const newFieldErrors: { name?: string; description?: string } = {};
     if (!form.name) {
       newFieldErrors.name = "Persona name is required.";
+      hasError = true;
+    }
+    if (!form.description) {
+      newFieldErrors.description = "Description is required.";
       hasError = true;
     }
     if (hasError) {
@@ -91,12 +95,12 @@ function CreatePersonaModal() {
       await createPersona({
         name: form.name,
         description: form.description,
-        background: form.background,
-        gender: form.gender,
-        goals: goals.filter((g) => g.trim()),
-        frustrations: frustrations.filter((f) => f.trim()),
-        traits: traits.filter((t) => t.trim()),
-        preferredDevices: preferredDevices.filter((d) => d.trim()),
+        background: form.background || undefined,
+        gender: form.gender ? form.gender : undefined,
+        goals: goals.filter((g) => g.trim()).length ? goals.filter((g) => g.trim()) : undefined,
+        frustrations: frustrations.filter((f) => f.trim()).length ? frustrations.filter((f) => f.trim()) : undefined,
+        traits: traits.filter((t) => t.trim()).length ? traits.filter((t) => t.trim()) : undefined,
+        preferredDevices: preferredDevices.length ? preferredDevices : undefined,
       });
       toast.success("New persona created!");
       setOpen(false);
@@ -126,6 +130,7 @@ function CreatePersonaModal() {
             className="space-y-4" 
             id="create-persona-form"
             onKeyDown={e => {
+              // Only submit on Enter if not inside a textarea
               if (
                 (e.key === "Enter" || e.key === "Return") &&
                 e.target instanceof HTMLElement &&
@@ -138,22 +143,36 @@ function CreatePersonaModal() {
           >
             <section>
               <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
-              <Input id="name" name="name" value={form.name} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.name} aria-describedby={fieldErrors.name ? 'name-error' : undefined} />
+              <Input id="name" name="name" value={form.name} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.name} aria-describedby={fieldErrors.name ? 'name-error' : undefined} required />
               {fieldErrors.name && <div id="name-error" className="text-destructive text-xs mt-1">{fieldErrors.name}</div>}
             </section>
             <section>
-              <label htmlFor="description" className="block text-sm font-medium mb-1">Description <span className="text-muted-foreground">(optional)</span></label>
-              <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} />
+              <label htmlFor="description" className="block text-sm font-medium mb-1">Description</label>
+              <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.description} aria-describedby={fieldErrors.description ? 'description-error' : undefined} required />
+              {fieldErrors.description && <div id="description-error" className="text-destructive text-xs mt-1">{fieldErrors.description}</div>}
             </section>
             <section>
               <label htmlFor="background" className="block text-sm font-medium mb-1">Background <span className="text-muted-foreground">(optional)</span></label>
               <Textarea id="background" name="background" value={form.background} onChange={handleChange} disabled={loading} />
             </section>
             <section>
-              <label htmlFor="gender" className="block text-sm font-medium mb-1">Gender <span className="text-muted-foreground">(optional)</span></label>
-              <Input id="gender" name="gender" value={form.gender} onChange={handleChange} disabled={loading} />
+              <label className="block text-sm font-medium mb-1">Gender <span className="text-muted-foreground">(optional)</span></label>
+              <div className="flex items-center gap-4 mt-2">
+                {["Male", "Female", "Prefer not to say"].map(genderOption => (
+                  <label key={genderOption} className="flex items-center gap-1 text-sm">
+                    <input
+                      type="radio"
+                      name="gender"
+                      value={genderOption}
+                      checked={form.gender === genderOption}
+                      onChange={() => setForm(f => ({ ...f, gender: genderOption }))}
+                      disabled={loading}
+                    />
+                    {genderOption}
+                  </label>
+                ))}
+              </div>
             </section>
-            {/* Dynamic lists: Goals, Frustrations, Traits, Preferred Devices */}
             <fieldset className="border rounded-md p-3">
               <legend className="text-sm font-medium px-1">Goals <span className="text-muted-foreground">(optional)</span></legend>
               <div className="flex items-center justify-between mb-1 mt-2">
@@ -228,27 +247,26 @@ function CreatePersonaModal() {
             </fieldset>
             <fieldset className="border rounded-md p-3">
               <legend className="text-sm font-medium px-1">Preferred Devices <span className="text-muted-foreground">(optional)</span></legend>
-              <div className="flex items-center justify-between mb-1 mt-2">
-                <span className="block text-xs text-muted-foreground">Add preferred devices for this persona.</span>
-                <Button type="button" size="icon" variant="ghost" onClick={() => addListItem(setPreferredDevices)} disabled={loading}>
-                  <Plus className="size-4" />
-                  <span className="sr-only">Add Device</span>
-                </Button>
+              <div className="flex items-center gap-4 mt-2">
+                {['Desktop', 'Tablet', 'Mobile'].map(device => (
+                  <label key={device} className="flex items-center gap-1 text-sm">
+                    <input
+                      type="checkbox"
+                      value={device}
+                      checked={preferredDevices.includes(device)}
+                      onChange={e => {
+                        setPreferredDevices(prev =>
+                          e.target.checked
+                            ? [...prev, device]
+                            : prev.filter(d => d !== device)
+                        );
+                      }}
+                      disabled={loading}
+                    />
+                    {device}
+                  </label>
+                ))}
               </div>
-              {preferredDevices.map((device, idx) => (
-                <section key={idx} className="flex gap-2 mb-2">
-                  <Input
-                    placeholder="Device"
-                    value={device}
-                    onChange={e => handleListChange(setPreferredDevices, idx, e.target.value)}
-                    disabled={loading}
-                  />
-                  <Button type="button" size="icon" variant="ghost" onClick={() => removeListItem(setPreferredDevices, idx)} disabled={loading}>
-                    <span className="sr-only">Remove</span>
-                    <Trash className="size-4" />
-                  </Button>
-                </section>
-              ))}
             </fieldset>
           </form>
         </ScrollArea>
