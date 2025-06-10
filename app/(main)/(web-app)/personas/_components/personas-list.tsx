@@ -1,8 +1,7 @@
 "use client";
 import { usePersonas } from "@/hooks/use-personas";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { EllipsisVerticalIcon } from "lucide-react";
+import { PersonaCardDropdown } from "./persona-card-dropdown";
 
 export function PersonasList() {
   const { personas, personasLoading, personasError } = usePersonas();
@@ -16,7 +15,7 @@ export function PersonasList() {
       {personas.map((persona) => (
         <section
           key={persona._id}
-          className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border hover:bg-muted transition-colors"
+          className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border hover:bg-muted/60 transition-colors"
         >
           <section className="flex-shrink-0">
             {persona.avatarUrl ? (
@@ -38,9 +37,11 @@ export function PersonasList() {
             <h3 className="font-semibold text-lg truncate" title={persona.name}>{persona.name}</h3>
             <p className="text-sm text-muted-foreground mt-1 truncate" title={persona.gender}>{persona.gender || "-"}</p>
           </section>
-          <Button variant="ghost" size="icon" className="ml-auto" aria-label="Persona options">
-            <EllipsisVerticalIcon className="w-4 h-4" />
-          </Button>
+          <PersonaCardDropdown
+            onOpen={() => {}}
+            onEdit={() => {}}
+            onDelete={() => {}}
+          />
         </section>
       ))}
     </section>
