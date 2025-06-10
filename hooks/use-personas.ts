@@ -129,6 +129,7 @@ export function usePersonas() {
       credentials: "include",
       headers: { Authorization: `Bearer ${token}` },
     });
+    if (res.status === 404) throw new Error("Not found");
     if (!res.ok) throw new Error("Failed to fetch persona");
     const persona = await res.json();
     store.updatePersonaInList(persona);

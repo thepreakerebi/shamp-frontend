@@ -12,7 +12,6 @@ export function Breadcrumbs() {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
   let path = "";
-  console.log('Breadcrumbs pathname:', pathname, 'segments:', segments);
   // Find the projectId if present (first segment after 'home')
   const homeIdx = segments.indexOf("home");
   const projectId = homeIdx !== -1 && segments.length > homeIdx + 1 ? segments[homeIdx + 1] : undefined;
@@ -50,7 +49,6 @@ export function Breadcrumbs() {
     let ignore = false;
     if (personaId) {
       const personaFromStore = personas?.find((p) => p._id === personaId);
-      console.log('Breadcrumbs personaId:', personaId, 'Found in store:', personaFromStore);
       if (personaFromStore) {
         setPersonaName(personaFromStore.name);
       } else {
