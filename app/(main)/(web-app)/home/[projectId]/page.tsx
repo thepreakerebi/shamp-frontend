@@ -1,15 +1,22 @@
 "use client";
 import { useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, notFound } from "next/navigation";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ProjectDetailsTab } from "./_components/project-details-tab";
 import { ProjectDetailsTabContent } from "./_components/project-details-tab-content";
 import { ProjectTestsTabContent } from "./_components/project-tests-tab-content";
 import { ProjectTestrunsTabContent } from "./_components/project-testruns-tab-content";
+import { useProjectsStore } from "@/lib/store/projects";
 
 export default function ProjectDetailsPage() {
   const [tab, setTab] = useState("details");
   const { projectId } = useParams();
+  const project = useProjectsStore((s) => s.projects?.find((p) => p._id === projectId) || null);
+
+  if (!project) {
+    notFound();
+    return null;
+  }
 
   return (
     <main className="p-4">
