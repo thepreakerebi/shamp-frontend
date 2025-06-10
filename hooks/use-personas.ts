@@ -1,6 +1,7 @@
 import { useAuth, type User } from "@/lib/auth";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import io from "socket.io-client";
+import { usePersonasStore } from "@/lib/store/personas";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
@@ -42,48 +43,43 @@ const fetcher = (url: string, token: string) =>
 
 export function usePersonas() {
   const { token } = useAuth();
-  const [personas, setPersonas] = useState<Persona[] | null>(null);
-  const [personasLoading, setPersonasLoading] = useState(true);
-  const [personasError, setPersonasError] = useState<string | null>(null);
-  const [count, setCount] = useState(0);
-  const [countLoading, setCountLoading] = useState(true);
-  const [countError, setCountError] = useState<string | null>(null);
+  const store = usePersonasStore();
 
   const fetchPersonas = useCallback(async () => {
     if (!token) return;
-    setPersonasLoading(true);
-    setPersonasError(null);
+    store.setPersonasLoading(true);
+    store.setPersonasError(null);
     try {
       const data = await fetcher("/personas", token);
-      setPersonas(data);
+      store.setPersonas(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setPersonasError(err.message);
+        store.setPersonasError(err.message);
       } else {
-        setPersonasError("Failed to fetch personas");
+        store.setPersonasError("Failed to fetch personas");
       }
     } finally {
-      setPersonasLoading(false);
+      store.setPersonasLoading(false);
     }
-  }, [token]);
+  }, [token, store]);
 
   const fetchCount = useCallback(async () => {
     if (!token) return;
-    setCountLoading(true);
-    setCountError(null);
+    store.setCountLoading(true);
+    store.setCountError(null);
     try {
       const data = await fetcher("/personas/count", token);
-      setCount(data.count ?? 0);
+      store.setCount(data.count ?? 0);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setCountError(err.message);
+        store.setCountError(err.message);
       } else {
-        setCountError("Failed to fetch persona count");
+        store.setCountError("Failed to fetch persona count");
       }
     } finally {
-      setCountLoading(false);
+      store.setCountLoading(false);
     }
-  }, [token]);
+  }, [token, store]);
 
   // Refetch both personas and count
   const refetch = useCallback(() => {
@@ -95,7 +91,8 @@ export function usePersonas() {
     if (!token) return;
     fetchPersonas();
     fetchCount();
-  }, [token, fetchPersonas, fetchCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
@@ -125,7 +122,9 @@ export function usePersonas() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to fetch persona");
-    return res.json();
+    const persona = await res.json();
+    store.updatePersonaInList(persona);
+    return persona;
   };
 
   // Create a persona
@@ -141,7 +140,9 @@ export function usePersonas() {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to create persona");
-    return res.json();
+    const persona = await res.json();
+    store.addPersonaToList(persona);
+    return persona;
   };
 
   // Update a persona
@@ -157,7 +158,9 @@ export function usePersonas() {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to update persona");
-    return res.json();
+    const persona = await res.json();
+    store.updatePersonaInList(persona);
+    return persona;
   };
 
   // Delete a persona
@@ -169,16 +172,17 @@ export function usePersonas() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to delete persona");
+    store.removePersonaFromList(id);
     return res.json();
   };
 
   return {
-    personas,
-    personasError,
-    personasLoading,
-    count,
-    countError,
-    countLoading,
+    personas: store.personas,
+    personasError: store.personasError,
+    personasLoading: store.personasLoading,
+    count: store.count,
+    countError: store.countError,
+    countLoading: store.countLoading,
     createPersona,
     updatePersona,
     deletePersona,
