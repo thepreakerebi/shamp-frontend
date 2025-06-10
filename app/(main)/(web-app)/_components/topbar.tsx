@@ -5,6 +5,8 @@ import { Breadcrumbs } from './breadcrumbs';
 import { CreateProjectButton } from './create-project-button';
 import { usePathname } from 'next/navigation';
 import { useSidebar } from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
+import { Plus, Users } from 'lucide-react';
 
 export function Topbar() {
   const pathname = usePathname();
@@ -29,6 +31,14 @@ export function Topbar() {
       </section>
       <section className="flex flex-row items-center gap-4">
         {pathname === '/home' && <CreateProjectButton />}
+        {pathname === '/personas' && (
+          <section className="flex flex-row items-center gap-2">
+            <Button variant="ghost" size="icon" aria-label="Personas">
+              <Users className="size-5" />
+            </Button>
+            <Button variant="outline"><Plus className="size-4 mr-2" /> Create persona</Button>
+          </section>
+        )}
         {/* Add more buttons for other pages here as needed */}
       </section>
     </section>
