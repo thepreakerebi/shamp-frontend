@@ -1,6 +1,7 @@
 import { useAuth } from "@/lib/auth";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import io from "socket.io-client";
+import { useBatchPersonasStore } from "@/lib/store/batchPersonas";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
@@ -46,27 +47,29 @@ const fetcher = (url: string, token: string) =>
 
 export function useBatchPersonas() {
   const { token } = useAuth();
-  const [batchPersonas, setBatchPersonas] = useState<BatchPersona[] | null>(null);
-  const [batchPersonasLoading, setBatchPersonasLoading] = useState(true);
-  const [batchPersonasError, setBatchPersonasError] = useState<string | null>(null);
+  const store = useBatchPersonasStore();
 
   const fetchBatchPersonas = useCallback(async () => {
-    if (!token) return;
-    setBatchPersonasLoading(true);
-    setBatchPersonasError(null);
+    if (!token) {
+      store.setBatchPersonasLoading(false);
+      store.setBatchPersonas([]);
+      return;
+    }
+    store.setBatchPersonasLoading(true);
+    store.setBatchPersonasError(null);
     try {
       const data = await fetcher("/batchpersonas", token);
-      setBatchPersonas(data);
+      store.setBatchPersonas(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setBatchPersonasError(err.message);
+        store.setBatchPersonasError(err.message);
       } else {
-        setBatchPersonasError("Failed to fetch batch personas");
+        store.setBatchPersonasError("Failed to fetch batch personas");
       }
     } finally {
-      setBatchPersonasLoading(false);
+      store.setBatchPersonasLoading(false);
     }
-  }, [token]);
+  }, [token, store]);
 
   useEffect(() => {
     if (!token) return;
@@ -128,9 +131,9 @@ export function useBatchPersonas() {
   };
 
   return {
-    batchPersonas,
-    batchPersonasError,
-    batchPersonasLoading,
+    batchPersonas: store.batchPersonas,
+    batchPersonasError: store.batchPersonasError,
+    batchPersonasLoading: store.batchPersonasLoading,
     getBatchPersonaById,
     createBatchPersona,
     deleteBatchPersona,
