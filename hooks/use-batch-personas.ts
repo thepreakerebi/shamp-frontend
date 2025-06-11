@@ -1,5 +1,5 @@
 import { useAuth } from "@/lib/auth";
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import io from "socket.io-client";
 import { useBatchPersonasStore } from "@/lib/store/batchPersonas";
 
@@ -49,37 +49,30 @@ export function useBatchPersonas(enabled: boolean = true) {
   const { token } = useAuth();
   const store = useBatchPersonasStore();
 
-  const fetchBatchPersonas = useCallback(async () => {
-    if (!enabled) return;
-    if (!token) {
-      store.setBatchPersonasLoading(false);
-      store.setBatchPersonas([]);
-      return;
-    }
-    store.setBatchPersonasLoading(true);
-    store.setBatchPersonasError(null);
-    try {
-      const data = await fetcher("/batchpersonas", token);
-      console.log('[BatchPersonas] API response:', data);
-      store.setBatchPersonas(Array.isArray(data) ? data : []);
-      console.log('[BatchPersonas] Setting batchPersonas in store:', Array.isArray(data) ? data : []);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        store.setBatchPersonasError(err.message);
-      } else {
-        store.setBatchPersonasError("Failed to fetch batch personas");
-      }
-    } finally {
-      console.log('[BatchPersonas] Setting batchPersonasLoading to false');
-      store.setBatchPersonasLoading(false);
-    }
-  }, [token, store, enabled]);
-
   useEffect(() => {
     if (!enabled) return;
     if (!token) return;
-    fetchBatchPersonas();
-  }, [token, fetchBatchPersonas, enabled]);
+    // Inline the fetch logic to avoid dependency on fetchBatchPersonas
+    (async () => {
+      store.setBatchPersonasLoading(true);
+      store.setBatchPersonasError(null);
+      try {
+        const data = await fetcher("/batchpersonas", token);
+        console.log('[BatchPersonas] API response:', data);
+        store.setBatchPersonas(Array.isArray(data) ? data : []);
+        console.log('[BatchPersonas] Setting batchPersonas in store:', Array.isArray(data) ? data : []);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          store.setBatchPersonasError(err.message);
+        } else {
+          store.setBatchPersonasError("Failed to fetch batch personas");
+        }
+      } finally {
+        console.log('[BatchPersonas] Setting batchPersonasLoading to false');
+        store.setBatchPersonasLoading(false);
+      }
+    })();
+  }, [token, enabled]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -88,8 +81,22 @@ export function useBatchPersonas(enabled: boolean = true) {
       transports: ["websocket"],
       auth: { token },
     });
-    const handleUpdate = () => {
-      fetchBatchPersonas();
+    // Inline the fetch logic for socket events
+    const handleUpdate = async () => {
+      store.setBatchPersonasLoading(true);
+      store.setBatchPersonasError(null);
+      try {
+        const data = await fetcher("/batchpersonas", token);
+        store.setBatchPersonas(Array.isArray(data) ? data : []);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          store.setBatchPersonasError(err.message);
+        } else {
+          store.setBatchPersonasError("Failed to fetch batch personas");
+        }
+      } finally {
+        store.setBatchPersonasLoading(false);
+      }
     };
     socket.on("batchPersona:created", handleUpdate);
     socket.on("batchPersona:deleted", handleUpdate);
@@ -98,7 +105,7 @@ export function useBatchPersonas(enabled: boolean = true) {
       socket.off("batchPersona:deleted", handleUpdate);
       socket.disconnect();
     };
-  }, [fetchBatchPersonas, token, enabled]);
+  }, [token, enabled]);
 
   const getBatchPersonaById = async (id: string): Promise<BatchPersona> => {
     if (!token) throw new Error("Not authenticated");
@@ -143,6 +150,5 @@ export function useBatchPersonas(enabled: boolean = true) {
     getBatchPersonaById,
     createBatchPersona,
     deleteBatchPersona,
-    refetch: fetchBatchPersonas,
   };
 } 
