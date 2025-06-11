@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useProjects } from "@/hooks/use-projects";
 import { useProjectsStore } from "@/lib/store/projects";
@@ -12,6 +12,8 @@ import { useBatchPersonasStore } from "@/lib/store/batchPersonas";
 
 export function Breadcrumbs() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const batchQueryId = searchParams.get("batch");
   const segments = pathname.split("/").filter(Boolean);
   let path = "";
   // Find the projectId if present (first segment after 'home')
@@ -36,6 +38,7 @@ export function Breadcrumbs() {
   const { getBatchPersonaById } = useBatchPersonas();
   const [batchPersonaName, setBatchPersonaName] = useState<string | null>(null);
   const batchPersonas = useBatchPersonasStore((s) => s.batchPersonas);
+  const [batchQueryName, setBatchQueryName] = useState<string | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -102,6 +105,13 @@ export function Breadcrumbs() {
     return () => { ignore = true; };
   }, [batchPersonasId, getBatchPersonaById, batchPersonas]);
 
+  useEffect(() => {
+    if (!batchQueryId) { setBatchQueryName(null); return; }
+    const fromStore = batchPersonas?.find((b) => b._id === batchQueryId);
+    if (fromStore) { setBatchQueryName(fromStore.name); return; }
+    getBatchPersonaById(batchQueryId).then(b=>setBatchQueryName(b?.name||null)).catch(()=>setBatchQueryName(null));
+  }, [batchQueryId, batchPersonas, getBatchPersonaById]);
+
   return (
     <Breadcrumb>
       <BreadcrumbList>
@@ -122,6 +132,24 @@ export function Breadcrumbs() {
           }
           if (segment === batchPersonasId && batchPersonaName) {
             display = batchPersonaName;
+          }
+          if (segment === "personas" && batchQueryName) {
+            return (
+              <React.Fragment key={segment+"batch"}>
+                {idx > 0 && <BreadcrumbSeparator />}
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href={path}>{display}</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href={`/personas/batch/${batchQueryId}`}>{batchQueryName}</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              </React.Fragment>
+            );
           }
           return (
             <React.Fragment key={segment}>
