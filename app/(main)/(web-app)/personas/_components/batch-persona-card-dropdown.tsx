@@ -13,10 +13,11 @@ import { useRouter } from "next/navigation";
 interface BatchPersonaCardDropdownProps {
   onOpen?: () => void;
   onDelete?: () => void;
+  onRename?: () => void;
   batchPersonaId?: string;
 }
 
-export function BatchPersonaCardDropdown({ onOpen, onDelete, batchPersonaId }: BatchPersonaCardDropdownProps) {
+export function BatchPersonaCardDropdown({ onOpen, onDelete, onRename, batchPersonaId }: BatchPersonaCardDropdownProps) {
   const router = useRouter();
   const handleOpen = () => {
     if (onOpen) onOpen();
@@ -33,6 +34,7 @@ export function BatchPersonaCardDropdown({ onOpen, onDelete, batchPersonaId }: B
       </CustomDropdownMenuTrigger>
       <CustomDropdownMenuContent align="end">
         <CustomDropdownMenuItem onSelect={handleOpen}>Open</CustomDropdownMenuItem>
+        <CustomDropdownMenuItem onSelect={() => { if (onRename) onRename(); }}>Change name</CustomDropdownMenuItem>
         <CustomDropdownMenuItem onSelect={() => { if (onDelete) onDelete(); }} variant="destructive">Delete</CustomDropdownMenuItem>
       </CustomDropdownMenuContent>
     </CustomDropdownMenu>

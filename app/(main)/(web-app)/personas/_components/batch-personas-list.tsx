@@ -8,6 +8,7 @@ import { BatchPersonasListSkeleton } from "./batch-personas-list-skeleton";
 import { BatchPersonasListEmpty } from "./batch-personas-list-empty";
 import { useCreateBatchPersonasModal } from "./create-batch-personas-modal";
 import { DeleteBatchPersonasModal } from "./delete-batch-personas-modal";
+import { EditBatchPersonaNameModal } from "./edit-batch-persona-name-modal";
 import { BatchPersona } from "@/hooks/use-batch-personas";
 import Link from "next/link";
 
@@ -21,6 +22,10 @@ export function BatchPersonasList() {
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deletingBatchPersona, setDeletingBatchPersona] = React.useState<BatchPersona | null>(null);
   const [deleteLoading, setDeleteLoading] = React.useState(false);
+
+  // State for rename modal
+  const [renameOpen, setRenameOpen] = React.useState(false);
+  const [renamingBatchPersona, setRenamingBatchPersona] = React.useState<BatchPersona | null>(null);
 
   const handleDelete = async () => {
     if (!deletingBatchPersona) return;
@@ -73,6 +78,10 @@ export function BatchPersonasList() {
               <BatchPersonaCardDropdown
                 batchPersonaId={batch._id}
                 onOpen={() => {}}
+                onRename={() => {
+                  setRenamingBatchPersona(batch);
+                  setRenameOpen(true);
+                }}
                 onDelete={() => {
                   setDeletingBatchPersona(batch);
                   setDeleteOpen(true);
@@ -88,6 +97,11 @@ export function BatchPersonasList() {
         batchPersona={deletingBatchPersona}
         onConfirm={handleDelete}
         loading={deleteLoading}
+      />
+      <EditBatchPersonaNameModal
+        open={renameOpen}
+        setOpen={setRenameOpen}
+        batchPersona={renamingBatchPersona}
       />
     </>
   );
