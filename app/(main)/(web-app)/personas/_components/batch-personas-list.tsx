@@ -5,11 +5,14 @@ import { BatchPersonasImage } from "./batch-personas-image";
 import { BatchPersonaCardDropdown } from "./batch-persona-card-dropdown";
 import { toast } from "sonner";
 import { BatchPersonasListSkeleton } from "./batch-personas-list-skeleton";
+import { BatchPersonasListEmpty } from "./batch-personas-list-empty";
+import { useCreateBatchPersonasModal } from "./create-batch-personas-modal";
 
 // Optionally, you can create skeleton/empty components for batch personas as well
 
 export function BatchPersonasList() {
   const { batchPersonas, batchPersonasLoading, batchPersonasError, deleteBatchPersona } = useBatchPersonas();
+  const { setOpen: setCreateBatchOpen } = useCreateBatchPersonasModal();
 
   const handleDelete = async (id: string) => {
     try {
@@ -27,7 +30,7 @@ export function BatchPersonasList() {
     return <div className="py-8 text-center text-destructive">{batchPersonasError}</div>;
   }
   if (!batchPersonas || batchPersonas.length === 0) {
-    return <div className="py-8 text-center text-muted-foreground">No batch personas found.</div>;
+    return <BatchPersonasListEmpty onCreate={() => setCreateBatchOpen(true)} />;
   }
 
   return (

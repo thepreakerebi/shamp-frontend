@@ -60,7 +60,9 @@ export function useBatchPersonas(enabled: boolean = true) {
     store.setBatchPersonasError(null);
     try {
       const data = await fetcher("/batchpersonas", token);
+      console.log('[BatchPersonas] API response:', data);
       store.setBatchPersonas(Array.isArray(data) ? data : []);
+      console.log('[BatchPersonas] Setting batchPersonas in store:', Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
         store.setBatchPersonasError(err.message);
@@ -68,6 +70,7 @@ export function useBatchPersonas(enabled: boolean = true) {
         store.setBatchPersonasError("Failed to fetch batch personas");
       }
     } finally {
+      console.log('[BatchPersonas] Setting batchPersonasLoading to false');
       store.setBatchPersonasLoading(false);
     }
   }, [token, store, enabled]);
