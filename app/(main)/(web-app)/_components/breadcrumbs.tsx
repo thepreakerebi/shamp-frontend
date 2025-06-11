@@ -131,7 +131,11 @@ export function Breadcrumbs() {
                   <BreadcrumbPage>{display}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>
-                    <Link href={path}>{display}</Link>
+                    {segment === "personas" && batchPersonasId ? (
+                      <Link href="/personas?tab=groups">{display}</Link>
+                    ) : (
+                      <Link href={path}>{display}</Link>
+                    )}
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
