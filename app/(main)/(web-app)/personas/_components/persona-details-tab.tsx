@@ -1,0 +1,23 @@
+"use client";
+import { TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+const TAB_LIST = [
+  { key: "individuals", label: "Individuals" },
+  { key: "groups", label: "Groups" },
+];
+
+export function PersonaDetailsTab() {
+  return (
+    <TabsList aria-label="Persona details tabs">
+      {TAB_LIST.map((tab) => (
+        <TabsTrigger
+          key={tab.key}
+          value={tab.key}
+          className="text-left w-full md:rounded-lg rounded-none"
+        >
+          {tab.label}
+        </TabsTrigger>
+      ))}
+    </TabsList>
+  );
+} 

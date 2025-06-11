@@ -91,7 +91,7 @@ function PersonasListInner() {
 
   return (
     <>
-      <section className="grid grid-cols-1 lsm:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 w-full">
+      <section className="grid grid-cols-1 lsm:grid-cols-2 sm:grid-cols-3 gap-4 w-full">
         {personas.map((persona) => (
           <PersonaCard
             key={persona._id}
