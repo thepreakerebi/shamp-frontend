@@ -16,7 +16,12 @@ export function Breadcrumbs() {
   const homeIdx = segments.indexOf("home");
   const projectId = homeIdx !== -1 && segments.length > homeIdx + 1 ? segments[homeIdx + 1] : undefined;
   const personasIdx = segments.indexOf("personas");
-  const personaId = personasIdx !== -1 && segments.length > personasIdx + 1 ? segments[personasIdx + 1] : undefined;
+  let personaId: string | undefined = undefined;
+  if (personasIdx !== -1 && segments.length > personasIdx + 1) {
+    if (segments[personasIdx + 1] !== "batch") {
+      personaId = segments[personasIdx + 1];
+    }
+  }
   const { getProjectById } = useProjects();
   const projects = useProjectsStore((s) => s.projects);
   const [projectName, setProjectName] = useState<string | null>(null);
@@ -70,6 +75,8 @@ export function Breadcrumbs() {
     <Breadcrumb>
       <BreadcrumbList>
         {segments.map((segment, idx) => {
+          // Hide 'batch' segment from breadcrumbs
+          if (segment === "batch") return null;
           path += `/${segment}`;
           const isLast = idx === segments.length - 1;
           let display = segment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());

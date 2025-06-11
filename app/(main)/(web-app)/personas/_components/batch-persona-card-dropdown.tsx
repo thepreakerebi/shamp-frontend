@@ -21,7 +21,7 @@ export function BatchPersonaCardDropdown({ onOpen, onDelete, batchPersonaId }: B
   const handleOpen = () => {
     if (onOpen) onOpen();
     if (batchPersonaId) {
-      router.push(`/batchpersonas/${batchPersonaId}`);
+      router.push(`/personas/batch/${batchPersonaId}`);
     }
   };
   return (

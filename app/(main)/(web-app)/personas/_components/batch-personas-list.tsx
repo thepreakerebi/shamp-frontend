@@ -9,6 +9,7 @@ import { BatchPersonasListEmpty } from "./batch-personas-list-empty";
 import { useCreateBatchPersonasModal } from "./create-batch-personas-modal";
 import { DeleteBatchPersonasModal } from "./delete-batch-personas-modal";
 import { BatchPersona } from "@/hooks/use-batch-personas";
+import Link from "next/link";
 
 // Optionally, you can create skeleton/empty components for batch personas as well
 
@@ -61,7 +62,9 @@ export function BatchPersonasList() {
               className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border hover:bg-muted/60 transition-colors"
             >
               <section className="flex-shrink-0">
-                <BatchPersonasImage avatarUrls={avatarUrls} />
+                <Link href={`/personas/batch/${batch._id}`} aria-label={`View batch persona ${batch.name}`} tabIndex={0}>
+                  <BatchPersonasImage avatarUrls={avatarUrls} />
+                </Link>
               </section>
               <section className="flex flex-col w-full min-w-0 gap-1">
                 <h3 className="font-semibold text-lg truncate w-full" title={batch.name}>{batch.name}</h3>
