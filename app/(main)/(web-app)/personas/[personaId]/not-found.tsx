@@ -1,6 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { Bot, FolderX } from "lucide-react";
+import { Bot, UserX } from "lucide-react";
 import Link from "next/link";
 
 export default function PersonaNotFound() {
@@ -8,7 +8,7 @@ export default function PersonaNotFound() {
     <main className="flex flex-col items-center justify-center min-h-[60vh] px-4 py-16 w-full bg-background animate-fade-in">
       <div className="flex flex-col items-center gap-4 max-w-md w-full">
         <span className="relative flex items-center justify-center">
-          <FolderX className="text-muted-foreground" size={64} />
+          <UserX className="text-muted-foreground" size={64} />
           <Bot className="absolute -bottom-4 -right-4 text-secondary animate-bounce" size={32} />
         </span>
         <h1 className="text-3xl md:text-4xl font-bold text-center text-foreground">Persona Not Found</h1>

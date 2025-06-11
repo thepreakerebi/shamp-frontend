@@ -1,23 +1,41 @@
 "use client";
 import { useState } from "react";
-import { useParams, notFound } from "next/navigation";
+import { useParams } from "next/navigation";
 import { usePersonasStore } from "@/lib/store/personas";
 import Image from "next/image";
 import { PersonaCardDropdown } from "../_components/persona-card-dropdown";
 import { EditPersonaModal } from "../_components/edit-persona-modal";
 import { DeletePersonaModal } from "../_components/delete-persona-modal";
+import { PersonaDetailsSkeleton } from "./_components/persona-details-skeleton";
+import PersonaNotFound from "./not-found";
 
 export default function PersonaPage() {
   const { personaId } = useParams();
   const personas = usePersonasStore((s) => s.personas);
+  const personasError = usePersonasStore((s) => s.personasError);
   const persona = personas?.find((p) => p._id === personaId) || null;
+
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading] = useState(false);
 
+  // Show skeleton while store is not yet populated
+  if (personas === null) {
+    return <PersonaDetailsSkeleton />;
+  }
+
+  // If there was an error loading personas, show a user-friendly error
+  if (personasError) {
+    return (
+      <div className="py-8 text-center text-destructive">
+        Failed to load personas. Please try again later.
+      </div>
+    );
+  }
+
+  // If store is loaded and persona is not found, show not-found page
   if (!persona) {
-    notFound();
-    return null;
+    return <PersonaNotFound />;
   }
 
   return (
