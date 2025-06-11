@@ -8,15 +8,24 @@ import {
 } from "@/components/ui/custom-dropdown-menu";
 import { EllipsisVerticalIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 interface PersonaCardDropdownProps {
   onOpen?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   showOpen?: boolean;
+  personaId?: string;
 }
 
-export function PersonaCardDropdown({ onOpen, onEdit, onDelete, showOpen = true }: PersonaCardDropdownProps) {
+export function PersonaCardDropdown({ onOpen, onEdit, onDelete, showOpen = true, personaId }: PersonaCardDropdownProps) {
+  const router = useRouter();
+  const handleOpen = () => {
+    if (onOpen) onOpen();
+    if (personaId) {
+      router.push(`/personas/${personaId}`);
+    }
+  };
   return (
     <CustomDropdownMenu>
       <CustomDropdownMenuTrigger asChild>
@@ -26,7 +35,7 @@ export function PersonaCardDropdown({ onOpen, onEdit, onDelete, showOpen = true 
       </CustomDropdownMenuTrigger>
       <CustomDropdownMenuContent align="end">
         {showOpen && (
-          <CustomDropdownMenuItem onSelect={onOpen}>Open</CustomDropdownMenuItem>
+          <CustomDropdownMenuItem onSelect={handleOpen}>Open</CustomDropdownMenuItem>
         )}
         <CustomDropdownMenuItem onSelect={onEdit}>Edit</CustomDropdownMenuItem>
         <CustomDropdownMenuItem onSelect={onDelete} variant="destructive">Delete</CustomDropdownMenuItem>

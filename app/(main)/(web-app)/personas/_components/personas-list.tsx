@@ -52,6 +52,7 @@ function PersonaCard({ persona, onEdit, onOpen, onDelete }: {
         onOpen={onOpen}
         onEdit={onEdit}
         onDelete={onDelete}
+        personaId={persona._id}
       />
     </section>
   );
