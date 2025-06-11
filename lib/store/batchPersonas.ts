@@ -9,6 +9,7 @@ interface BatchPersonasState {
   setBatchPersonasLoading: (loading: boolean) => void;
   setBatchPersonasError: (error: string | null) => void;
   reset: () => void;
+  updateBatchPersonaInList: (batch: BatchPersona) => void;
 }
 
 export const useBatchPersonasStore = create<BatchPersonasState>((set) => ({
@@ -18,6 +19,12 @@ export const useBatchPersonasStore = create<BatchPersonasState>((set) => ({
   setBatchPersonas: (batchPersonas) => set({ batchPersonas }),
   setBatchPersonasLoading: (batchPersonasLoading) => set({ batchPersonasLoading }),
   setBatchPersonasError: (batchPersonasError) => set({ batchPersonasError }),
+  updateBatchPersonaInList: (batch) =>
+    set((state) => ({
+      batchPersonas: state.batchPersonas
+        ? state.batchPersonas.map((b) => (b._id === batch._id ? batch : b))
+        : [batch],
+    })),
   reset: () => set({
     batchPersonas: null,
     batchPersonasLoading: true,

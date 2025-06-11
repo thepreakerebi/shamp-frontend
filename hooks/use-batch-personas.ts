@@ -97,9 +97,13 @@ export function useBatchPersonas(enabled: boolean = true) {
     };
     socket.on("batchPersona:created", handleUpdate);
     socket.on("batchPersona:deleted", handleUpdate);
+    socket.on("batchPersona:updated", (updated: BatchPersona) => {
+      store.updateBatchPersonaInList(updated);
+    });
     return () => {
       socket.off("batchPersona:created", handleUpdate);
       socket.off("batchPersona:deleted", handleUpdate);
+      socket.off("batchPersona:updated", () => {});
       socket.disconnect();
     };
   }, [token, enabled]);
@@ -140,6 +144,23 @@ export function useBatchPersonas(enabled: boolean = true) {
     return res.json();
   };
 
+  const updateBatchPersonaName = async (id: string, name: string): Promise<BatchPersona> => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/batchpersonas/${id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) throw new Error("Failed to update batch persona");
+    const updated = await res.json();
+    store.updateBatchPersonaInList(updated);
+    return updated;
+  };
+
   return {
     batchPersonas: store.batchPersonas,
     batchPersonasError: store.batchPersonasError,
@@ -147,5 +168,6 @@ export function useBatchPersonas(enabled: boolean = true) {
     getBatchPersonaById,
     createBatchPersona,
     deleteBatchPersona,
+    updateBatchPersonaName,
   };
 } 
