@@ -33,7 +33,7 @@ export function BatchPersonaCardDropdown({ onOpen, onDelete, batchPersonaId }: B
       </CustomDropdownMenuTrigger>
       <CustomDropdownMenuContent align="end">
         <CustomDropdownMenuItem onSelect={handleOpen}>Open</CustomDropdownMenuItem>
-        <CustomDropdownMenuItem onSelect={onDelete} variant="destructive">Delete</CustomDropdownMenuItem>
+        <CustomDropdownMenuItem onSelect={() => { if (onDelete) onDelete(); }} variant="destructive">Delete</CustomDropdownMenuItem>
       </CustomDropdownMenuContent>
     </CustomDropdownMenu>
   );
