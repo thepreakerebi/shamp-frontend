@@ -123,11 +123,11 @@ function ProjectsListInner() {
 
   return (
     <>
-      <section
+    <section
         className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-4 w-full"
-        aria-label="Projects list"
-      >
-        {projects.map((project: Project) => (
+      aria-label="Projects list"
+    >
+      {projects.map((project: Project) => (
           <ProjectCard
             key={project._id}
             project={project}
@@ -137,8 +137,8 @@ function ProjectsListInner() {
               setTrashModalOpen(true);
             }}
           />
-        ))}
-      </section>
+      ))}
+    </section>
       <MoveProjectToTrashModal
         open={trashModalOpen}
         setOpen={setTrashModalOpen}

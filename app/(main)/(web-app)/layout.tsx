@@ -12,18 +12,18 @@ export default function WebAppLayout({ children }: { children: React.ReactNode }
   return (
     <CreateProjectModalProvider>
       <CreatePersonaModalProvider>
-        <SidebarProvider>
-          <ProtectedRoute>
-            <Toaster position="top-center" />
-            <AppSidebar />
-            <main className="min-h-screen w-full">
+      <SidebarProvider>
+        <ProtectedRoute>
+          <Toaster position="top-center" />
+          <AppSidebar />
+          <main className="min-h-screen w-full">
               <Topbar />
               <section className="flex flex-col w-full h-full pt-16">
                 {children}
               </section>
-            </main>
-          </ProtectedRoute>
-        </SidebarProvider>
+          </main>
+        </ProtectedRoute>
+      </SidebarProvider>
       </CreatePersonaModalProvider>
     </CreateProjectModalProvider>
   );
