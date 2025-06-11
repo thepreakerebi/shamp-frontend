@@ -5,6 +5,7 @@ import { PersonasList } from "./_components/personas-list";
 import { usePersonas } from "@/hooks/use-personas";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { PersonaDetailsTab } from "./_components/persona-details-tab";
+import { BatchPersonasList } from "./_components/batch-personas-list";
 
 export default function PersonasPage() {
   // Ensure personas are fetched and store is hydrated
@@ -20,8 +21,7 @@ export default function PersonasPage() {
               <PersonasList />
             </TabsContent>
             <TabsContent value="groups">
-              {/* TODO: Add Groups list/component here */}
-              <div className="text-muted-foreground text-center py-8">Groups coming soon...</div>
+              <BatchPersonasList />
             </TabsContent>
           </section>
         </nav>
