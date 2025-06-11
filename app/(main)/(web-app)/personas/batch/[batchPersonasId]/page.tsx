@@ -4,6 +4,8 @@ import { useBatchPersonas, BatchPersona } from "@/hooks/use-batch-personas";
 import { useEffect, useState } from "react";
 import { Persona } from "@/hooks/use-personas";
 import { PersonaCard } from "../../_components/persona-card";
+import { PersonaListSkeleton } from "../../_components/persona-list-skeleton";
+import BatchPersonaNotFound from "./not-found";
 
 export default function BatchPersonaPage() {
   const { batchPersonasId } = useParams();
@@ -22,23 +24,29 @@ export default function BatchPersonaPage() {
         setLoading(false);
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : "Failed to fetch batch persona");
+        const msg = err instanceof Error ? err.message.toLowerCase() : "";
+        if (msg.includes("not found") || msg.includes("failed to fetch batch persona")) {
+          setBatchPersona(null);
+          setError(null);
+        } else {
+          setError(err instanceof Error ? err.message : "Failed to fetch batch persona");
+        }
         setLoading(false);
       });
   }, [batchPersonasId]);
 
   if (loading) {
-    return <div className="py-8 text-center text-muted-foreground">Loading batch personas...</div>;
+    return <PersonaListSkeleton count={4} />;
   }
   if (error) {
     return <div className="py-8 text-center text-destructive">{error}</div>;
   }
   if (!batchPersona) {
-    return <div className="py-8 text-center text-muted-foreground">Batch persona not found.</div>;
+    return <BatchPersonaNotFound />;
   }
 
   return (
-    <main className="p-4 w-full flex flex-col gap-6 w-full">
+    <main className="p-4 w-full flex flex-col gap-6">
       {/* Batch Persona Name */}
       <h1 className="text-xl font-medium text-foreground truncate" title={batchPersona.name}>{batchPersona.name}</h1>
 
