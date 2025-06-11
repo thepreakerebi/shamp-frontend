@@ -9,6 +9,8 @@ import type { Persona } from "@/hooks/use-personas";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { PersonaListSkeleton } from "./persona-list-skeleton";
+import { PersonaListEmpty } from "./persona-list-empty";
+import { useCreatePersonaModal } from "./create-persona-modal";
 
 function PersonaCard({ persona, onEdit, onOpen, onDelete }: {
   persona: Persona,
@@ -61,6 +63,7 @@ function PersonaCard({ persona, onEdit, onOpen, onDelete }: {
 
 function PersonasListInner() {
   const { personas, personasLoading, personasError, deletePersona } = usePersonas();
+  const { setOpen: setCreateOpen } = useCreatePersonaModal();
   const [editOpen, setEditOpen] = React.useState(false);
   const [editingPersona, setEditingPersona] = React.useState<Persona | null>(null);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
@@ -84,7 +87,7 @@ function PersonasListInner() {
 
   if (personasLoading && (!personas || personas.length === 0)) return <PersonaListSkeleton />;
   if (personasError) return <div className="py-8 text-center text-destructive">{personasError}</div>;
-  if (!personas || personas.length === 0) return <div className="py-8 text-center text-muted-foreground">No personas found.</div>;
+  if (!personas || personas.length === 0) return <PersonaListEmpty onCreate={() => setCreateOpen(true)} />;
 
   return (
     <>
