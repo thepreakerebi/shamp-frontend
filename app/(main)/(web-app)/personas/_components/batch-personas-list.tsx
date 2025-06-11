@@ -4,6 +4,7 @@ import { useBatchPersonas } from "@/hooks/use-batch-personas";
 import { BatchPersonasImage } from "./batch-personas-image";
 import { BatchPersonaCardDropdown } from "./batch-persona-card-dropdown";
 import { toast } from "sonner";
+import { BatchPersonasListSkeleton } from "./batch-personas-list-skeleton";
 
 // Optionally, you can create skeleton/empty components for batch personas as well
 
@@ -20,7 +21,7 @@ export function BatchPersonasList() {
   };
 
   if (batchPersonasLoading && (!batchPersonas || batchPersonas.length === 0)) {
-    return <div className="py-8 text-center text-muted-foreground">Loading batch personas...</div>;
+    return <BatchPersonasListSkeleton />;
   }
   if (batchPersonasError) {
     return <div className="py-8 text-center text-destructive">{batchPersonasError}</div>;
