@@ -7,7 +7,7 @@ import {
   CustomDropdownMenuItem,
 } from "@/components/ui/custom-dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, Upload, User } from "lucide-react";
+import { Plus, Users, Upload, User, ChevronDown } from "lucide-react";
 
 interface CreateDropdownButtonProps {
   onSinglePersona?: () => void;
@@ -20,7 +20,7 @@ export function CreateDropdownButton({ onSinglePersona, onBatchPersonas, onImpor
     <CustomDropdownMenu>
       <CustomDropdownMenuTrigger asChild>
         <Button variant="outline" className="gap-2">
-          <Plus className="size-4" /> Create
+          <Plus className="size-4" /> Create <ChevronDown className="size-4" />
         </Button>
       </CustomDropdownMenuTrigger>
       <CustomDropdownMenuContent align="end">

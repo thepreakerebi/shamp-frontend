@@ -6,7 +6,7 @@ import { CreateProjectButton } from './create-project-button';
 import { usePathname } from 'next/navigation';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useCreatePersonaModal } from '@/app/(main)/(web-app)/personas/_components/create-persona-modal';
-import { CreateDropdownButton } from './create-dropdown-button';
+import { CreateDropdownButton } from './create-persona-dropdown-button';
 import { useCreateBatchPersonasModal } from '@/app/(main)/(web-app)/personas/_components/create-batch-personas-modal';
 
 export function Topbar() {
