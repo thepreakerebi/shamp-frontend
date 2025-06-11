@@ -14,27 +14,45 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useBatchPersonas } from "@/hooks/use-batch-personas";
+import { useAuth } from "@/lib/auth";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Plus, Trash } from "lucide-react";
 
-interface CreateBatchPersonasModalProps {
+// Context for global modal control
+const CreateBatchPersonasModalContext = React.createContext<{
   open: boolean;
   setOpen: (open: boolean) => void;
-  onSuccess?: () => void;
+} | null>(null);
+
+export function useCreateBatchPersonasModal() {
+  const ctx = React.useContext(CreateBatchPersonasModalContext);
+  if (!ctx) throw new Error("useCreateBatchPersonasModal must be used within CreateBatchPersonasModalProvider");
+  return ctx;
 }
 
-export function CreateBatchPersonasModal({ open, setOpen, onSuccess }: CreateBatchPersonasModalProps) {
+export function CreateBatchPersonasModalProvider({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <CreateBatchPersonasModalContext.Provider value={{ open, setOpen }}>
+      {children}
+      <CreateBatchPersonasModal />
+    </CreateBatchPersonasModalContext.Provider>
+  );
+}
+
+function CreateBatchPersonasModal() {
+  const { open, setOpen } = useCreateBatchPersonasModal();
   const [form, setForm] = React.useState({
     count: 3,
     name: "",
     description: "",
     targetAudience: "",
-    diversity: "",
-    requiredFields: "name,description",
     additionalContext: "",
   });
+  const [diversity, setDiversity] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const { createBatchPersona } = useBatchPersonas();
+  const { token } = useAuth();
   const prevOpen = React.useRef(false);
 
   React.useEffect(() => {
@@ -44,10 +62,9 @@ export function CreateBatchPersonasModal({ open, setOpen, onSuccess }: CreateBat
         name: "",
         description: "",
         targetAudience: "",
-        diversity: "",
-        requiredFields: "name,description",
         additionalContext: "",
       });
+      setDiversity([]);
       setError(null);
     }
     prevOpen.current = open;
@@ -56,6 +73,13 @@ export function CreateBatchPersonasModal({ open, setOpen, onSuccess }: CreateBat
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
+  // Diversity dynamic list handlers
+  const handleDiversityChange = (idx: number, value: string) => {
+    setDiversity((prev) => prev.map((item, i) => (i === idx ? value : item)));
+  };
+  const addDiversityItem = () => setDiversity((prev) => [...prev, ""]);
+  const removeDiversityItem = (idx: number) => setDiversity((prev) => prev.filter((_, i) => i !== idx));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,20 +90,26 @@ export function CreateBatchPersonasModal({ open, setOpen, onSuccess }: CreateBat
     }
     setLoading(true);
     try {
-      await createBatchPersona({
-        count: Number(form.count),
-        name: form.name,
-        description: form.description,
-        targetAudience: form.targetAudience || undefined,
-        diversity: form.diversity || undefined,
-        requiredFields: form.requiredFields
-          ? form.requiredFields.split(",").map(f => f.trim())
-          : undefined,
-        additionalContext: form.additionalContext || undefined,
+      if (!token) throw new Error("Not authenticated");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/batchpersonas`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          count: Number(form.count),
+          name: form.name,
+          description: form.description,
+          targetAudience: form.targetAudience || undefined,
+          diversity: diversity.filter((d) => d.trim()).length ? diversity.filter((d) => d.trim()) : undefined,
+          additionalContext: form.additionalContext || undefined,
+        }),
       });
-      toast.success("Batch personas created!");
+      if (!res.ok) throw new Error("Failed to create batch persona");
+      toast.success("New batch personas created!");
       setOpen(false);
-      if (onSuccess) onSuccess();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to create batch personas");
     } finally {
@@ -95,36 +125,54 @@ export function CreateBatchPersonasModal({ open, setOpen, onSuccess }: CreateBat
           <DialogDescription>Generate multiple personas at once using AI.</DialogDescription>
         </DialogHeader>
         {error && <div className="text-destructive text-sm mb-2">{error}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4" id="create-batch-personas-form">
-          <section>
-            <label htmlFor="count" className="block text-sm font-medium mb-1">Count</label>
-            <Input id="count" name="count" type="number" min={1} max={10} value={form.count} onChange={handleChange} disabled={loading} required />
-          </section>
-          <section>
-            <label htmlFor="name" className="block text-sm font-medium mb-1">Batch Name</label>
-            <Input id="name" name="name" value={form.name} onChange={handleChange} disabled={loading} required />
-          </section>
-          <section>
-            <label htmlFor="description" className="block text-sm font-medium mb-1">Description</label>
-            <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} required />
-          </section>
-          <section>
-            <label htmlFor="targetAudience" className="block text-sm font-medium mb-1">Target Audience <span className="text-muted-foreground">(optional)</span></label>
-            <Input id="targetAudience" name="targetAudience" value={form.targetAudience} onChange={handleChange} disabled={loading} />
-          </section>
-          <section>
-            <label htmlFor="diversity" className="block text-sm font-medium mb-1">Diversity <span className="text-muted-foreground">(optional, e.g. gender, age)</span></label>
-            <Input id="diversity" name="diversity" value={form.diversity} onChange={handleChange} disabled={loading} />
-          </section>
-          <section>
-            <label htmlFor="requiredFields" className="block text-sm font-medium mb-1">Required Fields <span className="text-muted-foreground">(comma separated)</span></label>
-            <Input id="requiredFields" name="requiredFields" value={form.requiredFields} onChange={handleChange} disabled={loading} />
-          </section>
-          <section>
-            <label htmlFor="additionalContext" className="block text-sm font-medium mb-1">Additional Context <span className="text-muted-foreground">(optional)</span></label>
-            <Textarea id="additionalContext" name="additionalContext" value={form.additionalContext} onChange={handleChange} disabled={loading} />
-          </section>
-        </form>
+        <ScrollArea className="max-h-[60vh] pr-2">
+          <form onSubmit={handleSubmit} className="space-y-4" id="create-batch-personas-form">
+            <section>
+              <label htmlFor="count" className="block text-sm font-medium mb-1">Count</label>
+              <Input id="count" name="count" type="number" min={1} max={10} value={form.count} onChange={handleChange} disabled={loading} required />
+            </section>
+            <section>
+              <label htmlFor="name" className="block text-sm font-medium mb-1">Batch Name</label>
+              <Input id="name" name="name" value={form.name} onChange={handleChange} disabled={loading} required />
+            </section>
+            <section>
+              <label htmlFor="description" className="block text-sm font-medium mb-1">Description</label>
+              <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} required />
+            </section>
+            <section>
+              <label htmlFor="targetAudience" className="block text-sm font-medium mb-1">Target Audience <span className="text-muted-foreground">(optional)</span></label>
+              <Input id="targetAudience" name="targetAudience" value={form.targetAudience} onChange={handleChange} disabled={loading} />
+            </section>
+            <fieldset className="border rounded-md p-3">
+              <legend className="text-sm font-medium px-1">Diversity <span className="text-muted-foreground">(optional)</span></legend>
+              <div className="flex items-center justify-between mb-1 mt-2">
+                <span className="block text-xs text-muted-foreground">Add diversity requirements for this batch (e.g. gender, age, background).</span>
+                <Button type="button" size="icon" variant="ghost" onClick={addDiversityItem} disabled={loading}>
+                  <Plus className="size-4" />
+                  <span className="sr-only">Add Diversity</span>
+                </Button>
+              </div>
+              {diversity.map((item, idx) => (
+                <section key={idx} className="flex gap-2 mb-2">
+                  <Input
+                    placeholder="Diversity requirement"
+                    value={item}
+                    onChange={e => handleDiversityChange(idx, e.target.value)}
+                    disabled={loading}
+                  />
+                  <Button type="button" size="icon" variant="ghost" onClick={() => removeDiversityItem(idx)} disabled={loading}>
+                    <span className="sr-only">Remove</span>
+                    <Trash className="size-4" />
+                  </Button>
+                </section>
+              ))}
+            </fieldset>
+            <section>
+              <label htmlFor="additionalContext" className="block text-sm font-medium mb-1">Additional Context <span className="text-muted-foreground">(optional)</span></label>
+              <Textarea id="additionalContext" name="additionalContext" value={form.additionalContext} onChange={handleChange} disabled={loading} />
+            </section>
+          </form>
+        </ScrollArea>
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={loading}>Cancel</Button>

@@ -45,11 +45,12 @@ const fetcher = (url: string, token: string) =>
     return res.json();
   });
 
-export function useBatchPersonas() {
+export function useBatchPersonas(enabled: boolean = true) {
   const { token } = useAuth();
   const store = useBatchPersonasStore();
 
   const fetchBatchPersonas = useCallback(async () => {
+    if (!enabled) return;
     if (!token) {
       store.setBatchPersonasLoading(false);
       store.setBatchPersonas([]);
@@ -69,14 +70,16 @@ export function useBatchPersonas() {
     } finally {
       store.setBatchPersonasLoading(false);
     }
-  }, [token, store]);
+  }, [token, store, enabled]);
 
   useEffect(() => {
+    if (!enabled) return;
     if (!token) return;
     fetchBatchPersonas();
-  }, [token, fetchBatchPersonas]);
+  }, [token, fetchBatchPersonas, enabled]);
 
   useEffect(() => {
+    if (!enabled) return;
     if (!token) return;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
@@ -92,7 +95,7 @@ export function useBatchPersonas() {
       socket.off("batchPersona:deleted", handleUpdate);
       socket.disconnect();
     };
-  }, [fetchBatchPersonas, token]);
+  }, [fetchBatchPersonas, token, enabled]);
 
   const getBatchPersonaById = async (id: string): Promise<BatchPersona> => {
     if (!token) throw new Error("Not authenticated");
