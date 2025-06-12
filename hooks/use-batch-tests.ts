@@ -8,12 +8,14 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000"
 
 export interface BatchTest {
   _id: string;
-  project: string;
-  batchPersona: string;
-  test: string;
+  project: string | { _id: string; name?: string };
+  batchPersona: string | { _id: string; name?: string };
+  test: string | { _id: string; name?: string };
   testRuns?: string[];
   createdBy?: string;
   trashed?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
   // Add other fields as needed
 }
 
@@ -151,8 +153,36 @@ export function useBatchTests() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to move batch test to trash");
+    const data = await res.json();
+    const batch = data.batchTest ?? data;
+    updateBatchTestInList(batch);
+    return batch;
+  };
+
+  const restoreBatchTestFromTrash = async (id: string) => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/batchtests/${id}/restore`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to restore batch test from trash");
+    const data = await res.json();
+    const batch = data.batchTest ?? data;
+    updateBatchTestInList(batch);
+    return batch;
+  };
+
+  const duplicateBatchTest = async (id: string) => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/batchtests/${id}/duplicate`, {
+      method: "POST",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to duplicate batch test");
     const batch = await res.json();
-    removeBatchTestFromList(batch._id);
+    addBatchTestToList(batch);
     return batch;
   };
 
@@ -198,6 +228,8 @@ export function useBatchTests() {
     createBatchTest,
     updateBatchTest,
     moveBatchTestToTrash,
+    restoreBatchTestFromTrash,
+    duplicateBatchTest,
     deleteBatchTest,
     analyzeBatchTestOutputs,
     getBatchTestAnalysisHistory,
