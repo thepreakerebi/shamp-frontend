@@ -68,7 +68,13 @@ export function useTests() {
     setTestsError(null);
     try {
       const data = await fetcher("/tests", token);
-      setTests(Array.isArray(data) ? data : []);
+      if (Array.isArray(data)) {
+        setTests(data);
+      } else if (data && Array.isArray(data.data)) {
+        setTests(data.data);
+      } else {
+        setTests([]);
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setTestsError(err.message);
