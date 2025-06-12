@@ -1,6 +1,7 @@
 import { useAuth } from "@/lib/auth";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import io from "socket.io-client";
+import { useTestsStore } from "@/lib/store/tests";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
@@ -42,48 +43,51 @@ const fetcher = (url: string, token: string) =>
 
 export function useTests() {
   const { token } = useAuth();
-  const [tests, setTests] = useState<Test[] | null>(null);
-  const [testsLoading, setTestsLoading] = useState(true);
-  const [testsError, setTestsError] = useState<string | null>(null);
-  const [count, setCount] = useState(0);
-  const [countLoading, setCountLoading] = useState(true);
-  const [countError, setCountError] = useState<string | null>(null);
+  const store = useTestsStore();
 
   const fetchTests = useCallback(async () => {
-    if (!token) return;
-    setTestsLoading(true);
-    setTestsError(null);
+    if (!token) {
+      store.setTestsLoading(false);
+      store.setTests([]);
+      return;
+    }
+    store.setTestsLoading(true);
+    store.setTestsError(null);
     try {
       const data = await fetcher("/tests", token);
-      setTests(data);
+      store.setTests(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setTestsError(err.message);
+        store.setTestsError(err.message);
       } else {
-        setTestsError("Failed to fetch tests");
+        store.setTestsError("Failed to fetch tests");
       }
     } finally {
-      setTestsLoading(false);
+      store.setTestsLoading(false);
     }
-  }, [token]);
+  }, [token, store]);
 
   const fetchCount = useCallback(async () => {
-    if (!token) return;
-    setCountLoading(true);
-    setCountError(null);
+    if (!token) {
+      store.setCountLoading(false);
+      store.setCount(0);
+      return;
+    }
+    store.setCountLoading(true);
+    store.setCountError(null);
     try {
       const data = await fetcher("/tests/count", token);
-      setCount(data.count ?? 0);
+      store.setCount(data.count ?? 0);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setCountError(err.message);
+        store.setCountError(err.message);
       } else {
-        setCountError("Failed to fetch test count");
+        store.setCountError("Failed to fetch test count");
       }
     } finally {
-      setCountLoading(false);
+      store.setCountLoading(false);
     }
-  }, [token]);
+  }, [token, store]);
 
   // Refetch both tests and count
   const refetch = useCallback(() => {
@@ -143,7 +147,9 @@ export function useTests() {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to create test");
-    return res.json();
+    const test = await res.json();
+    store.addTestToList(test);
+    return test;
   };
 
   // Update a test
@@ -159,7 +165,9 @@ export function useTests() {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to update test");
-    return res.json();
+    const test = await res.json();
+    store.updateTestInList(test);
+    return test;
   };
 
   // Delete a test
@@ -172,6 +180,7 @@ export function useTests() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to delete test");
+    store.removeTestFromList(id);
     return res.json();
   };
 
@@ -198,12 +207,12 @@ export function useTests() {
   };
 
   return {
-    tests,
-    testsError,
-    testsLoading,
-    count,
-    countError,
-    countLoading,
+    tests: store.tests,
+    testsError: store.testsError,
+    testsLoading: store.testsLoading,
+    count: store.count,
+    countError: store.countError,
+    countLoading: store.countLoading,
     createTest,
     updateTest,
     deleteTest,
