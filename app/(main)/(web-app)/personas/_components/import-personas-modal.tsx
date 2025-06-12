@@ -48,7 +48,7 @@ export function ImportPersonasModalProvider({ children }: { children: React.Reac
   return (
     <ImportPersonasModalContext.Provider value={{ open, setOpen }}>
       {children}
-      <ImportPersonasModal />
+      {open && <ImportPersonasModal />}
     </ImportPersonasModalContext.Provider>
   );
 }

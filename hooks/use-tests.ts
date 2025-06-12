@@ -43,51 +43,64 @@ const fetcher = (url: string, token: string) =>
 
 export function useTests() {
   const { token } = useAuth();
-  const store = useTestsStore();
+  const {
+    tests,
+    testsError,
+    testsLoading,
+    count,
+    countError,
+    countLoading,
+    setTests,
+    setTestsLoading,
+    setTestsError,
+    setCount,
+    setCountLoading,
+    setCountError,
+  } = useTestsStore();
 
   const fetchTests = useCallback(async () => {
     if (!token) {
-      store.setTestsLoading(false);
-      store.setTests([]);
+      setTestsLoading(false);
+      setTests([]);
       return;
     }
-    store.setTestsLoading(true);
-    store.setTestsError(null);
+    setTestsLoading(true);
+    setTestsError(null);
     try {
       const data = await fetcher("/tests", token);
-      store.setTests(Array.isArray(data) ? data : []);
+      setTests(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        store.setTestsError(err.message);
+        setTestsError(err.message);
       } else {
-        store.setTestsError("Failed to fetch tests");
+        setTestsError("Failed to fetch tests");
       }
     } finally {
-      store.setTestsLoading(false);
+      setTestsLoading(false);
     }
-  }, [token, store]);
+  }, [token, setTests, setTestsLoading, setTestsError]);
 
   const fetchCount = useCallback(async () => {
     if (!token) {
-      store.setCountLoading(false);
-      store.setCount(0);
+      setCountLoading(false);
+      setCount(0);
       return;
     }
-    store.setCountLoading(true);
-    store.setCountError(null);
+    setCountLoading(true);
+    setCountError(null);
     try {
       const data = await fetcher("/tests/count", token);
-      store.setCount(data.count ?? 0);
+      setCount(data.count ?? 0);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        store.setCountError(err.message);
+        setCountError(err.message);
       } else {
-        store.setCountError("Failed to fetch test count");
+        setCountError("Failed to fetch test count");
       }
     } finally {
-      store.setCountLoading(false);
+      setCountLoading(false);
     }
-  }, [token, store]);
+  }, [token, setCount, setCountLoading, setCountError]);
 
   // Refetch both tests and count
   const refetch = useCallback(() => {
@@ -148,7 +161,7 @@ export function useTests() {
     });
     if (!res.ok) throw new Error("Failed to create test");
     const test = await res.json();
-    store.addTestToList(test);
+    useTestsStore.getState().addTestToList(test);
     return test;
   };
 
@@ -166,7 +179,7 @@ export function useTests() {
     });
     if (!res.ok) throw new Error("Failed to update test");
     const test = await res.json();
-    store.updateTestInList(test);
+    useTestsStore.getState().updateTestInList(test);
     return test;
   };
 
@@ -180,7 +193,7 @@ export function useTests() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to delete test");
-    store.removeTestFromList(id);
+    useTestsStore.getState().removeTestFromList(id);
     return res.json();
   };
 
@@ -207,12 +220,12 @@ export function useTests() {
   };
 
   return {
-    tests: store.tests,
-    testsError: store.testsError,
-    testsLoading: store.testsLoading,
-    count: store.count,
-    countError: store.countError,
-    countLoading: store.countLoading,
+    tests,
+    testsError,
+    testsLoading,
+    count,
+    countError,
+    countLoading,
     createTest,
     updateTest,
     deleteTest,
