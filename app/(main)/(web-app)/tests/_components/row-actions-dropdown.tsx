@@ -41,6 +41,10 @@ function RowActionsDropdownComponent({ testId, onOpen, actions }: RowActionsDrop
     router.push(`/tests/${testId}`);
   };
 
+  const handleEdit = () => {
+    router.push(`/tests/${testId}?edit=1`);
+  };
+
   const handleDuplicate = async () => {
     await duplicateTest(testId);
   };
@@ -81,6 +85,7 @@ function RowActionsDropdownComponent({ testId, onOpen, actions }: RowActionsDrop
         <CustomDropdownMenuContent align="end">
           <CustomDropdownMenuItem onSelect={handleRun}>Run</CustomDropdownMenuItem>
           <CustomDropdownMenuItem onSelect={handleOpen}>Open</CustomDropdownMenuItem>
+          <CustomDropdownMenuItem onSelect={handleEdit}>Edit</CustomDropdownMenuItem>
           <CustomDropdownMenuItem onSelect={handleDuplicate}>Duplicate</CustomDropdownMenuItem>
           <CustomDropdownMenuItem onSelect={handleTrash}>Move to trash</CustomDropdownMenuItem>
           <CustomDropdownMenuItem variant="destructive" onSelect={handleDelete}>

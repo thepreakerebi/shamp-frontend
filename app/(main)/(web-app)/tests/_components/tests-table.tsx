@@ -8,16 +8,19 @@ import {
   getSortedRowModel,
   SortingState,
   useReactTable,
+  getFilteredRowModel,
 } from "@tanstack/react-table";
 import { ProjectBadge } from "@/components/ui/project-badge";
 import { PersonaBadge } from "@/components/ui/persona-badge";
 import { RowActionsDropdown } from "./row-actions-dropdown";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import type { Column } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
+import { TestsTableToolbar } from "./tests-table-toolbar";
+import { useAuth } from "@/lib/auth";
 
 interface TableTest {
   _id: string;
@@ -27,13 +30,14 @@ interface TableTest {
   persona?: { _id: string; name: string } | null;
   successfulRuns?: number;
   failedRuns?: number;
-  createdBy?: { name: string; role: string } | null;
+  createdBy?: { _id?: string; name: string; role: string } | null;
   updatedAt?: string;
 }
 
 export function TestsTable() {
   const testsHook = useTests();
   const { tests, testsLoading, moveTestToTrash, deleteTest, duplicateTest } = testsHook;
+  const { user } = useAuth();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [page, setPage] = useState(1);
   const limit = 25;
@@ -42,7 +46,9 @@ export function TestsTable() {
     () => [
       {
         accessorKey: "name",
-        header: () => "Name",
+        header: ({ column }) => (
+          <SortableHeader column={column} title="Name" />
+        ),
         cell: ({ row }) => {
           const t = row.original;
           return (
@@ -52,7 +58,8 @@ export function TestsTable() {
       },
       {
         id: "project",
-        header: () => "Project",
+        accessorFn: (row: TableTest) => row.project?.name ?? "",
+        header: ({ column }) => <SortableHeader column={column} title="Project" />,
         cell: ({ row }) => {
           const proj = row.original.project;
           return proj ? <ProjectBadge name={proj.name} /> : "-";
@@ -60,7 +67,8 @@ export function TestsTable() {
       },
       {
         id: "persona",
-        header: () => "Persona",
+        accessorFn: (row: TableTest) => row.persona?.name ?? "",
+        header: ({ column }) => <SortableHeader column={column} title="Persona" />,
         cell: ({ row }) => {
           const p = row.original.persona;
           return p ? <PersonaBadge name={p.name} /> : "-";
@@ -68,7 +76,8 @@ export function TestsTable() {
       },
       {
         id: "runs",
-        header: () => "Runs",
+        accessorFn: (row: TableTest) => (row.successfulRuns ?? 0) + (row.failedRuns ?? 0),
+        header: ({ column }) => <SortableHeader column={column} title="Runs" />,
         cell: ({ row }) => {
           const { successfulRuns = 0, failedRuns = 0 } = row.original;
           return (
@@ -85,19 +94,15 @@ export function TestsTable() {
       },
       {
         id: "createdBy",
-        header: () => "Created By",
+        accessorFn: (row: TableTest) => row.createdBy?.name ?? "",
+        header: ({ column }) => <SortableHeader column={column} title="Created By" />,
         cell: ({ row }) => {
           const c = row.original.createdBy;
           if (!c) return "-";
-          const initials = c.name.split(" ").map(n => n[0]).join("").slice(0,2).toUpperCase();
+          const isMe = user && (c._id ? c._id === user._id : c.name === `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim());
+          const displayName = isMe ? "You" : c.name;
           return (
-            <span className="flex items-center gap-2">
-              <Avatar className="h-6 w-6">
-                <AvatarImage src="" alt={c.name} />
-                <AvatarFallback>{initials}</AvatarFallback>
-              </Avatar>
-              <span className="truncate max-w-[120px]" title={c.name}>{c.name}</span>
-            </span>
+            <span className="truncate max-w-[150px]" title={displayName}>{displayName}</span>
           );
         },
       },
@@ -125,6 +130,7 @@ export function TestsTable() {
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
   });
 
   const router = useRouter();
@@ -136,13 +142,15 @@ export function TestsTable() {
 
   return (
     <section className="w-full overflow-x-auto">
+      <TestsTableToolbar table={table} />
+
       {/* Table */}
       <table className="w-full text-sm">
         <thead className="bg-muted/50">
           {table.getHeaderGroups().map(hg => (
             <tr key={hg.id}>
               {hg.headers.map(h => (
-                <th key={h.id} className="text-left px-3 py-2 font-semibold">
+                <th key={h.id} className="text-left px-3 py-2 font-semibold select-none">
                   {flexRender(h.column.columnDef.header, h.getContext())}
                 </th>
               ))}
@@ -187,5 +195,28 @@ export function TestsTable() {
         </div>
       )}
     </section>
+  );
+}
+
+// Reusable sortable header component
+function SortableHeader({ column, title }: { column: Column<TableTest, unknown>; title: string }) {
+  const isSorted = column.getIsSorted() as false | 'asc' | 'desc';
+  return (
+    <button
+      type="button"
+      className="flex items-center gap-1"
+      onClick={() => column.toggleSorting()}
+    >
+      {title}
+      {isSorted ? (
+        isSorted === 'asc' ? (
+          <ChevronUp className="w-3 h-3" />
+        ) : (
+          <ChevronDown className="w-3 h-3" />
+        )
+      ) : (
+        <ChevronsUpDown className="w-3 h-3 text-muted-foreground" />
+      )}
+    </button>
   );
 } 
