@@ -8,12 +8,14 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { useCreatePersonaModal } from '@/app/(main)/(web-app)/personas/_components/create-persona-modal';
 import { CreateDropdownButton } from './create-persona-dropdown-button';
 import { useCreateBatchPersonasModal } from '@/app/(main)/(web-app)/personas/_components/create-batch-personas-modal';
+import { useImportPersonasModal } from '@/app/(main)/(web-app)/personas/_components/import-personas-modal';
 
 export function Topbar() {
   const pathname = usePathname();
   const { state, isMobile } = useSidebar();
   const { setOpen: setCreatePersonaOpen } = useCreatePersonaModal();
   const { setOpen: setBatchModalOpen } = useCreateBatchPersonasModal();
+  const { setOpen: setImportModalOpen } = useImportPersonasModal();
 
   // Only shift when expanded on desktop
   const isExpandedDesktop = !isMobile && state === 'expanded';
@@ -38,7 +40,7 @@ export function Topbar() {
           <CreateDropdownButton
             onSinglePersona={() => setCreatePersonaOpen(true)}
             onBatchPersonas={() => setBatchModalOpen(true)}
-            onImportFile={() => { /* TODO: open import modal */ }}
+            onImportFile={() => setImportModalOpen(true)}
           />
         )}
         {/* Add more buttons for other pages here as needed */}
