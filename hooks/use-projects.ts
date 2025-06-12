@@ -215,6 +215,21 @@ export function useProjects() {
     return project;
   };
 
+  // Restore a project from trash
+  const restoreProjectFromTrash = async (id: string) => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/projects/${id}/restore`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to restore project from trash");
+    const project = await res.json();
+    store.updateProjectInList(project);
+    refetch();
+    return project;
+  };
+
   // Get all tests for a project
   const getProjectTests = async (projectId: string) => {
     if (!token) throw new Error("Not authenticated");
@@ -254,6 +269,7 @@ export function useProjects() {
     trashedProjectsError: store.trashedProjectsError,
     refetchTrashed,
     moveProjectToTrash,
+    restoreProjectFromTrash,
     getProjectTests,
     getProjectTestruns,
   };
