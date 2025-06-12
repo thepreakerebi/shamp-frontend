@@ -185,6 +185,39 @@ export function usePersonas() {
     return res.json();
   };
 
+  // Upload a document (PDF, DOCX, CSV) to extract personas in bulk
+  const uploadPersonaDocument = async (file: File) => {
+    if (!token) throw new Error("Not authenticated");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch(`${API_BASE}/personas/upload-doc`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // NOTE: Do NOT set Content-Type when sending FormData, the browser will set the correct boundary
+      } as Record<string, string>,
+      body: formData,
+    });
+
+    if (!res.ok) {
+      // Surface server error text if available
+      const errorText = await res.text();
+      throw new Error(errorText || "Failed to upload document");
+    }
+
+    const data: { created: Persona[]; errors: unknown[] } = await res.json();
+
+    if (Array.isArray(data.created) && data.created.length > 0) {
+      // Optimistically add the newly created personas to the store
+      store.addPersonasToList(data.created);
+    }
+
+    return data;
+  };
+
   return {
     personas: store.personas,
     personasError: store.personasError,
@@ -197,5 +230,6 @@ export function usePersonas() {
     deletePersona,
     getPersonaById,
     refetch,
+    uploadPersonaDocument,
   };
 } 

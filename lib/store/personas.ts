@@ -17,6 +17,7 @@ interface PersonasState {
   updatePersonaInList: (persona: Persona) => void;
   removePersonaFromList: (id: string) => void;
   addPersonaToList: (persona: Persona) => void;
+  addPersonasToList: (personas: Persona[]) => void;
   reset: () => void;
 }
 
@@ -46,6 +47,10 @@ export const usePersonasStore = create<PersonasState>((set) => ({
   addPersonaToList: (persona) =>
     set((state) => ({
       personas: state.personas ? [persona, ...state.personas] : [persona],
+    })),
+  addPersonasToList: (personas) =>
+    set((state) => ({
+      personas: state.personas ? [...personas, ...state.personas] : personas,
     })),
   reset: () =>
     set({
