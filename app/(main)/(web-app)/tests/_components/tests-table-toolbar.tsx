@@ -67,7 +67,7 @@ export function TestsTableToolbar<T>({ table, onFilter }: ToolbarProps<T>) {
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="gap-1"><Filter className="w-4 h-4"/> Filters</Button>
           </PopoverTrigger>
-          <PopoverContent className="w-96" align="end">
+          <PopoverContent align="end">
             <div className="space-y-4">
               {projects && projects.length > 0 && (
                 <div>
