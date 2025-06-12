@@ -219,6 +219,52 @@ export function useTests() {
     return res.json();
   };
 
+  // Move a test to trash
+  const moveTestToTrash = async (id: string) => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/tests/${id}/trash`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to move test to trash");
+    const data = await res.json();
+    const updated = data.test ?? data;
+    useTestsStore.getState().updateTestInList(updated);
+    refetch();
+    return updated;
+  };
+
+  // Restore a test from trash
+  const restoreTestFromTrash = async (id: string) => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/tests/${id}/restore`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to restore test from trash");
+    const data = await res.json();
+    const restored = data.test ?? data;
+    useTestsStore.getState().updateTestInList(restored);
+    refetch();
+    return restored;
+  };
+
+  // Duplicate a test
+  const duplicateTest = async (id: string) => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/tests/${id}/duplicate`, {
+      method: "POST",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to duplicate test");
+    const test = await res.json();
+    useTestsStore.getState().addTestToList(test);
+    return test;
+  };
+
   return {
     tests,
     testsError,
@@ -229,6 +275,9 @@ export function useTests() {
     createTest,
     updateTest,
     deleteTest,
+    moveTestToTrash,
+    restoreTestFromTrash,
+    duplicateTest,
     getTestById,
     refetch,
     analyzeTestOutputs,
