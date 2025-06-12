@@ -9,6 +9,8 @@ import { usePersonas } from "@/hooks/use-personas";
 import { usePersonasStore } from "@/lib/store/personas";
 import { useBatchPersonas } from "@/hooks/use-batch-personas";
 import { useBatchPersonasStore } from "@/lib/store/batchPersonas";
+import { useTests } from "@/hooks/use-tests";
+import { useTestsStore } from "@/lib/store/tests";
 
 export function Breadcrumbs() {
   const pathname = usePathname();
@@ -20,14 +22,19 @@ export function Breadcrumbs() {
   const homeIdx = segments.indexOf("home");
   const projectId = homeIdx !== -1 && segments.length > homeIdx + 1 ? segments[homeIdx + 1] : undefined;
   const personasIdx = segments.indexOf("personas");
+  const testsIdx = segments.indexOf("tests");
   let personaId: string | undefined = undefined;
   let batchPersonasId: string | undefined = undefined;
+  let testId: string | undefined = undefined;
   if (personasIdx !== -1 && segments.length > personasIdx + 1) {
     if (segments[personasIdx + 1] === "batch" && segments.length > personasIdx + 2) {
       batchPersonasId = segments[personasIdx + 2];
     } else if (segments[personasIdx + 1] !== "batch") {
       personaId = segments[personasIdx + 1];
     }
+  }
+  if (testsIdx !== -1 && segments.length > testsIdx + 1 && segments[testsIdx + 1] !== "batch") {
+    testId = segments[testsIdx + 1];
   }
   const { getProjectById } = useProjects();
   const projects = useProjectsStore((s) => s.projects);
@@ -39,6 +46,11 @@ export function Breadcrumbs() {
   const [batchPersonaName, setBatchPersonaName] = useState<string | null>(null);
   const batchPersonas = useBatchPersonasStore((s) => s.batchPersonas);
   const [batchQueryName, setBatchQueryName] = useState<string | null>(null);
+
+  // Tests related hooks/state
+  const { getTestById } = useTests();
+  const tests = useTestsStore((s) => s.tests);
+  const [testName, setTestName] = useState<string | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -112,6 +124,27 @@ export function Breadcrumbs() {
     getBatchPersonaById(batchQueryId).then(b=>setBatchQueryName(b?.name||null)).catch(()=>setBatchQueryName(null));
   }, [batchQueryId, batchPersonas, getBatchPersonaById]);
 
+  useEffect(() => {
+    let ignore = false;
+    if (testId) {
+      const testFromStore = tests?.find((t) => t._id === testId);
+      if (testFromStore) {
+        setTestName(testFromStore.name);
+      } else {
+        getTestById(testId)
+          .then((test) => {
+            if (!ignore) setTestName(test?.name || null);
+          })
+          .catch(() => {
+            if (!ignore) setTestName(null);
+          });
+      }
+    } else {
+      setTestName(null);
+    }
+    return () => { ignore = true; };
+  }, [testId, getTestById, tests]);
+
   return (
     <Breadcrumb>
       <BreadcrumbList>
@@ -133,13 +166,19 @@ export function Breadcrumbs() {
           if (segment === batchPersonasId && batchPersonaName) {
             display = batchPersonaName;
           }
+          if (segment === "tests") {
+            display = "Tests";
+          }
+          if (segment === testId && testName) {
+            display = testName;
+          }
           if (segment === "personas" && batchQueryName) {
             return (
-              <React.Fragment key={segment+"batch"}>
+              <React.Fragment key={segment + "batch"}>
                 {idx > 0 && <BreadcrumbSeparator />}
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
-                    <Link href={path}>{display}</Link>
+                    <Link href="/personas?tab=groups">Personas</Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
