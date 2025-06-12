@@ -148,7 +148,7 @@ export function TestsTable() {
 
   return (
     <section className="w-full overflow-x-auto">
-      <TestsTableToolbar table={table} onFilter={p => { const merged={...params,...p}; setParams(merged); searchTests({...merged, page:'1', limit:25}); }} />
+      <TestsTableToolbar table={table} onFilter={p => { setParams(p); searchTests({ ...p, page: '1', limit: 25 }); }} />
 
       {/* Table */}
       <table className="w-full text-sm">

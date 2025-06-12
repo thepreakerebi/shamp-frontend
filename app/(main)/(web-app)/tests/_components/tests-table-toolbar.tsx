@@ -10,9 +10,6 @@ import { Filter } from "lucide-react";
 import { useProjects, type Project } from "@/hooks/use-projects";
 import { usePersonas, type Persona as PersonaType } from "@/hooks/use-personas";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover as DatePopover, PopoverTrigger as DatePopoverTrigger, PopoverContent as DatePopoverContent } from "@/components/ui/popover";
-import { format } from "date-fns";
 
 interface ToolbarProps<T> {
   table: Table<T>;
@@ -31,8 +28,6 @@ export function TestsTableToolbar<T>({ table, onFilter }: ToolbarProps<T>) {
   const [persSel, setPersSel] = useState<string[]>([]);
   const [runStatus, setRunStatus] = useState<string>("any");
   const [role, setRole] = useState<string>("any");
-  const [fromDate, setFromDate] = useState<string>("");
-  const [toDate, setToDate] = useState<string>("");
 
   const toggleId = (arr: string[], id: string, setter: (v: string[]) => void) => {
     if (arr.includes(id)) {
@@ -49,8 +44,6 @@ export function TestsTableToolbar<T>({ table, onFilter }: ToolbarProps<T>) {
     if (persSel.length > 0) params.persona = persSel.join(",");
     if (runStatus && runStatus !== "any") params.runStatus = runStatus;
     if (role && role !== "any") params.role = role;
-    if (fromDate) params.createdFrom = fromDate;
-    if (toDate) params.createdTo = toDate;
     onFilter(params);
   };
 
@@ -124,44 +117,14 @@ export function TestsTableToolbar<T>({ table, onFilter }: ToolbarProps<T>) {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <p className="text-sm font-medium mb-1">Created between</p>
-                <div className="flex items-center gap-2">
-                  <DatePopover>
-                    <DatePopoverTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex-1 justify-start">
-                        {fromDate ? format(new Date(fromDate), "yyyy-MM-dd") : "From"}
-                      </Button>
-                    </DatePopoverTrigger>
-                    <DatePopoverContent className="p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={fromDate ? new Date(fromDate) : undefined}
-                        onSelect={(d)=> setFromDate(d ? d.toISOString().split('T')[0] : "")}
-                        initialFocus
-                      />
-                    </DatePopoverContent>
-                  </DatePopover>
-                  <span>–</span>
-                  <DatePopover>
-                    <DatePopoverTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex-1 justify-start">
-                        {toDate ? format(new Date(toDate), "yyyy-MM-dd") : "To"}
-                      </Button>
-                    </DatePopoverTrigger>
-                    <DatePopoverContent className="p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={toDate ? new Date(toDate) : undefined}
-                        onSelect={(d)=> setToDate(d ? d.toISOString().split('T')[0] : "")}
-                        initialFocus
-                      />
-                    </DatePopoverContent>
-                  </DatePopover>
-                </div>
-              </div>
               <div className="flex justify-end gap-2">
-                <Button size="sm" variant="ghost" onClick={()=> {setProjSel([]);setPersSel([]);setRunStatus("any");setRole("any");setFromDate("");setToDate(""); applyFilters();}}>Reset</Button>
+                <Button size="sm" variant="ghost" onClick={()=> {
+                  setProjSel([]);
+                  setPersSel([]);
+                  setRunStatus("any");
+                  setRole("any");
+                  onFilter({});
+                }}>Reset</Button>
                 <Button size="sm" onClick={applyFilters}>Apply</Button>
               </div>
             </div>
