@@ -67,7 +67,7 @@ export function useTests() {
     setTestsLoading(true);
     setTestsError(null);
     try {
-      const data = await fetcher("/tests", token);
+      const data = await fetcher(`/tests?page=1&limit=250`, token);
       if (Array.isArray(data)) {
         setTests(data);
       } else if (data && Array.isArray(data.data)) {
