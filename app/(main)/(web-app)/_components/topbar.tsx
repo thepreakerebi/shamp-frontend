@@ -9,6 +9,7 @@ import { useCreatePersonaModal } from '@/app/(main)/(web-app)/personas/_componen
 import { CreateDropdownButton } from './create-persona-dropdown-button';
 import { useCreateBatchPersonasModal } from '@/app/(main)/(web-app)/personas/_components/create-batch-personas-modal';
 import { useImportPersonasModal } from '@/app/(main)/(web-app)/personas/_components/import-personas-modal';
+import { CreateTestDropdownButton } from '@/app/(main)/(web-app)/tests/_components/create-test-dropdown-button';
 
 export function Topbar() {
   const pathname = usePathname();
@@ -21,6 +22,10 @@ export function Topbar() {
   const isExpandedDesktop = !isMobile && state === 'expanded';
   const left = isExpandedDesktop ? '16rem' : '0';
   const width = isExpandedDesktop ? 'calc(100% - 16rem)' : '100%';
+
+  // TODO: Replace with real modal handlers when implemented
+  const handleSingleTest = () => console.log('Create single test');
+  const handleBatchTests = () => console.log('Create batch tests');
 
   return (
     <section
@@ -41,6 +46,12 @@ export function Topbar() {
             onSinglePersona={() => setCreatePersonaOpen(true)}
             onBatchPersonas={() => setBatchModalOpen(true)}
             onImportFile={() => setImportModalOpen(true)}
+          />
+        )}
+        {pathname === '/tests' && (
+          <CreateTestDropdownButton
+            onSingleTest={handleSingleTest}
+            onBatchTests={handleBatchTests}
           />
         )}
         {/* Add more buttons for other pages here as needed */}
