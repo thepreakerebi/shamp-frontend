@@ -5,7 +5,6 @@ import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
-  getSortedRowModel,
   SortingState,
   useReactTable,
   getFilteredRowModel,
@@ -36,18 +35,26 @@ interface TableTest {
 
 export function TestsTable() {
   const testsHook = useTests();
-  const { tests, testsLoading, moveTestToTrash, deleteTest, duplicateTest } = testsHook;
+  const { tests, testsLoading, moveTestToTrash, deleteTest, duplicateTest, searchTests } = testsHook;
   const { user } = useAuth();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [page, setPage] = useState(1);
   const limit = 25;
+  const [params, setParams] = useState<Record<string,string>>({});
+
+  const handleRemoteSort = (field: string, dir: 'asc' | 'desc') => {
+    setSorting([{ id: field, desc: dir === 'desc' }]);
+    const merged = { ...params, sort: field, order: dir, page: '1' };
+    setParams(merged);
+    searchTests({ ...merged, limit: 25 });
+  };
 
   const columns = useMemo<ColumnDef<TableTest>[]>(
     () => [
       {
         accessorKey: "name",
         header: ({ column }) => (
-          <SortableHeader column={column} title="Name" />
+          <SortableHeader column={column} title="Name" sortKey="name" onSort={handleRemoteSort} />
         ),
         cell: ({ row }) => {
           const t = row.original;
@@ -59,7 +66,7 @@ export function TestsTable() {
       {
         id: "project",
         accessorFn: (row: TableTest) => row.project?.name ?? "",
-        header: ({ column }) => <SortableHeader column={column} title="Project" />,
+        header: ({ column }) => <SortableHeader column={column} title="Project" sortKey="project" onSort={handleRemoteSort} />,
         cell: ({ row }) => {
           const proj = row.original.project;
           return proj ? <ProjectBadge name={proj.name} /> : "-";
@@ -68,7 +75,7 @@ export function TestsTable() {
       {
         id: "persona",
         accessorFn: (row: TableTest) => row.persona?.name ?? "",
-        header: ({ column }) => <SortableHeader column={column} title="Persona" />,
+        header: ({ column }) => <SortableHeader column={column} title="Persona" sortKey="persona" onSort={handleRemoteSort} />,
         cell: ({ row }) => {
           const p = row.original.persona;
           return p ? <PersonaBadge name={p.name} /> : "-";
@@ -77,7 +84,7 @@ export function TestsTable() {
       {
         id: "runs",
         accessorFn: (row: TableTest) => (row.successfulRuns ?? 0) + (row.failedRuns ?? 0),
-        header: ({ column }) => <SortableHeader column={column} title="Runs" />,
+        header: ({ column }) => <SortableHeader column={column} title="Runs" sortKey="succRuns" onSort={handleRemoteSort} />,
         cell: ({ row }) => {
           const { successfulRuns = 0, failedRuns = 0 } = row.original;
           return (
@@ -95,7 +102,7 @@ export function TestsTable() {
       {
         id: "createdBy",
         accessorFn: (row: TableTest) => row.createdBy?.name ?? "",
-        header: ({ column }) => <SortableHeader column={column} title="Created By" />,
+        header: ({ column }) => <SortableHeader column={column} title="Created By" sortKey="created" onSort={handleRemoteSort} />,
         cell: ({ row }) => {
           const c = row.original.createdBy;
           if (!c) return "-";
@@ -129,7 +136,6 @@ export function TestsTable() {
     state: { sorting },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   });
 
@@ -142,7 +148,7 @@ export function TestsTable() {
 
   return (
     <section className="w-full overflow-x-auto">
-      <TestsTableToolbar table={table} />
+      <TestsTableToolbar table={table} onFilter={p => { const merged={...params,...p}; setParams(merged); searchTests({...merged, page:'1', limit:25}); }} />
 
       {/* Table */}
       <table className="w-full text-sm">
@@ -199,13 +205,17 @@ export function TestsTable() {
 }
 
 // Reusable sortable header component
-function SortableHeader({ column, title }: { column: Column<TableTest, unknown>; title: string }) {
+function SortableHeader({ column, title, sortKey, onSort }: { column: Column<TableTest, unknown>; title: string; sortKey: string; onSort: (field:string, dir:'asc'|'desc')=>void }) {
   const isSorted = column.getIsSorted() as false | 'asc' | 'desc';
   return (
     <button
       type="button"
       className="flex items-center gap-1"
-      onClick={() => column.toggleSorting()}
+      onClick={() => {
+        let next: 'asc' | 'desc' = 'asc';
+        if (isSorted === 'asc') next = 'desc';
+        onSort(sortKey, next);
+      }}
     >
       {title}
       {isSorted ? (

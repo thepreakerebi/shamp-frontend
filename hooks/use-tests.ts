@@ -108,6 +108,38 @@ export function useTests() {
     }
   }, [token, setCount, setCountLoading, setCountError]);
 
+  // Remote search/filter
+  const searchTests = useCallback(
+    async (params: Record<string, string | number | undefined>) => {
+      if (!token) return;
+      setTestsLoading(true);
+      setTestsError(null);
+      try {
+        const filtered: Record<string, string> = {};
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== "") {
+            filtered[key] = String(value);
+          }
+        });
+        const qs = new URLSearchParams(filtered).toString();
+        const data = await fetcher(`/tests/search?${qs}`, token);
+        // expects { total, page, limit, data }
+        if (data && Array.isArray(data.data)) {
+          setTests(data.data);
+        } else {
+          setTests([]);
+        }
+        setCount(data.total ?? data.data?.length ?? 0);
+      } catch (err: unknown) {
+        if (err instanceof Error) setTestsError(err.message);
+        else setTestsError("Failed to search tests");
+      } finally {
+        setTestsLoading(false);
+      }
+    },
+    [token, setTests, setTestsLoading, setTestsError, setCount]
+  );
+
   // Refetch both tests and count
   const refetch = useCallback(() => {
     fetchTests();
@@ -288,5 +320,6 @@ export function useTests() {
     refetch,
     analyzeTestOutputs,
     getTestAnalysisHistory,
+    searchTests,
   };
 } 
