@@ -1,6 +1,7 @@
 import { useAuth } from "@/lib/auth";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import io from "socket.io-client";
+import { useBatchTestsStore } from "@/lib/store/batchTests";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
@@ -35,17 +36,29 @@ const fetcher = (url: string, token: string) =>
 
 export function useBatchTests() {
   const { token } = useAuth();
-  const [batchTests, setBatchTests] = useState<BatchTest[] | null>(null);
-  const [batchTestsLoading, setBatchTestsLoading] = useState(true);
-  const [batchTestsError, setBatchTestsError] = useState<string | null>(null);
+  const {
+    batchTests,
+    batchTestsLoading,
+    batchTestsError,
+    setBatchTests,
+    setBatchTestsLoading,
+    setBatchTestsError,
+    addBatchTestToList,
+    updateBatchTestInList,
+    removeBatchTestFromList,
+  } = useBatchTestsStore();
 
   const fetchBatchTests = useCallback(async () => {
-    if (!token) return;
+    if (!token) {
+      setBatchTestsLoading(false);
+      setBatchTests([]);
+      return;
+    }
     setBatchTestsLoading(true);
     setBatchTestsError(null);
     try {
       const data = await fetcher("/batchtests", token);
-      setBatchTests(data);
+      setBatchTests(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setBatchTestsError(err.message);
@@ -55,7 +68,7 @@ export function useBatchTests() {
     } finally {
       setBatchTestsLoading(false);
     }
-  }, [token]);
+  }, [token, setBatchTests, setBatchTestsLoading, setBatchTestsError]);
 
   useEffect(() => {
     if (!token) return;
@@ -91,7 +104,9 @@ export function useBatchTests() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to fetch batch test");
-    return res.json();
+    const batch = await res.json();
+    addBatchTestToList(batch);
+    return batch;
   };
 
   const createBatchTest = async (payload: Omit<BatchTest, '_id' | 'testRuns' | 'createdBy' | 'trashed'>) => {
@@ -106,7 +121,9 @@ export function useBatchTests() {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to create batch test");
-    return res.json();
+    const batch = await res.json();
+    addBatchTestToList(batch);
+    return batch;
   };
 
   const updateBatchTest = async (id: string, payload: Partial<Omit<BatchTest, '_id' | 'testRuns' | 'createdBy' | 'trashed'>>) => {
@@ -121,7 +138,9 @@ export function useBatchTests() {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to update batch test");
-    return res.json();
+    const batch = await res.json();
+    updateBatchTestInList(batch);
+    return batch;
   };
 
   const moveBatchTestToTrash = async (id: string) => {
@@ -132,7 +151,9 @@ export function useBatchTests() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to move batch test to trash");
-    return res.json();
+    const batch = await res.json();
+    removeBatchTestFromList(batch._id);
+    return batch;
   };
 
   const deleteBatchTest = async (id: string, deleteTestRuns = false) => {
@@ -144,7 +165,9 @@ export function useBatchTests() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to delete batch test");
-    return res.json();
+    const batch = await res.json();
+    removeBatchTestFromList(batch._id);
+    return batch;
   };
 
   const analyzeBatchTestOutputs = async (id: string): Promise<BatchTestAnalysis> => {
