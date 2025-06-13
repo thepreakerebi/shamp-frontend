@@ -15,12 +15,18 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { RowActionsDropdown } from "./row-actions-dropdown";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import type { Column } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { TestsTableToolbar } from "./tests-table-toolbar";
 import { useAuth } from "@/lib/auth";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
+} from "@/components/ui/pagination";
 
 interface TableTest {
   _id: string;
@@ -40,14 +46,14 @@ export function TestsTable() {
   const { user } = useAuth();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [page, setPage] = useState(1);
-  const limit = 25;
+  const limit = 15;
   const [params, setParams] = useState<Record<string,string>>({});
 
   const handleRemoteSort = (field: string, dir: 'asc' | 'desc') => {
     setSorting([{ id: field, desc: dir === 'desc' }]);
     const merged = { ...params, sort: field, order: dir, page: '1' };
     setParams(merged);
-    searchTests({ ...merged, limit: 25 });
+    searchTests({ ...merged, limit });
   };
 
   const columns = useMemo<ColumnDef<TableTest>[]>(
@@ -64,7 +70,7 @@ export function TestsTable() {
               <TooltipTrigger asChild>
                 <span className="font-medium truncate cursor-default" >{t.name}</span>
               </TooltipTrigger>
-              <TooltipContent side="top" align="start" className="bg-neutral-900 dark:bg-neutral-50 text-neutral-50 dark:text-neutral-900 max-w-[300px]">
+              <TooltipContent side="top" align="start" className="bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-50 max-w-[300px]">
                 {t.description || t.name}
               </TooltipContent>
             </Tooltip>
@@ -160,7 +166,7 @@ export function TestsTable() {
       <TestsTableToolbar table={table} onFilter={p => { setParams(p); searchTests({ ...p, page: '1', limit: 25 }); }} />
 
       {/* Scrollable rows container */}
-      <div className="max-h-[80vh] overflow-y-auto">
+      <div className="max-h-[84vh] overflow-y-auto relative">
         <table className="w-full text-sm">
           <thead className="bg-muted sticky top-0 z-10">
             {table.getHeaderGroups().map(hg => (
@@ -197,20 +203,24 @@ export function TestsTable() {
             )}
           </tbody>
         </table>
+        {pageCount > 1 && (
+          <Pagination className="sticky bottom-0 bg-background py-2">
+            <PaginationContent>
+              <PaginationPrevious
+                aria-disabled={page === 1}
+                onClick={() => page > 1 && setPage(p => p - 1)}
+              />
+              <PaginationItem>
+                <span className="px-2 text-sm select-none">Page {page} of {pageCount}</span>
+              </PaginationItem>
+              <PaginationNext
+                aria-disabled={page === pageCount}
+                onClick={() => page < pageCount && setPage(p => p + 1)}
+              />
+            </PaginationContent>
+          </Pagination>
+        )}
       </div>
-
-      {/* Pagination */}
-      {pageCount > 1 && (
-        <div className="flex items-center justify-end gap-2 mt-2">
-          <Button variant="outline" size="icon" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <span className="text-sm">Page {page} of {pageCount}</span>
-          <Button variant="outline" size="icon" disabled={page === pageCount} onClick={() => setPage(p => p + 1)}>
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-      )}
     </section>
   );
 }
