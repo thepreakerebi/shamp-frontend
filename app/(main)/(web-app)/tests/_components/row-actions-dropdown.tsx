@@ -41,7 +41,7 @@ function RowActionsDropdownComponent({ testId, onOpen, actions }: RowActionsDrop
   };
 
   const handleEdit = () => {
-    // TODO: implement edit logic (open modal or navigate to edit page)
+    router.push(`/tests/${testId}/edit`);
   };
 
   const handleDuplicate = async () => {
