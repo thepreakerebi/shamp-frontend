@@ -10,6 +10,7 @@ import { EllipsisVerticalIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import React, { useState } from "react";
+import { toast } from "sonner";
 
 interface RowActionFns {
   moveTestToTrash: (id: string) => Promise<unknown>;
@@ -45,7 +46,12 @@ function RowActionsDropdownComponent({ testId, onOpen, actions }: RowActionsDrop
   };
 
   const handleDuplicate = async () => {
-    await duplicateTest(testId);
+    try {
+      await duplicateTest(testId);
+      toast.success("Test duplicated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to duplicate test");
+    }
   };
 
   const handleTrash = () => {
