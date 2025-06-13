@@ -32,8 +32,7 @@ function RowActionsDropdownComponent({ testId, onOpen, actions }: RowActionsDrop
   }>({ type: null, loading: false });
 
   const handleRun = () => {
-    // placeholder: navigate to run page or trigger API
-    router.push(`/tests/${testId}?run=1`);
+    // TODO: implement run logic
   };
 
   const handleOpen = () => {
@@ -42,7 +41,7 @@ function RowActionsDropdownComponent({ testId, onOpen, actions }: RowActionsDrop
   };
 
   const handleEdit = () => {
-    router.push(`/tests/${testId}?edit=1`);
+    // TODO: implement edit logic (open modal or navigate to edit page)
   };
 
   const handleDuplicate = async () => {
