@@ -27,6 +27,7 @@ import {
   PaginationPrevious,
   PaginationNext,
 } from "@/components/ui/pagination";
+import { TestsTableSkeleton } from "./tests-table-skeleton";
 
 interface TableTest {
   _id: string;
@@ -162,6 +163,10 @@ export function TestsTable() {
   const pageCount = Math.max(1, Math.ceil(total / limit));
   const pageRows = table.getRowModel().rows.slice((page - 1) * limit, page * limit);
 
+  if (testsLoading && (!tests || tests.length === 0)) {
+    return <TestsTableSkeleton rows={10} />;
+  }
+
   return (
     <section className="w-full overflow-x-auto">
       <TestsTableToolbar table={table} onFilter={p => { setParams(p); searchTests({ ...p, page: '1', limit: 25 }); }} />
@@ -181,9 +186,7 @@ export function TestsTable() {
             ))}
           </thead>
           <tbody>
-            {testsLoading ? (
-              <tr><td colSpan={columns.length} className="p-4 text-center">Loading…</td></tr>
-            ) : pageRows.length === 0 ? (
+            {pageRows.length === 0 ? (
               <tr><td colSpan={columns.length} className="p-4 text-center text-muted-foreground">No tests found</td></tr>
             ) : (
               pageRows.map(row => {
