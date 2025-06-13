@@ -78,7 +78,7 @@ export default function CreateTestPage() {
         </section>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={()=>router.back()}>Cancel</Button>
-          <Button type="submit" disabled={loading} className="flex items-center gap-2">
+          <Button type="submit" variant="secondary" disabled={loading} className="flex items-center gap-2">
             {loading && <Loader2 className="animate-spin size-4" />}
             {loading?"Creating…":"Create test"}
           </Button>

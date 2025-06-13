@@ -165,7 +165,7 @@ export function TestsTable() {
           {table.getHeaderGroups().map(hg => (
             <tr key={hg.id}>
               {hg.headers.map(h => (
-                <th key={h.id} className="text-left px-3 py-2 font-semibold select-none">
+                <th key={h.id} className="text-left px-3 py-2 font-semibold select-none sticky top-0 z-10 bg-muted/50 backdrop-blur">
                   {flexRender(h.column.columnDef.header, h.getContext())}
                 </th>
               ))}
