@@ -12,7 +12,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from "@/components/ui/command";
+import { ChevronsUpDown, Check } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -20,7 +22,7 @@ import { useTests } from "@/hooks/use-tests";
 import { useProjects } from "@/hooks/use-projects";
 import { usePersonas } from "@/hooks/use-personas";
 import type { Persona } from "@/hooks/use-personas";
-import type { Project } from "@/hooks/use-projects";
+import Image from "next/image";
 
 // Context to expose open state globally
 const CreateTestModalContext = React.createContext<{ open: boolean; setOpen: (o: boolean) => void } | null>(null);
@@ -51,6 +53,8 @@ function CreateTestModal() {
   const [fieldErrors, setFieldErrors] = React.useState<{ name?: string; description?: string; projectId?: string; personaId?: string }>({});
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [openProject, setOpenProject] = React.useState(false);
+  const [openPersona, setOpenPersona] = React.useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -109,30 +113,106 @@ function CreateTestModal() {
             </section>
             <section>
               <label className="block text-sm font-medium mb-1">Project</label>
-              <Select value={form.projectId} onValueChange={v => { setForm(f => ({ ...f, projectId: v })); setFieldErrors(prev=>({...prev, projectId: undefined})); }} disabled={projectsLoading || loading}>
-                <SelectTrigger className="w-full h-8"><SelectValue placeholder="Select project"/></SelectTrigger>
-                <SelectContent>
-                  {projects?.map((p: Project) => (
-                    <SelectItem key={p._id} value={p._id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={openProject} onOpenChange={setOpenProject}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openProject}
+                    className="w-full justify-between"
+                    disabled={projectsLoading || loading}
+                  >
+                    {form.projectId
+                      ? projects?.find(p => p._id === form.projectId)?.name
+                      : "Select project"}
+                    <ChevronsUpDown className="size-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0 max-h-60 overflow-y-auto" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search project..." className="h-9" />
+                    <ScrollArea className="max-h-60">
+                      <CommandList>
+                        <CommandEmpty>No project found.</CommandEmpty>
+                        {projects?.map(p => (
+                          <CommandItem
+                            key={p._id}
+                            value={p.name}
+                            onSelect={() => {
+                              setForm(f => ({ ...f, projectId: p._id }));
+                              setFieldErrors(prev => ({ ...prev, projectId: undefined }));
+                              setOpenProject(false);
+                            }}
+                          >
+                            {p.name}
+                            <Check className={`ml-auto size-4 ${form.projectId === p._id ? 'opacity-100' : 'opacity-0'}`} />
+                          </CommandItem>
+                        ))}
+                      </CommandList>
+                    </ScrollArea>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               {fieldErrors.projectId && <p className="text-destructive text-xs mt-1">{fieldErrors.projectId}</p>}
             </section>
             <section>
               <label className="block text-sm font-medium mb-1">Persona</label>
-              <Select
-                value={form.personaId}
-                onValueChange={v => setForm(f => ({ ...f, personaId: v }))}
-                disabled={personasLoading || loading}
-              >
-                <SelectTrigger className="w-full h-8"><SelectValue placeholder="Select persona"/></SelectTrigger>
-                <SelectContent>
-                  {personas?.map((p: Persona) => (
-                    <SelectItem key={p._id} value={p._id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={openPersona} onOpenChange={setOpenPersona}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openPersona}
+                    className="w-full justify-between"
+                    disabled={personasLoading || loading}
+                  >
+                    {form.personaId
+                      ? personas?.find(per => per._id === form.personaId)?.name
+                      : "Select persona"}
+                    <ChevronsUpDown className="size-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0 max-h-60 overflow-y-auto" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search persona..." className="h-9" />
+                    <ScrollArea className="max-h-60">
+                      <CommandList>
+                        <CommandEmpty>No persona found.</CommandEmpty>
+                        {personas?.map((p: Persona) => (
+                          <CommandItem
+                            key={p._id}
+                            value={p.name}
+                            onSelect={() => {
+                              setForm(f => ({ ...f, personaId: p._id }));
+                              setFieldErrors(prev => ({ ...prev, personaId: undefined }));
+                              setOpenPersona(false);
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              {p.avatarUrl ? (
+                                <Image
+                                  src={p.avatarUrl}
+                                  alt={p.name}
+                                  width={24}
+                                  height={24}
+                                  className="rounded-full object-cover border border-border bg-muted"
+                                  unoptimized
+                                />
+                              ) : (
+                                <span className="w-6 h-6 rounded-full flex items-center justify-center bg-muted text-[10px] font-medium text-muted-foreground border border-border">
+                                  {p.name?.[0]?.toUpperCase() || "?"}
+                                </span>
+                              )}
+                              <span>{p.name}</span>
+                            </div>
+                            <Check className={`ml-auto size-4 ${form.personaId === p._id ? 'opacity-100' : 'opacity-0'}`} />
+                          </CommandItem>
+                        ))}
+                      </CommandList>
+                    </ScrollArea>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               {fieldErrors.personaId && <p className="text-destructive text-xs mt-1">{fieldErrors.personaId}</p>}
             </section>
           </form>
