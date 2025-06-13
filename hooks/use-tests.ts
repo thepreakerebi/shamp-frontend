@@ -2,7 +2,6 @@ import { useAuth } from "@/lib/auth";
 import { useEffect, useCallback } from "react";
 import io from "socket.io-client";
 import { useTestsStore } from "@/lib/store/tests";
-import React from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
@@ -59,10 +58,7 @@ export function useTests() {
     setCountError,
   } = useTestsStore();
 
-  const latestSearchIdRef = React.useRef<number>(0);
-
   const fetchTests = useCallback(async () => {
-    if (useTestsStore.getState().filtered) return;
     if (!token) {
       setTestsLoading(false);
       setTests([]);
@@ -91,7 +87,6 @@ export function useTests() {
   }, [token, setTests, setTestsLoading, setTestsError]);
 
   const fetchCount = useCallback(async () => {
-    if (useTestsStore.getState().filtered) return;
     if (!token) {
       setCountLoading(false);
       setCount(0);
@@ -116,12 +111,6 @@ export function useTests() {
   // Remote search/filter
   const searchTests = useCallback(
     async (params: Record<string, string | number | undefined>) => {
-      // track latest search to avoid race condition
-      const currentId = Date.now();
-      latestSearchIdRef.current = currentId;
-
-      const hasFilters = Object.keys(params).some((k) => !["page", "limit"].includes(k) && params[k] !== "" && params[k] !== undefined);
-      useTestsStore.getState().setFiltered(hasFilters);
       if (!token) return;
       setTestsLoading(true);
       setTestsError(null);
@@ -134,7 +123,6 @@ export function useTests() {
         });
         const qs = new URLSearchParams(filtered).toString();
         const data = await fetcher(`/tests/search?${qs}`, token);
-        if (latestSearchIdRef.current !== currentId) return; // outdated response
         // expects { total, page, limit, data }
         if (data && Array.isArray(data.data)) {
           setTests(data.data.filter((t: Test)=> t.trashed !== true));
@@ -171,9 +159,7 @@ export function useTests() {
       auth: { token },
     });
     const handleUpdate = () => {
-      if (!useTestsStore.getState().filtered) {
-        refetch();
-      }
+      refetch();
     };
     socket.on("test:created", handleUpdate);
     socket.on("test:deleted", handleUpdate);
@@ -318,12 +304,6 @@ export function useTests() {
     return test;
   };
 
-  const clearFilters = () => {
-    useTestsStore.getState().setFiltered(false);
-    fetchTests();
-    fetchCount();
-  };
-
   return {
     tests,
     testsError,
@@ -342,6 +322,5 @@ export function useTests() {
     analyzeTestOutputs,
     getTestAnalysisHistory,
     searchTests,
-    clearFilters,
   };
 } 
