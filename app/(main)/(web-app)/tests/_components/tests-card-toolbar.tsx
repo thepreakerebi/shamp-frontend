@@ -32,6 +32,8 @@ export function TestsCardToolbar({ onFilter }: CardToolbarProps) {
 
   const buildParams = (): Record<string, string> => {
     const params: Record<string, string> = {};
+    params.page = "1";
+    params.limit = "25";
     if (query) {
       const lower = query.trim().toLowerCase();
       if (lower === "you" && user) {
@@ -46,11 +48,11 @@ export function TestsCardToolbar({ onFilter }: CardToolbarProps) {
     return params;
   };
 
-  // debounce search
+  // debounce search and filter changes
   useEffect(() => {
     const t = setTimeout(() => onFilter(buildParams()), 400);
     return () => clearTimeout(t);
-  }, [query]);
+  }, [query, projSel, persSel, runStatus, role]);
 
   const applyFilters = () => onFilter(buildParams());
 
