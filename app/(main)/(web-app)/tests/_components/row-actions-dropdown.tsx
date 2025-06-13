@@ -12,6 +12,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { MoveTestToTrashModal } from "./move-test-to-trash-modal";
+import { DeleteTestModal } from "./delete-test-modal";
 
 interface RowActionFns {
   moveTestToTrash: (id: string) => Promise<unknown>;
@@ -30,12 +31,15 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions }: RowA
   const router = useRouter();
   const { duplicateTest, moveTestToTrash, deleteTest } = actions;
   const [confirmState, setConfirmState] = useState<{
-    type: "trash" | "delete" | "run" | null;
+    type: "run" | null;
     loading: boolean;
   }>({ type: null, loading: false });
 
   const [trashModalOpen, setTrashModalOpen] = useState(false);
   const [trashLoading, setTrashLoading] = useState(false);
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const handleRun = () => {
     setConfirmState({ type: "run", loading: false });
@@ -64,18 +68,14 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions }: RowA
   };
 
   const handleDelete = () => {
-    setConfirmState({ type: "delete", loading: false });
+    setDeleteModalOpen(true);
   };
 
-  const confirmAction = async () => {
+  const confirmAction = () => {
     if (!confirmState.type) return;
     setConfirmState(s => ({ ...s, loading: true }));
     if (confirmState.type === "run") {
       alert("Running test... (API integration pending)");
-    } else if (confirmState.type === "trash") {
-      await moveTestToTrash(testId);
-    } else {
-      await deleteTest(testId);
     }
     setConfirmState({ type: null, loading: false });
   };
@@ -90,6 +90,19 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions }: RowA
     } finally {
       setTrashLoading(false);
       setTrashModalOpen(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    setDeleteLoading(true);
+    try {
+      await deleteTest(testId);
+      toast.success("Test deleted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete test");
+    } finally {
+      setDeleteLoading(false);
+      setDeleteModalOpen(false);
     }
   };
 
@@ -130,16 +143,6 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions }: RowA
         loading={confirmState.loading}
         onConfirm={confirmAction}
       />
-      <ConfirmDialog
-        open={confirmState.type === "delete"}
-        onOpenChange={(o) => !o && setConfirmState({ type: null, loading: false })}
-        title="Delete test"
-        description="This will permanently delete the test. Continue?"
-        confirmLabel="Delete"
-        confirmVariant="destructive"
-        loading={confirmState.loading}
-        onConfirm={confirmAction}
-      />
       {/* Trash modal */}
       <MoveTestToTrashModal
         open={trashModalOpen}
@@ -147,6 +150,14 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions }: RowA
         testName={testName ?? "this test"}
         onConfirm={confirmTrash}
         loading={trashLoading}
+      />
+      {/* Delete modal */}
+      <DeleteTestModal
+        open={deleteModalOpen}
+        setOpen={setDeleteModalOpen}
+        testName={testName ?? "this test"}
+        onConfirm={confirmDelete}
+        loading={deleteLoading}
       />
     </>
   );
