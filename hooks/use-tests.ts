@@ -19,7 +19,7 @@ export interface Test {
 
 type TestPayload = {
   name: string;
-  description?: string;
+  description: string;
   project: string;
   persona: string;
 };
