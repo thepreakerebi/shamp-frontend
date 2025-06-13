@@ -134,6 +134,7 @@ export function TestsTable() {
         cell: ({ row }) => (
           <RowActionsDropdown
             testId={row.original._id}
+            testName={row.original.name}
             onOpen={() => {}}
             actions={{ moveTestToTrash, deleteTest, duplicateTest }}
           />

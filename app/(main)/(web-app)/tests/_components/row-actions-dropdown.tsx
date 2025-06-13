@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import React, { useState } from "react";
 import { toast } from "sonner";
+import { MoveTestToTrashModal } from "./move-test-to-trash-modal";
 
 interface RowActionFns {
   moveTestToTrash: (id: string) => Promise<unknown>;
@@ -20,17 +21,21 @@ interface RowActionFns {
 
 interface RowActionsDropdownProps {
   testId: string;
+  testName?: string;
   onOpen?: () => void;
   actions: RowActionFns;
 }
 
-function RowActionsDropdownComponent({ testId, onOpen, actions }: RowActionsDropdownProps) {
+function RowActionsDropdownComponent({ testId, testName, onOpen, actions }: RowActionsDropdownProps) {
   const router = useRouter();
   const { duplicateTest, moveTestToTrash, deleteTest } = actions;
   const [confirmState, setConfirmState] = useState<{
     type: "trash" | "delete" | "run" | null;
     loading: boolean;
   }>({ type: null, loading: false });
+
+  const [trashModalOpen, setTrashModalOpen] = useState(false);
+  const [trashLoading, setTrashLoading] = useState(false);
 
   const handleRun = () => {
     setConfirmState({ type: "run", loading: false });
@@ -55,7 +60,7 @@ function RowActionsDropdownComponent({ testId, onOpen, actions }: RowActionsDrop
   };
 
   const handleTrash = () => {
-    setConfirmState({ type: "trash", loading: false });
+    setTrashModalOpen(true);
   };
 
   const handleDelete = () => {
@@ -73,6 +78,19 @@ function RowActionsDropdownComponent({ testId, onOpen, actions }: RowActionsDrop
       await deleteTest(testId);
     }
     setConfirmState({ type: null, loading: false });
+  };
+
+  const confirmTrash = async () => {
+    setTrashLoading(true);
+    try {
+      await moveTestToTrash(testId);
+      toast.success("Test moved to trash");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to move test to trash");
+    } finally {
+      setTrashLoading(false);
+      setTrashModalOpen(false);
+    }
   };
 
   return (
@@ -113,16 +131,6 @@ function RowActionsDropdownComponent({ testId, onOpen, actions }: RowActionsDrop
         onConfirm={confirmAction}
       />
       <ConfirmDialog
-        open={confirmState.type === "trash"}
-        onOpenChange={(o) => !o && setConfirmState({ type: null, loading: false })}
-        title="Move test to trash"
-        description="Are you sure you want to move this test to trash?"
-        confirmLabel="Move to trash"
-        confirmVariant="destructive"
-        loading={confirmState.loading}
-        onConfirm={confirmAction}
-      />
-      <ConfirmDialog
         open={confirmState.type === "delete"}
         onOpenChange={(o) => !o && setConfirmState({ type: null, loading: false })}
         title="Delete test"
@@ -131,6 +139,14 @@ function RowActionsDropdownComponent({ testId, onOpen, actions }: RowActionsDrop
         confirmVariant="destructive"
         loading={confirmState.loading}
         onConfirm={confirmAction}
+      />
+      {/* Trash modal */}
+      <MoveTestToTrashModal
+        open={trashModalOpen}
+        setOpen={setTrashModalOpen}
+        testName={testName ?? "this test"}
+        onConfirm={confirmTrash}
+        loading={trashLoading}
       />
     </>
   );
