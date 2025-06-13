@@ -93,10 +93,10 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions }: RowA
     }
   };
 
-  const confirmDelete = async () => {
+  const confirmDelete = async (deleteRuns: boolean) => {
     setDeleteLoading(true);
     try {
-      await deleteTest(testId);
+      await deleteTest(testId, deleteRuns);
       toast.success("Test deleted");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete test");
