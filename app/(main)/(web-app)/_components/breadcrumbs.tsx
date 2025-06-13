@@ -201,7 +201,7 @@ export function Breadcrumbs() {
                     {segment === "personas" && batchPersonasId ? (
                       <Link href="/personas?tab=groups">{display}</Link>
                     ) : (
-                      <Link href={path}>{display}</Link>
+                    <Link href={path}>{display}</Link>
                     )}
                   </BreadcrumbLink>
                 )}

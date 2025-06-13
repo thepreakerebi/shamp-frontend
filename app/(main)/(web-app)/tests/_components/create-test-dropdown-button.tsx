@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { useRouter } from "next/navigation";
 import {
   CustomDropdownMenu,
   CustomDropdownMenuTrigger,
@@ -15,6 +16,7 @@ interface CreateTestDropdownButtonProps {
 }
 
 export function CreateTestDropdownButton({ onSingleTest, onBatchTests }: CreateTestDropdownButtonProps) {
+  const router = useRouter();
   return (
     <CustomDropdownMenu>
       <CustomDropdownMenuTrigger asChild>
@@ -23,7 +25,7 @@ export function CreateTestDropdownButton({ onSingleTest, onBatchTests }: CreateT
         </Button>
       </CustomDropdownMenuTrigger>
       <CustomDropdownMenuContent align="end">
-        <CustomDropdownMenuItem onSelect={onSingleTest}>
+        <CustomDropdownMenuItem onSelect={onSingleTest ?? (()=>router.push("/tests/create"))}>
           <ListChecks className="size-4 mr-2" /> Single test
         </CustomDropdownMenuItem>
         <CustomDropdownMenuItem onSelect={onBatchTests}>

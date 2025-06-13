@@ -3,22 +3,21 @@ import React from "react";
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Breadcrumbs } from './breadcrumbs';
 import { CreateProjectButton } from './create-project-button';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useCreatePersonaModal } from '@/app/(main)/(web-app)/personas/_components/create-persona-modal';
 import { CreateDropdownButton } from './create-persona-dropdown-button';
 import { useCreateBatchPersonasModal } from '@/app/(main)/(web-app)/personas/_components/create-batch-personas-modal';
 import { useImportPersonasModal } from '@/app/(main)/(web-app)/personas/_components/import-personas-modal';
 import { CreateTestDropdownButton } from '@/app/(main)/(web-app)/tests/_components/create-test-dropdown-button';
-import { useCreateTestModal } from './create-test-modal';
 
 export function Topbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { state, isMobile } = useSidebar();
   const { setOpen: setCreatePersonaOpen } = useCreatePersonaModal();
   const { setOpen: setBatchModalOpen } = useCreateBatchPersonasModal();
   const { setOpen: setImportModalOpen } = useImportPersonasModal();
-  const { setOpen: setCreateTestOpen } = useCreateTestModal();
 
   // Only shift when expanded on desktop
   const isExpandedDesktop = !isMobile && state === 'expanded';
@@ -26,7 +25,7 @@ export function Topbar() {
   const width = isExpandedDesktop ? 'calc(100% - 16rem)' : '100%';
 
   // TODO: Replace with real modal handlers when implemented
-  const handleSingleTest = () => setCreateTestOpen(true);
+  const handleSingleTest = () => router.push('/tests/create');
   const handleBatchTests = () => console.log('Create batch tests');
 
   return (

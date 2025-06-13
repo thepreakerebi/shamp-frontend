@@ -9,31 +9,28 @@ import { CreateProjectModalProvider } from './_components/create-project-modal';
 import { CreatePersonaModalProvider } from '@/app/(main)/(web-app)/personas/_components/create-persona-modal';
 import { CreateBatchPersonasModalProvider } from '@/app/(main)/(web-app)/personas/_components/create-batch-personas-modal';
 import { ImportPersonasModalProvider } from '@/app/(main)/(web-app)/personas/_components/import-personas-modal';
-import { CreateTestModalProvider } from './_components/create-test-modal';
 
 export default function WebAppLayout({ children }: { children: React.ReactNode }) {
   return (
     <CreateProjectModalProvider>
-      <CreateTestModalProvider>
-        <CreatePersonaModalProvider>
-          <CreateBatchPersonasModalProvider>
-            <ImportPersonasModalProvider>
-              <SidebarProvider>
-                <ProtectedRoute>
-                  <Toaster position="top-center" />
-                  <AppSidebar />
-                  <main className="min-h-screen w-full">
-                    <Topbar />
-                    <section className="flex flex-col w-full h-full pt-16">
-                      {children}
-                    </section>
-                  </main>
-                </ProtectedRoute>
-              </SidebarProvider>
-            </ImportPersonasModalProvider>
-          </CreateBatchPersonasModalProvider>
-        </CreatePersonaModalProvider>
-      </CreateTestModalProvider>
+      <CreatePersonaModalProvider>
+        <CreateBatchPersonasModalProvider>
+          <ImportPersonasModalProvider>
+            <SidebarProvider>
+              <ProtectedRoute>
+                <Toaster position="top-center" />
+                <AppSidebar />
+                <main className="min-h-screen w-full">
+                  <Topbar />
+                  <section className="flex flex-col w-full h-full pt-16">
+                    {children}
+                  </section>
+                </main>
+              </ProtectedRoute>
+            </SidebarProvider>
+          </ImportPersonasModalProvider>
+        </CreateBatchPersonasModalProvider>
+      </CreatePersonaModalProvider>
     </CreateProjectModalProvider>
   );
 } 
