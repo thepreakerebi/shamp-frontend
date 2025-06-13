@@ -69,9 +69,9 @@ export function useTests() {
     try {
       const data = await fetcher(`/tests?page=1&limit=250`, token);
       if (Array.isArray(data)) {
-        setTests(data);
+        setTests(data.filter((t: Test) => t.trashed !== true));
       } else if (data && Array.isArray(data.data)) {
-        setTests(data.data);
+        setTests(data.data.filter((t: Test) => t.trashed !== true));
       } else {
         setTests([]);
       }
@@ -125,7 +125,7 @@ export function useTests() {
         const data = await fetcher(`/tests/search?${qs}`, token);
         // expects { total, page, limit, data }
         if (data && Array.isArray(data.data)) {
-          setTests(data.data);
+          setTests(data.data.filter((t: Test)=> t.trashed !== true));
         } else {
           setTests([]);
         }
@@ -268,7 +268,8 @@ export function useTests() {
     if (!res.ok) throw new Error("Failed to move test to trash");
     const data = await res.json();
     const updated = data.test ?? data;
-    useTestsStore.getState().updateTestInList(updated);
+    // remove from active tests list
+    useTestsStore.getState().removeTestFromList(id);
     refetch();
     return updated;
   };
