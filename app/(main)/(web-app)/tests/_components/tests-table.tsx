@@ -64,7 +64,7 @@ export function TestsTable() {
               <TooltipTrigger asChild>
                 <span className="font-medium truncate cursor-default" >{t.name}</span>
               </TooltipTrigger>
-              <TooltipContent side="top" align="start" className="bg-secondary text-secondary-foreground">
+              <TooltipContent side="top" align="start" className="bg-neutral-900 dark:bg-neutral-50 text-neutral-50 dark:text-neutral-900 max-w-[300px]">
                 {t.description || t.name}
               </TooltipContent>
             </Tooltip>
@@ -159,43 +159,45 @@ export function TestsTable() {
     <section className="w-full overflow-x-auto">
       <TestsTableToolbar table={table} onFilter={p => { setParams(p); searchTests({ ...p, page: '1', limit: 25 }); }} />
 
-      {/* Table */}
-      <table className="w-full text-sm">
-        <thead className="bg-muted/50">
-          {table.getHeaderGroups().map(hg => (
-            <tr key={hg.id}>
-              {hg.headers.map(h => (
-                <th key={h.id} className="text-left px-3 py-2 font-semibold select-none sticky top-0 z-10 bg-muted/50 backdrop-blur">
-                  {flexRender(h.column.columnDef.header, h.getContext())}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {testsLoading ? (
-            <tr><td colSpan={columns.length} className="p-4 text-center">Loading…</td></tr>
-          ) : pageRows.length === 0 ? (
-            <tr><td colSpan={columns.length} className="p-4 text-center text-muted-foreground">No tests found</td></tr>
-          ) : (
-            pageRows.map(row => {
-              const handleRowClick: React.MouseEventHandler<HTMLTableRowElement> = (e) => {
-                if ((e.target as HTMLElement).closest('[data-stop-row]')) return;
-                router.push(`/tests/${row.original._id}`);
-              };
-              return (
-                <tr key={row.id} onClick={handleRowClick} className={cn("border-b last:border-b-0 cursor-pointer hover:bg-muted/60") }>
-                  {row.getVisibleCells().map(cell => (
-                    <td key={cell.id} className="px-3 py-2 whitespace-nowrap max-w-[12rem]">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+      {/* Scrollable rows container */}
+      <div className="max-h-[80vh] overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-muted sticky top-0 z-10">
+            {table.getHeaderGroups().map(hg => (
+              <tr key={hg.id}>
+                {hg.headers.map(h => (
+                  <th key={h.id} className="text-left px-3 py-2 font-semibold select-none">
+                    {flexRender(h.column.columnDef.header, h.getContext())}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {testsLoading ? (
+              <tr><td colSpan={columns.length} className="p-4 text-center">Loading…</td></tr>
+            ) : pageRows.length === 0 ? (
+              <tr><td colSpan={columns.length} className="p-4 text-center text-muted-foreground">No tests found</td></tr>
+            ) : (
+              pageRows.map(row => {
+                const handleRowClick: React.MouseEventHandler<HTMLTableRowElement> = (e) => {
+                  if ((e.target as HTMLElement).closest('[data-stop-row]')) return;
+                  router.push(`/tests/${row.original._id}`);
+                };
+                return (
+                  <tr key={row.id} onClick={handleRowClick} className={cn("border-b last:border-b-0 cursor-pointer hover:bg-muted/60") }>
+                    {row.getVisibleCells().map(cell => (
+                      <td key={cell.id} className="px-3 py-2 whitespace-nowrap max-w-[12rem]">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* Pagination */}
       {pageCount > 1 && (
