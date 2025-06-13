@@ -54,30 +54,30 @@ export function BatchPersonasList() {
 
   return (
     <>
-      <section className="grid grid-cols-1 lsm:grid-cols-2 sm:grid-cols-3 gap-4 w-full">
-        {batchPersonas.map((batch) => {
-          // Get avatarUrls from personas (array of Persona or string IDs)
-          let avatarUrls: string[] = [];
-          if (Array.isArray(batch.personas)) {
-            avatarUrls = (batch.personas as { avatarUrl?: string }[]).map((p) => p && p.avatarUrl ? p.avatarUrl : undefined).filter(Boolean) as string[];
-          }
-          return (
-            <section
-              key={batch._id}
-              className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border hover:bg-muted/60 transition-colors"
-            >
-              <section className="flex-shrink-0">
+    <section className="grid grid-cols-1 lsm:grid-cols-2 sm:grid-cols-3 gap-4 w-full">
+      {batchPersonas.map((batch) => {
+        // Get avatarUrls from personas (array of Persona or string IDs)
+        let avatarUrls: string[] = [];
+        if (Array.isArray(batch.personas)) {
+          avatarUrls = (batch.personas as { avatarUrl?: string }[]).map((p) => p && p.avatarUrl ? p.avatarUrl : undefined).filter(Boolean) as string[];
+        }
+        return (
+          <section
+            key={batch._id}
+            className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border hover:bg-muted/60 transition-colors"
+          >
+            <section className="flex-shrink-0">
                 <Link href={`/personas/batch/${batch._id}`} aria-label={`View batch persona ${batch.name}`} tabIndex={0}>
-                  <BatchPersonasImage avatarUrls={avatarUrls} />
+              <BatchPersonasImage avatarUrls={avatarUrls} />
                 </Link>
-              </section>
-              <section className="flex flex-col w-full min-w-0 gap-1">
-                <h3 className="font-semibold text-lg truncate w-full" title={batch.name}>{batch.name}</h3>
-                <p className="text-sm text-muted-foreground truncate w-full">{Array.isArray(batch.personas) ? batch.personas.length : 0} personas</p>
-              </section>
-              <BatchPersonaCardDropdown
-                batchPersonaId={batch._id}
-                onOpen={() => {}}
+            </section>
+            <section className="flex flex-col w-full min-w-0 gap-1">
+              <h3 className="font-semibold text-lg truncate w-full" title={batch.name}>{batch.name}</h3>
+              <p className="text-sm text-muted-foreground truncate w-full">{Array.isArray(batch.personas) ? batch.personas.length : 0} personas</p>
+            </section>
+            <BatchPersonaCardDropdown
+              batchPersonaId={batch._id}
+              onOpen={() => {}}
                 onRename={() => {
                   setRenamingBatchPersona(batch);
                   setRenameOpen(true);
@@ -86,11 +86,11 @@ export function BatchPersonasList() {
                   setDeletingBatchPersona(batch);
                   setDeleteOpen(true);
                 }}
-              />
-            </section>
-          );
-        })}
-      </section>
+            />
+          </section>
+        );
+      })}
+    </section>
       <DeleteBatchPersonasModal
         open={deleteOpen}
         setOpen={setDeleteOpen}
