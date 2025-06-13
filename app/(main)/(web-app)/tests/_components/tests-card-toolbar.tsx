@@ -10,6 +10,7 @@ import { useProjects, type Project } from "@/hooks/use-projects";
 import { usePersonas, type Persona as PersonaType } from "@/hooks/use-personas";
 import { useAuth } from "@/lib/auth";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { useTests } from "@/hooks/use-tests";
 
 interface CardToolbarProps {
   onFilter: (params: Record<string, string>) => void;
@@ -24,6 +25,7 @@ export function TestsCardToolbar({ onFilter }: CardToolbarProps) {
   const [persSel, setPersSel] = useState<string[]>([]);
   const [runStatus, setRunStatus] = useState<string>("any");
   const [role, setRole] = useState<string>("any");
+  const { clearFilters } = useTests();
 
   const toggleId = (arr: string[], id: string, setter: (v: string[]) => void) => {
     if (arr.includes(id)) setter(arr.filter(i => i !== id));
@@ -61,7 +63,7 @@ export function TestsCardToolbar({ onFilter }: CardToolbarProps) {
     setPersSel([]);
     setRunStatus("any");
     setRole("any");
-    onFilter({});
+    clearFilters();
   };
 
   return (

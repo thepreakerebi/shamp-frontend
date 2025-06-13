@@ -318,6 +318,12 @@ export function useTests() {
     return test;
   };
 
+  const clearFilters = () => {
+    useTestsStore.getState().setFiltered(false);
+    fetchTests();
+    fetchCount();
+  };
+
   return {
     tests,
     testsError,
@@ -336,5 +342,6 @@ export function useTests() {
     analyzeTestOutputs,
     getTestAnalysisHistory,
     searchTests,
+    clearFilters,
   };
 } 

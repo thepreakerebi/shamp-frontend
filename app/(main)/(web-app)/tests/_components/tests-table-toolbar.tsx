@@ -11,6 +11,7 @@ import { useProjects, type Project } from "@/hooks/use-projects";
 import { usePersonas, type Persona as PersonaType } from "@/hooks/use-personas";
 import { useAuth } from "@/lib/auth";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { useTests } from "@/hooks/use-tests";
 
 interface ToolbarProps<T> {
   table: Table<T>;
@@ -30,6 +31,7 @@ export function TestsTableToolbar<T>({ table, onFilter }: ToolbarProps<T>) {
   const [persSel, setPersSel] = useState<string[]>([]);
   const [runStatus, setRunStatus] = useState<string>("any");
   const [role, setRole] = useState<string>("any");
+  const { clearFilters } = useTests();
 
   const toggleId = (arr: string[], id: string, setter: (v: string[]) => void) => {
     if (arr.includes(id)) {
@@ -156,7 +158,7 @@ export function TestsTableToolbar<T>({ table, onFilter }: ToolbarProps<T>) {
                   setPersSel([]);
                   setRunStatus("any");
                   setRole("any");
-                  onFilter({});
+                  clearFilters();
                 }}>Reset</Button>
                 <Button size="sm" onClick={applyFilters}>Apply</Button>
               </div>
