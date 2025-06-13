@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Filter } from "lucide-react";
 import { useProjects, type Project } from "@/hooks/use-projects";
 import { usePersonas, type Persona as PersonaType } from "@/hooks/use-personas";
+import { useAuth } from "@/lib/auth";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 interface ToolbarProps<T> {
@@ -24,6 +25,7 @@ export function TestsTableToolbar<T>({ table, onFilter }: ToolbarProps<T>) {
   // Filter state
   const { projects } = useProjects();
   const { personas } = usePersonas();
+  const { user } = useAuth();
   const [projSel, setProjSel] = useState<string[]>([]);
   const [persSel, setPersSel] = useState<string[]>([]);
   const [runStatus, setRunStatus] = useState<string>("any");
@@ -39,7 +41,15 @@ export function TestsTableToolbar<T>({ table, onFilter }: ToolbarProps<T>) {
 
   const applyFilters = () => {
     const params: Record<string, string> = {};
-    if (query) params.q = query;
+    if (query) {
+      const lower = query.trim().toLowerCase();
+      if (lower === 'you' && user) {
+        const full = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+        if (full) params.q = full;
+      } else {
+        params.q = query;
+      }
+    }
     if (projSel.length > 0) params.project = projSel.join(",");
     if (persSel.length > 0) params.persona = persSel.join(",");
     if (runStatus && runStatus !== "any") params.runStatus = runStatus;
@@ -51,7 +61,15 @@ export function TestsTableToolbar<T>({ table, onFilter }: ToolbarProps<T>) {
   useEffect(() => {
     const timeout = setTimeout(() => {
       const params: Record<string, string> = {};
-      if (query) params.q = query;
+      if (query) {
+        const lower = query.trim().toLowerCase();
+        if (lower === 'you' && user) {
+          const full = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+          if (full) params.q = full;
+        } else {
+          params.q = query;
+        }
+      }
       if (projSel.length > 0) params.project = projSel.join(",");
       if (persSel.length > 0) params.persona = persSel.join(",");
       if (runStatus && runStatus !== "any") params.runStatus = runStatus;
