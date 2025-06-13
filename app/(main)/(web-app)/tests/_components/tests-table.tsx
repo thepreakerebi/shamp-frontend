@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-table";
 import { ProjectBadge } from "@/components/ui/project-badge";
 import { PersonaBadge } from "@/components/ui/persona-badge";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { RowActionsDropdown } from "./row-actions-dropdown";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -59,7 +60,14 @@ export function TestsTable() {
         cell: ({ row }) => {
           const t = row.original;
           return (
-            <span className="font-medium truncate" title={t.description || t.name}>{t.name}</span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="font-medium truncate cursor-default" >{t.name}</span>
+              </TooltipTrigger>
+              <TooltipContent side="top" align="start" className="bg-secondary text-secondary-foreground">
+                {t.description || t.name}
+              </TooltipContent>
+            </Tooltip>
           );
         },
       },
@@ -137,6 +145,7 @@ export function TestsTable() {
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    autoResetPageIndex: false,
   });
 
   const router = useRouter();
