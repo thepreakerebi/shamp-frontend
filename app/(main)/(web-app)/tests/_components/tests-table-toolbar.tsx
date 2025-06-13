@@ -1,7 +1,7 @@
 "use client";
 import { Table } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -46,6 +46,21 @@ export function TestsTableToolbar<T>({ table, onFilter }: ToolbarProps<T>) {
     if (role && role !== "any") params.role = role;
     onFilter(params);
   };
+
+  // Debounced quick search on query change
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      const params: Record<string, string> = {};
+      if (query) params.q = query;
+      if (projSel.length > 0) params.project = projSel.join(",");
+      if (persSel.length > 0) params.persona = persSel.join(",");
+      if (runStatus && runStatus !== "any") params.runStatus = runStatus;
+      if (role && role !== "any") params.role = role;
+      onFilter(params);
+    }, 400);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
   return (
     <section className="flex items-center justify-between gap-2 mb-2">
