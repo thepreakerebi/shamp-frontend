@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useTests } from "@/hooks/use-tests";
 import { TestCard } from "./test-card";
-import { TestsTableSkeleton } from "./tests-table-skeleton";
+import { TestsCardSkeleton } from "./tests-card-skeleton";
 import { TestsCardToolbar } from "./tests-card-toolbar";
 
 export function TestsList() {
@@ -19,7 +19,7 @@ export function TestsList() {
   }, []);
 
   if (testsLoading && (!tests || tests.length === 0)) {
-    return <TestsTableSkeleton rows={6} />;
+    return <TestsCardSkeleton count={6} />;
   }
 
   if (!tests || tests.length === 0) {
