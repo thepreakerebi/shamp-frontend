@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useTests } from "@/hooks/use-tests";
 import { TestCard } from "./test-card";
 import { TestsTableSkeleton } from "./tests-table-skeleton";
@@ -7,6 +7,16 @@ import { TestsCardToolbar } from "./tests-card-toolbar";
 
 export function TestsList() {
   const { tests, testsLoading } = useTests();
+
+  // Scroll-to-top button visibility (mobile only)
+  const [showTop, setShowTop] = useState(false);
+  useEffect(() => {
+    const handler = () => {
+      setShowTop(window.scrollY > 400);
+    };
+    window.addEventListener("scroll", handler);
+    return () => window.removeEventListener("scroll", handler);
+  }, []);
 
   if (testsLoading && (!tests || tests.length === 0)) {
     return <TestsTableSkeleton rows={6} />;
@@ -30,6 +40,16 @@ export function TestsList() {
           ))}
         </section>
       </section>
+      {/* Scroll to top button (mobile) */}
+      {showTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-6 right-4 z-20 md:hidden bg-secondary text-secondary-foreground rounded-full p-3 shadow-lg"
+          aria-label="Scroll to top"
+        >
+          ↑
+        </button>
+      )}
     </section>
   );
 } 
