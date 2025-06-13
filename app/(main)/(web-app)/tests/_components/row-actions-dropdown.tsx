@@ -27,12 +27,12 @@ function RowActionsDropdownComponent({ testId, onOpen, actions }: RowActionsDrop
   const router = useRouter();
   const { duplicateTest, moveTestToTrash, deleteTest } = actions;
   const [confirmState, setConfirmState] = useState<{
-    type: "trash" | "delete" | null;
+    type: "trash" | "delete" | "run" | null;
     loading: boolean;
   }>({ type: null, loading: false });
 
   const handleRun = () => {
-    // TODO: implement run logic
+    setConfirmState({ type: "run", loading: false });
   };
 
   const handleOpen = () => {
@@ -59,7 +59,9 @@ function RowActionsDropdownComponent({ testId, onOpen, actions }: RowActionsDrop
   const confirmAction = async () => {
     if (!confirmState.type) return;
     setConfirmState(s => ({ ...s, loading: true }));
-    if (confirmState.type === "trash") {
+    if (confirmState.type === "run") {
+      alert("Running test... (API integration pending)");
+    } else if (confirmState.type === "trash") {
       await moveTestToTrash(testId);
     } else {
       await deleteTest(testId);
@@ -82,18 +84,28 @@ function RowActionsDropdownComponent({ testId, onOpen, actions }: RowActionsDrop
           </Button>
         </CustomDropdownMenuTrigger>
         <CustomDropdownMenuContent align="end">
-          <CustomDropdownMenuItem onSelect={handleRun}>Run</CustomDropdownMenuItem>
-          <CustomDropdownMenuItem onSelect={handleOpen}>Open</CustomDropdownMenuItem>
-          <CustomDropdownMenuItem onSelect={handleEdit}>Edit</CustomDropdownMenuItem>
-          <CustomDropdownMenuItem onSelect={handleDuplicate}>Duplicate</CustomDropdownMenuItem>
-          <CustomDropdownMenuItem onSelect={handleTrash}>Move to trash</CustomDropdownMenuItem>
-          <CustomDropdownMenuItem variant="destructive" onSelect={handleDelete}>
+          <CustomDropdownMenuItem data-stop-row onSelect={handleRun}>Run</CustomDropdownMenuItem>
+          <CustomDropdownMenuItem data-stop-row onSelect={handleOpen}>Open</CustomDropdownMenuItem>
+          <CustomDropdownMenuItem data-stop-row onSelect={handleEdit}>Edit</CustomDropdownMenuItem>
+          <CustomDropdownMenuItem data-stop-row onSelect={handleDuplicate}>Duplicate</CustomDropdownMenuItem>
+          <CustomDropdownMenuItem data-stop-row onSelect={handleTrash}>Move to trash</CustomDropdownMenuItem>
+          <CustomDropdownMenuItem variant="destructive" data-stop-row onSelect={handleDelete}>
             Delete
           </CustomDropdownMenuItem>
         </CustomDropdownMenuContent>
       </CustomDropdownMenu>
 
       {/* confirmation dialogs */}
+      <ConfirmDialog
+        open={confirmState.type === "run"}
+        onOpenChange={(o) => !o && setConfirmState({ type: null, loading: false })}
+        title="Run test"
+        description="Are you sure you want to run this test now?"
+        confirmLabel="Run test"
+        confirmVariant="default"
+        loading={confirmState.loading}
+        onConfirm={confirmAction}
+      />
       <ConfirmDialog
         open={confirmState.type === "trash"}
         onOpenChange={(o) => !o && setConfirmState({ type: null, loading: false })}
