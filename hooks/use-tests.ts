@@ -32,6 +32,16 @@ export interface TestAnalysis {
 
 export type TestAnalysisHistoryEntry = TestAnalysis;
 
+export interface TestRunSummary {
+  _id: string;
+  personaName?: string;
+  status: string;
+  browserUseStatus?: string;
+  stepsWithScreenshots?: { step: Record<string, unknown>; screenshot: string | null }[];
+  recordings?: Record<string, unknown>[];
+  analysis?: Record<string, unknown>;
+}
+
 const fetcher = (url: string, token: string) =>
   fetch(`${API_BASE}${url}`, {
     credentials: "include",
@@ -304,6 +314,17 @@ export function useTests() {
     return test;
   };
 
+  // Get all test runs for a test (non-trashed)
+  const getTestRunsForTest = async (id: string): Promise<TestRunSummary[]> => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/tests/${id}/testruns`, {
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to fetch test runs");
+    return res.json();
+  };
+
   return {
     tests,
     testsError,
@@ -322,5 +343,6 @@ export function useTests() {
     analyzeTestOutputs,
     getTestAnalysisHistory,
     searchTests,
+    getTestRunsForTest,
   };
 } 
