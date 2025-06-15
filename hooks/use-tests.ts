@@ -12,6 +12,7 @@ export interface Test {
   description?: string;
   project: string;
   persona?: string;
+  personaNames?: string[];
   createdBy?: string;
   trashed?: boolean;
   // Add other fields as needed

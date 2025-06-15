@@ -60,9 +60,17 @@ export function TestCard({ test }: { test: Test }) {
         {test.project && typeof test.project === "object" && 'name' in test.project && (
           <ProjectBadge name={(test.project as { _id: string; name: string }).name} />
         )}
-        {test.persona && typeof test.persona === "object" && 'name' in test.persona && (
-          <PersonaBadge name={(test.persona as { _id: string; name: string }).name} />
-        )}
+        {(() => {
+          const t = test as Test & { personaNames?: string[] };
+          const firstPersonaName = t.personaNames && t.personaNames.length ? t.personaNames[0] : undefined;
+          if (firstPersonaName) {
+            return <PersonaBadge name={firstPersonaName} />;
+          }
+          if (test.persona && typeof test.persona === "object" && 'name' in test.persona) {
+            return <PersonaBadge name={(test.persona as { _id: string; name: string }).name} />;
+          }
+          return null;
+        })()}
         {test.createdBy && typeof test.createdBy === "object" && 'name' in test.createdBy && (
           <span className="text-xs text-muted-foreground truncate max-w-[120px]" title={(test.createdBy as { name: string }).name}>
             {(() => {

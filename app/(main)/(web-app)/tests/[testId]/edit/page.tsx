@@ -28,12 +28,22 @@ export default function EditTestPage() {
   };
 
   const [initialLoaded, setInitialLoaded] = useState(!!existing);
-  const [form, setForm] = useState<{ name: string; description: string; projectId: string; personaId: string }>(() => ({
-    name: existing?.name || "",
-    description: existing?.description || "",
-    projectId: getId(existing?.project),
-    personaId: getId(existing?.persona),
-  }));
+  const [form, setForm] = useState<{ name: string; description: string; projectId: string; personaId: string }>(() => {
+    const firstPersonaId = (() => {
+      if (!existing) return "";
+      const e = existing as { personaNames?: string[]; persona?: unknown };
+      if (Array.isArray(e.personaNames) && e.personaNames.length) {
+        return ""; // cannot resolve id from name list
+      }
+      return getId(e.persona);
+    })();
+    return {
+      name: existing?.name || "",
+      description: existing?.description || "",
+      projectId: getId(existing?.project),
+      personaId: firstPersonaId,
+    };
+  });
   const [errors, setErrors] = useState<{ name?: string; description?: string; projectId?: string; personaId?: string }>({});
   const [saving, setSaving] = useState(false);
 
@@ -42,11 +52,12 @@ export default function EditTestPage() {
     if (!existing && testId) {
       (async () => {
         const t = await getTestById(testId);
+        const firstPersonaId = (t as { persona?: unknown }).persona ? getId((t as { persona?: unknown }).persona) : "";
         setForm({
           name: t.name,
           description: t.description || "",
           projectId: getId(t.project),
-          personaId: getId(t.persona),
+          personaId: firstPersonaId,
         });
         setInitialLoaded(true);
       })();
