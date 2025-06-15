@@ -4,6 +4,7 @@ import { useTests } from "@/hooks/use-tests";
 import { TestCard } from "./test-card";
 import { TestsCardSkeleton } from "./tests-card-skeleton";
 import { TestsCardToolbar } from "./tests-card-toolbar";
+import { TestsListEmpty } from "./tests-list-empty";
 
 export function TestsList() {
   const { tests, testsLoading } = useTests();
@@ -23,11 +24,7 @@ export function TestsList() {
   }
 
   if (!tests || tests.length === 0) {
-    return (
-      <section className="p-4 text-center text-sm text-muted-foreground border border-dashed rounded-2xl">
-        No tests found. Create a test to get started.
-      </section>
-    );
+    return <TestsListEmpty />;
   }
 
   return (
