@@ -1,6 +1,7 @@
 import { useAuth } from "@/lib/auth";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import io from "socket.io-client";
+import { useTestRunsStore } from "@/lib/store/testruns";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
@@ -59,10 +60,14 @@ const fetcher = (url: string, token: string): Promise<unknown> =>
 
 export function useTestRuns() {
   const { token } = useAuth();
-  const [testRuns, setTestRuns] = useState<TestRun[]>([]);
-  const [successfulCount, setSuccessfulCount] = useState<number | null>(null);
-  const [failedCount, setFailedCount] = useState<number | null>(null);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const store = useTestRunsStore();
+  const {
+    setSuccessfulCount,
+    setFailedCount,
+    addTestRunToList,
+    removeTestRunFromList,
+    updateTestRunInList,
+  } = store;
 
   // Real-time updates
   useEffect(() => {
@@ -73,39 +78,52 @@ export function useTestRuns() {
     });
     // Listen for test run events
     socket.on("testRun:started", ({ testRun }: { testRun: TestRun }) => {
-      setTestRuns(prev => [testRun, ...prev]);
+      addTestRunToList(testRun);
     });
     socket.on("testRun:trashed", ({ _id }: { _id: string }) => {
-      setTestRuns(prev => prev.filter(tr => tr._id !== _id));
+      removeTestRunFromList(_id);
     });
     socket.on("testRun:deleted", ({ _id }: { _id: string }) => {
-      setTestRuns(prev => prev.filter(tr => tr._id !== _id));
+      removeTestRunFromList(_id);
     });
     socket.on("testRun:stopped", ({ testRunId }: { testRunId: string }) => {
-      setTestRuns(prev => prev.map(tr => tr._id === testRunId ? { ...tr, status: 'cancelled' } : tr));
+      {
+        const existing = store.testRuns?.find(r => r._id === testRunId);
+        if (existing) updateTestRunInList({ ...existing, status: 'cancelled' });
+      }
     });
     socket.on("testRun:paused", ({ testRunId }: { testRunId: string }) => {
-      setTestRuns(prev => prev.map(tr => tr._id === testRunId ? { ...tr, status: 'cancelled' } : tr));
+      {
+        const existing = store.testRuns?.find(r => r._id === testRunId);
+        if (existing) updateTestRunInList({ ...existing, status: 'cancelled' });
+      }
     });
     socket.on("testRun:resumed", ({ testRunId }: { testRunId: string }) => {
-      setTestRuns(prev => prev.map(tr => tr._id === testRunId ? { ...tr, status: 'running' } : tr));
+      {
+        const existing = store.testRuns?.find(r => r._id === testRunId);
+        if (existing) updateTestRunInList({ ...existing, status: 'running' });
+      }
     });
     socket.on("testRun:finished", ({ testRunId }: { testRunId: string }) => {
-      setTestRuns(prev => prev.map(tr => tr._id === testRunId ? { ...tr, status: 'succeeded' } : tr));
+      {
+        const existing = store.testRuns?.find(r => r._id === testRunId);
+        if (existing) updateTestRunInList({ ...existing, status: 'succeeded' });
+      }
     });
     socket.on("testRun:failed", ({ testRunId }: { testRunId: string }) => {
-      setTestRuns(prev => prev.map(tr => tr._id === testRunId ? { ...tr, status: 'failed' } : tr));
+      {
+        const existing = store.testRuns?.find(r => r._id === testRunId);
+        if (existing) updateTestRunInList({ ...existing, status: 'failed' });
+      }
     });
     socket.on("testRun:artifact", () => {
       // Optionally update artifacts in testRuns state
     });
-    socket.on("testRun:chatMessage", (msg: ChatMessage) => {
-      setChatMessages(prev => [...prev, msg]);
-    });
+    socket.on("testRun:chatMessage", () => {});
     return () => {
       socket.disconnect();
     };
-  }, [token]);
+  }, [token, addTestRunToList, removeTestRunFromList, updateTestRunInList]);
 
   // Analytics
   const fetchSuccessfulCount = useCallback(async () => {
@@ -116,7 +134,7 @@ export function useTestRuns() {
     } catch {
       setSuccessfulCount(null);
     }
-  }, [token]);
+  }, [token, setSuccessfulCount]);
 
   const fetchFailedCount = useCallback(async () => {
     if (!token) return;
@@ -126,7 +144,7 @@ export function useTestRuns() {
     } catch {
       setFailedCount(null);
     }
-  }, [token]);
+  }, [token, setFailedCount]);
 
   // Start a test run
   const startTestRun = async (testId: string) => {
@@ -183,7 +201,23 @@ export function useTestRuns() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to delete test run");
-    return res.json() as Promise<{ success: boolean }>;
+    const resJson = await res.json() as { success: boolean };
+    removeTestRunFromList(id);
+    return resJson;
+  };
+
+  // Move a test run to trash (soft delete)
+  const moveTestRunToTrash = async (id: string) => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/testruns/${id}/trash`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to move test run to trash");
+    const { testRun } = await res.json();
+    removeTestRunFromList(id);
+    return testRun;
   };
 
   // Get status, media
@@ -236,15 +270,15 @@ export function useTestRuns() {
   };
 
   return {
-    testRuns,
-    successfulCount,
-    failedCount,
-    chatMessages,
+    testRuns: store.testRuns,
+    successfulCount: store.successfulCount,
+    failedCount: store.failedCount,
     startTestRun,
     stopTestRun,
     pauseTestRun,
     resumeTestRun,
     deleteTestRun,
+    moveTestRunToTrash,
     getTestRunStatus,
     getTestRunMedia,
     chatWithAgent,

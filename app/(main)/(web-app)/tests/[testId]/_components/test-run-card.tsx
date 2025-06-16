@@ -16,6 +16,7 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
     resumeTestRun,
     stopTestRun,
     deleteTestRun,
+    moveTestRunToTrash,
   } = useTestRuns();
 
   // Handle navigation
@@ -95,7 +96,7 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
           <TestRunCardActionsDropdown
             runId={run._id}
             runPersonaName={run.personaName}
-            actions={{ deleteTestRun }}
+            actions={{ deleteTestRun, moveTestRunToTrash }}
           />
         </nav>
       </header>

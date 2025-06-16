@@ -13,6 +13,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface ActionsFns {
   deleteTestRun: (id: string) => Promise<unknown>;
+  moveTestRunToTrash: (id: string) => Promise<unknown>;
 }
 
 interface Props {
@@ -24,10 +25,10 @@ interface Props {
 
 export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, actions }: Props) {
   const router = useRouter();
-  const { deleteTestRun } = actions;
+  const { deleteTestRun, moveTestRunToTrash } = actions;
 
   const [confirmState, setConfirmState] = useState<{
-    type: "delete" | null;
+    type: "delete" | "trash" | null;
     loading: boolean;
   }>({ type: null, loading: false });
 
@@ -37,8 +38,7 @@ export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, acti
   };
 
   const handleMoveToTrash = () => {
-    // TODO: implement when API available; for now we treat as delete
-    setConfirmState({ type: "delete", loading: false });
+    setConfirmState({ type: "trash", loading: false });
   };
 
   const handleDelete = () => {
@@ -48,11 +48,13 @@ export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, acti
   const confirmAction = async () => {
     if (!confirmState.type) return;
     setConfirmState(s => ({ ...s, loading: true }));
-    if (confirmState.type === "delete") {
-      try {
+    try {
+      if (confirmState.type === "delete") {
         await deleteTestRun(runId);
-      } catch {}
-    }
+      } else if (confirmState.type === "trash") {
+        await moveTestRunToTrash(runId);
+      }
+    } catch {}
     setConfirmState({ type: null, loading: false });
   };
 
@@ -72,11 +74,16 @@ export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, acti
       </CustomDropdownMenu>
 
       <ConfirmDialog
-        open={confirmState.type === "delete"}
+        open={confirmState.type !== null}
         onOpenChange={o => !o && setConfirmState({ type: null, loading: false })}
-        title="Delete test run"
-        description={`Are you sure you want to delete ${runPersonaName ?? "this run"}?`}
-        confirmLabel="Delete"
+        title={confirmState.type === "trash" ? "Move run to trash" : "Delete test run"}
+        description={
+          confirmState.type === "trash"
+            ? `Are you sure you want to move ${runPersonaName ?? "this run"} to trash?`
+            : `Are you sure you want to delete ${runPersonaName ?? "this run"}?`
+        }
+        confirmLabel={confirmState.type === "trash" ? "Move to trash" : "Delete"}
+        confirmVariant={confirmState.type === "trash" ? "default" : "destructive"}
         loading={confirmState.loading}
         onConfirm={confirmAction}
       />
