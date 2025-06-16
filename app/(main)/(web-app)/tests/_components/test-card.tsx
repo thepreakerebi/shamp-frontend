@@ -25,7 +25,7 @@ export function TestCard({ test }: { test: Test }) {
 
   const isRunning = testRuns?.some(r => {
     const browserStatus = (r as { browserUseStatus?: string }).browserUseStatus;
-    return r.test === test._id && browserStatus === "running";
+    return r.test === test._id && (browserStatus === "running" || r.status === "running");
   });
 
   const runningBadge = (

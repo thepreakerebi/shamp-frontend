@@ -37,7 +37,7 @@ export function TestsList() {
           {[...tests]
             .sort((a, b) => {
               const hasRun = (t: typeof a) =>
-                testRuns?.some(r => (r as { browserUseStatus?: string }).browserUseStatus === "running" && r.test === t._id);
+                testRuns?.some(r => ((r as { browserUseStatus?: string }).browserUseStatus === "running" || r.status === 'running') && r.test === t._id);
               const aRun = hasRun(a);
               const bRun = hasRun(b);
               if (aRun === bRun) return 0;

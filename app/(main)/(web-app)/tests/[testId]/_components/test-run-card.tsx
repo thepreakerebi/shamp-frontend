@@ -8,6 +8,7 @@ import { PauseIcon, PlayIcon, StopCircleIcon } from "lucide-react";
 import { useTestRuns } from "@/hooks/use-testruns";
 import { TestRunCardActionsDropdown } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card-actions-dropdown";
 import { Separator } from "@/components/ui/separator";
+import React, { useState, useEffect } from "react";
 
 export function TestRunCard({ run }: { run: TestRunSummary }) {
   const router = useRouter();
@@ -20,7 +21,26 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
   } = useTestRuns();
 
   // Handle navigation
+  const [showVideoReady, setShowVideoReady] = useState(false);
+
+  // Initialize video ready badge visibility based on localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (run.browserUseStatus === 'stopped') {
+      const seen = localStorage.getItem('videoReadySeen:' + run._id);
+      setShowVideoReady(!seen);
+    }
+  }, [run.browserUseStatus, run._id]);
+
+  const markVideoReadySeen = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('videoReadySeen:' + run._id, '1');
+    }
+    setShowVideoReady(false);
+  };
+
   const handleOpen: React.MouseEventHandler<HTMLDivElement> = () => {
+    markVideoReadySeen();
     router.push(`/testruns/${run._id}`);
   };
 
@@ -41,6 +61,7 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
   const browserStatusBadge = (status?: string) => {
     if (!status) return null;
     const running = status === "running";
+    const label = status;
     return (
       <Badge variant="outline" className="text-xs whitespace-nowrap flex items-center gap-1">
         {running && (
@@ -61,10 +82,17 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
             />
           </svg>
         )}
-        {status}
+        {label}
       </Badge>
     );
   };
+
+  // Video ready badge visibility
+  const videoReadyBadge = (
+    <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-primary/10 text-primary-foreground dark:text-primary">
+      video ready
+    </Badge>
+  );
 
   // Control handlers
   const onPause = async (e: React.MouseEvent) => {
@@ -108,11 +136,17 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
             {(run.browserUseStatus === "finished" || run.browserUseStatus === "stopped") && statusBadge(run.status)}
             {browserStatusBadge(run.browserUseStatus)}
           </div>
+          {showVideoReady && run.browserUseStatus === 'stopped' && (
+            <div className="mt-1">
+              {videoReadyBadge}
+            </div>
+          )}
         </section>
         <nav onClick={(e) => e.stopPropagation()} data-stop-row>
           <TestRunCardActionsDropdown
             runId={run._id}
             runPersonaName={run.personaName}
+            onOpen={markVideoReadySeen}
             actions={{ deleteTestRun, moveTestRunToTrash }}
           />
         </nav>
