@@ -15,7 +15,6 @@ export interface TestRun {
   startedAt?: string;
   finishedAt?: string;
   trashed?: boolean;
-  browserUseStatus?: string;
   // Add other fields as needed
 }
 
@@ -88,24 +87,34 @@ export function useTestRuns() {
       removeTestRunFromList(_id);
     });
     socket.on("testRun:stopped", ({ testRunId }: { testRunId: string }) => {
-      const existing = store.testRuns?.find(r => r._id === testRunId);
-      if (existing) updateTestRunInList({ ...existing, browserUseStatus: 'stopped' });
+      {
+        const existing = store.testRuns?.find(r => r._id === testRunId);
+        if (existing) updateTestRunInList({ ...existing, status: 'cancelled' });
+      }
     });
     socket.on("testRun:paused", ({ testRunId }: { testRunId: string }) => {
-      const existing = store.testRuns?.find(r => r._id === testRunId);
-      if (existing) updateTestRunInList({ ...existing, browserUseStatus: 'cancelled', status: 'cancelled' });
+      {
+        const existing = store.testRuns?.find(r => r._id === testRunId);
+        if (existing) updateTestRunInList({ ...existing, status: 'cancelled' });
+      }
     });
     socket.on("testRun:resumed", ({ testRunId }: { testRunId: string }) => {
-      const existing = store.testRuns?.find(r => r._id === testRunId);
-      if (existing) updateTestRunInList({ ...existing, browserUseStatus: 'running', status: 'running' });
+      {
+        const existing = store.testRuns?.find(r => r._id === testRunId);
+        if (existing) updateTestRunInList({ ...existing, status: 'running' });
+      }
     });
     socket.on("testRun:finished", ({ testRunId }: { testRunId: string }) => {
-      const existing = store.testRuns?.find(r => r._id === testRunId);
-      if (existing) updateTestRunInList({ ...existing, browserUseStatus: 'finished', status: 'succeeded' });
+      {
+        const existing = store.testRuns?.find(r => r._id === testRunId);
+        if (existing) updateTestRunInList({ ...existing, status: 'succeeded' });
+      }
     });
     socket.on("testRun:failed", ({ testRunId }: { testRunId: string }) => {
-      const existing = store.testRuns?.find(r => r._id === testRunId);
-      if (existing) updateTestRunInList({ ...existing, browserUseStatus: 'finished', status: 'failed' });
+      {
+        const existing = store.testRuns?.find(r => r._id === testRunId);
+        if (existing) updateTestRunInList({ ...existing, status: 'failed' });
+      }
     });
     socket.on("testRun:artifact", () => {
       // Optionally update artifacts in testRuns state
@@ -150,10 +159,7 @@ export function useTestRuns() {
       body: JSON.stringify({ testId }),
     });
     if (!res.ok) throw new Error("Failed to start test run");
-    const data = (await res.json()) as { testRun: TestRun; message: string };
-    // Optimistically add to store for immediate UI feedback
-    addTestRunToList(data.testRun);
-    return data;
+    return res.json() as Promise<{ testRun: TestRun; message: string }>;
   };
 
   // Stop, pause, resume, delete
