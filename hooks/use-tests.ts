@@ -330,8 +330,10 @@ export function useTests() {
     });
     if (!res.ok) throw new Error("Failed to fetch test runs");
     const runs = (await res.json()) as TestRunSummary[];
-    useTestsStore.getState().setTestRunsForTest(id, runs as unknown as TestRun[]);
-    return runs;
+    const getTimestamp = (id: string) => parseInt(id.substring(0, 8), 16) * 1000;
+    const sorted = [...runs].sort((a, b) => getTimestamp(b._id) - getTimestamp(a._id));
+    useTestsStore.getState().setTestRunsForTest(id, sorted as unknown as TestRun[]);
+    return sorted;
   };
 
   return {
