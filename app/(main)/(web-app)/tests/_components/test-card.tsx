@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import React from "react";
 import { Test, useTests } from "@/hooks/use-tests";
+import { useTestRuns } from "@/hooks/use-testruns";
 import { RowActionsDropdown } from "./row-actions-dropdown";
 import { useAuth } from "@/lib/auth";
 import { Separator } from "@/components/ui/separator";
@@ -13,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 export function TestCard({ test }: { test: Test }) {
   const router = useRouter();
   const { moveTestToTrash, deleteTest, duplicateTest } = useTests();
+  const { testRuns } = useTestRuns();
   const { user } = useAuth();
   // successfulRuns and failedRuns may be undefined on type Test, fallback to 0
   const successfulRuns = 'successfulRuns' in test ? (test as unknown as { successfulRuns?: number }).successfulRuns ?? 0 : 0;
@@ -20,6 +22,21 @@ export function TestCard({ test }: { test: Test }) {
   const totalRuns = 'totalRuns' in test
     ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns
     : successfulRuns + failedRuns;
+
+  const isRunning = testRuns?.some(r => {
+    const browserStatus = (r as { browserUseStatus?: string }).browserUseStatus;
+    return r.test === test._id && browserStatus === "running";
+  });
+
+  const runningBadge = (
+    <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-primary/10 text-primary-foreground dark:text-primary flex items-center gap-1">
+      <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+      </svg>
+      running
+    </Badge>
+  );
 
   const handleClick: React.MouseEventHandler<HTMLDivElement> = () => {
     router.push(`/tests/${test._id}`);
@@ -85,7 +102,7 @@ export function TestCard({ test }: { test: Test }) {
         )}
       </section>
 
-      {/* Runs counts */}
+      {/* Runs counts & running */}
       <footer className="flex items-center gap-2 pt-1">
         <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
           ✓ {successfulRuns}
@@ -98,6 +115,7 @@ export function TestCard({ test }: { test: Test }) {
             {totalRuns} runs
           </Badge>
         )}
+        {isRunning && runningBadge}
       </footer>
     </section>
   );
