@@ -1,4 +1,5 @@
 import { useAuth } from "@/lib/auth";
+import type { TestRun } from "@/hooks/use-testruns";
 import { useEffect, useCallback } from "react";
 import io from "socket.io-client";
 import { useTestsStore } from "@/lib/store/tests";
@@ -317,14 +318,20 @@ export function useTests() {
   };
 
   // Get all test runs for a test (non-trashed)
-  const getTestRunsForTest = async (id: string): Promise<TestRunSummary[]> => {
+  const getTestRunsForTest = async (id: string, forceRefresh = false): Promise<TestRunSummary[]> => {
     if (!token) throw new Error("Not authenticated");
+    const cached = useTestsStore.getState().getTestRunsForTest(id);
+    if (cached && !forceRefresh) {
+      return cached as unknown as TestRunSummary[];
+    }
     const res = await fetch(`${API_BASE}/tests/${id}/testruns`, {
       credentials: "include",
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to fetch test runs");
-    return res.json();
+    const runs = (await res.json()) as TestRunSummary[];
+    useTestsStore.getState().setTestRunsForTest(id, runs as unknown as TestRun[]);
+    return runs;
   };
 
   return {

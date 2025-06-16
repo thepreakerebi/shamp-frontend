@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Test } from "@/hooks/use-tests";
+import type { TestRun } from "@/hooks/use-testruns";
 
 interface TestsState {
   tests: Test[] | null;
@@ -8,6 +9,9 @@ interface TestsState {
   count: number;
   countLoading: boolean;
   countError: string | null;
+  testRunsByTestId: Record<string, TestRun[]>;
+  setTestRunsForTest: (testId: string, runs: TestRun[]) => void;
+  getTestRunsForTest: (testId: string) => TestRun[] | undefined;
   setTests: (tests: Test[] | null) => void;
   setTestsLoading: (loading: boolean) => void;
   setTestsError: (error: string | null) => void;
@@ -20,13 +24,22 @@ interface TestsState {
   reset: () => void;
 }
 
-export const useTestsStore = create<TestsState>((set) => ({
+export const useTestsStore = create<TestsState>((set, get) => ({
   tests: null,
   testsLoading: true,
   testsError: null,
   count: 0,
   countLoading: true,
   countError: null,
+  testRunsByTestId: {},
+  setTestRunsForTest: (testId, runs) =>
+    set((state) => ({
+      testRunsByTestId: { ...state.testRunsByTestId, [testId]: runs },
+    })),
+  getTestRunsForTest: (testId) => {
+    const state = get();
+    return state.testRunsByTestId[testId];
+  },
   setTests: (tests) => set({ tests }),
   setTestsLoading: (testsLoading) => set({ testsLoading }),
   setTestsError: (testsError) => set({ testsError }),
@@ -53,5 +66,6 @@ export const useTestsStore = create<TestsState>((set) => ({
       count: 0,
       countLoading: true,
       countError: null,
+      testRunsByTestId: {},
     }),
 })); 
