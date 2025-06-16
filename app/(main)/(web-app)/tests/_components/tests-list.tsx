@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useTests } from "@/hooks/use-tests";
+import { useTestRuns } from "@/hooks/use-testruns";
 import { TestCard } from "./test-card";
 import { TestsCardSkeleton } from "./tests-card-skeleton";
 import { TestsCardToolbar } from "./tests-card-toolbar";
@@ -8,6 +9,7 @@ import { TestsListEmpty } from "./tests-list-empty";
 
 export function TestsList() {
   const { tests, testsLoading } = useTests();
+  const { testRuns } = useTestRuns();
 
   // Scroll-to-top button visibility (mobile only)
   const [showTop, setShowTop] = useState(false);
@@ -32,9 +34,18 @@ export function TestsList() {
       <section className="flex flex-col">
         <TestsCardToolbar />
         <section className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 py-1">
-          {tests.map(test => (
-            <TestCard key={test._id} test={test} />
-          ))}
+          {[...tests]
+            .sort((a, b) => {
+              const hasRun = (t: typeof a) =>
+                testRuns?.some(r => (r as { browserUseStatus?: string }).browserUseStatus === "running" && r.test === t._id);
+              const aRun = hasRun(a);
+              const bRun = hasRun(b);
+              if (aRun === bRun) return 0;
+              return aRun ? -1 : 1;
+            })
+            .map(test => (
+              <TestCard key={test._id} test={test} />
+            ))}
         </section>
       </section>
       {/* Scroll to top button (mobile) */}
