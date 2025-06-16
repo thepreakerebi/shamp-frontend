@@ -2,11 +2,15 @@
 import { useEffect, useState } from "react";
 import { Test, TestRunSummary } from "@/hooks/use-tests";
 import { useTests } from "@/hooks/use-tests";
+import { useTestRuns, type TestRun } from "@/hooks/use-testruns";
+import { useTestRunsStore } from "@/lib/store/testruns";
 import { TestRunCard } from "./test-run-card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function TestRunsSection({ test }: { test: Test }) {
   const { getTestRunsForTest } = useTests();
+  const { testRuns: storeRuns } = useTestRuns();
+  const { setTestRuns } = useTestRunsStore();
   const [runs, setRuns] = useState<TestRunSummary[] | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -18,7 +22,10 @@ export default function TestRunsSection({ test }: { test: Test }) {
       setLoading(true);
       try {
         const data = await getTestRunsForTest(test._id);
-        if (mounted) setRuns(data);
+        if (mounted) {
+          setRuns(data);
+          setTestRuns(data as unknown as TestRun[]);
+        }
       } catch {
         if (mounted) setRuns([]);
       } finally {
@@ -30,6 +37,8 @@ export default function TestRunsSection({ test }: { test: Test }) {
     };
   }, [test?._id]);
 
+  const displayRuns = storeRuns !== null ? storeRuns : runs;
+
   return (
     <section className="p-4 space-y-4">
       <h2 className="text-xl font-semibold">Test runs</h2>
@@ -40,12 +49,12 @@ export default function TestRunsSection({ test }: { test: Test }) {
           ))}
         </div>
       )}
-      {!loading && runs && runs.length === 0 && (
+      {!loading && (displayRuns?.length ?? 0) === 0 && (
         <p className="text-muted-foreground text-sm">No runs yet.</p>
       )}
-      {!loading && runs && runs.length > 0 && (
+      {!loading && displayRuns && displayRuns.length > 0 && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {runs.map(run => (
+          {displayRuns.map(run => (
             <TestRunCard key={run._id} run={run} />
           ))}
         </div>

@@ -10,6 +10,7 @@ import { EllipsisVerticalIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
 
 interface ActionsFns {
   deleteTestRun: (id: string) => Promise<unknown>;
@@ -51,10 +52,14 @@ export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, acti
     try {
       if (confirmState.type === "delete") {
         await deleteTestRun(runId);
+        toast.success("Test run deleted");
       } else if (confirmState.type === "trash") {
         await moveTestRunToTrash(runId);
+        toast.success("Test run moved to trash");
       }
-    } catch {}
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Action failed");
+    }
     setConfirmState({ type: null, loading: false });
   };
 
@@ -79,8 +84,8 @@ export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, acti
         title={confirmState.type === "trash" ? "Move run to trash" : "Delete test run"}
         description={
           confirmState.type === "trash"
-            ? `Are you sure you want to move ${runPersonaName ?? "this run"} to trash?`
-            : `Are you sure you want to delete ${runPersonaName ?? "this run"}?`
+            ? `Are you sure you want to move ${runPersonaName ? `${runPersonaName} test run` : "this test run"} to trash?`
+            : `Are you sure you want to delete ${runPersonaName ? `${runPersonaName} test run` : "this test run"}?`
         }
         confirmLabel={confirmState.type === "trash" ? "Move to trash" : "Delete"}
         confirmVariant={confirmState.type === "trash" ? "default" : "destructive"}
