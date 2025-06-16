@@ -38,9 +38,9 @@ export default function EditTestPage() {
       return getId(e.persona);
     })();
     return {
-      name: existing?.name || "",
-      description: existing?.description || "",
-      projectId: getId(existing?.project),
+    name: existing?.name || "",
+    description: existing?.description || "",
+    projectId: getId(existing?.project),
       personaId: firstPersonaId,
     };
   });

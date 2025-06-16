@@ -150,7 +150,10 @@ export function useTestRuns() {
       body: JSON.stringify({ testId }),
     });
     if (!res.ok) throw new Error("Failed to start test run");
-    return res.json() as Promise<{ testRun: TestRun; message: string }>;
+    const data = (await res.json()) as { testRun: TestRun; message: string };
+    // Optimistically add to store for immediate UI feedback
+    addTestRunToList(data.testRun);
+    return data;
   };
 
   // Stop, pause, resume, delete
