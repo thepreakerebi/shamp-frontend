@@ -1,0 +1,125 @@
+"use client";
+import { TestRunSummary } from "@/hooks/use-tests";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { PauseIcon, PlayIcon, StopCircleIcon } from "lucide-react";
+import { useTestRuns } from "@/hooks/use-testruns";
+import { TestRunCardActionsDropdown } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card-actions-dropdown";
+import { Separator } from "@/components/ui/separator";
+
+export function TestRunCard({ run }: { run: TestRunSummary }) {
+  const router = useRouter();
+  const {
+    pauseTestRun,
+    resumeTestRun,
+    stopTestRun,
+    deleteTestRun,
+  } = useTestRuns();
+
+  // Handle navigation
+  const handleOpen: React.MouseEventHandler<HTMLDivElement> = () => {
+    router.push(`/testruns/${run._id}`);
+  };
+
+  // Status badge helpers
+  const statusBadge = (status: string) => {
+    const map: Record<string, string> = {
+      succeeded: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+      failed: "bg-red-500/10 text-red-700 dark:text-red-400",
+      running: "bg-primary/10 text-primary-foreground dark:text-primary",
+      cancelled: "bg-muted text-muted-foreground",
+    };
+    const cls = map[status] ?? "bg-muted text-muted-foreground";
+    return (
+      <Badge variant="secondary" className={cn("px-1.5 py-0 text-xs", cls)}>
+        {status}
+      </Badge>
+    );
+  };
+
+  const browserStatusBadge = (status?: string) => {
+    if (!status) return null;
+    return (
+      <Badge variant="outline" className="text-xs whitespace-nowrap">
+        {status}
+      </Badge>
+    );
+  };
+
+  // Control handlers
+  const onPause = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await pauseTestRun(run._id);
+    } catch {}
+  };
+  const onResume = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await resumeTestRun(run._id);
+    } catch {}
+  };
+  const onStop = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await stopTestRun(run._id);
+    } catch {}
+  };
+
+  return (
+    <section
+      role="button"
+      onClick={handleOpen}
+      className="rounded-3xl border dark:border-0 bg-card/80 hover:bg-muted/50 transition-all cursor-pointer flex flex-col p-4 gap-3 relative"
+    >
+      {/* Header */}
+      <header className="flex items-start gap-3">
+        <figure
+          className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl font-bold shrink-0"
+          aria-hidden="true"
+        >
+          {run.personaName?.[0]?.toUpperCase() || "P"}
+        </figure>
+        <section className="flex-1 min-w-0">
+          <h3 className="font-semibold leading-tight truncate" title={run.personaName}>
+            {run.personaName}
+          </h3>
+          <div className="flex items-center gap-2 mt-1">
+            {statusBadge(run.status)}
+            {browserStatusBadge(run.browserUseStatus)}
+          </div>
+        </section>
+        <nav onClick={(e) => e.stopPropagation()} data-stop-row>
+          <TestRunCardActionsDropdown
+            runId={run._id}
+            runPersonaName={run.personaName}
+            actions={{ deleteTestRun }}
+          />
+        </nav>
+      </header>
+
+      <Separator />
+
+      {/* Controls */}
+      <footer className="flex items-center gap-2 mt-auto pt-1">
+        {run.browserUseStatus === "running" && (
+          <>
+            <Button size="icon" variant="ghost" onClick={onPause} aria-label="Pause test run">
+              <PauseIcon className="w-4 h-4" />
+            </Button>
+            <Button size="icon" variant="ghost" onClick={onStop} aria-label="Stop test run">
+              <StopCircleIcon className="w-4 h-4" />
+            </Button>
+          </>
+        )}
+        {run.browserUseStatus === "cancelled" && (
+          <Button size="icon" variant="ghost" onClick={onResume} aria-label="Resume test run">
+            <PlayIcon className="w-4 h-4" />
+          </Button>
+        )}
+      </footer>
+    </section>
+  );
+} 
