@@ -15,6 +15,7 @@ export interface Test {
   personaNames?: string[];
   createdBy?: string;
   trashed?: boolean;
+  totalRuns?: number;
   // Add other fields as needed
 }
 

@@ -17,6 +17,9 @@ export function TestCard({ test }: { test: Test }) {
   // successfulRuns and failedRuns may be undefined on type Test, fallback to 0
   const successfulRuns = 'successfulRuns' in test ? (test as unknown as { successfulRuns?: number }).successfulRuns ?? 0 : 0;
   const failedRuns = 'failedRuns' in test ? (test as unknown as { failedRuns?: number }).failedRuns ?? 0 : 0;
+  const totalRuns = 'totalRuns' in test
+    ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns
+    : successfulRuns + failedRuns;
 
   const handleClick: React.MouseEventHandler<HTMLDivElement> = () => {
     router.push(`/tests/${test._id}`);
@@ -90,6 +93,11 @@ export function TestCard({ test }: { test: Test }) {
         <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-red-500/10 text-red-700 dark:text-red-400">
           ✗ {failedRuns}
         </Badge>
+        {totalRuns > 0 && (
+          <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-primary/10 text-primary-foreground dark:text-primary">
+            {totalRuns} runs
+          </Badge>
+        )}
       </footer>
     </section>
   );
