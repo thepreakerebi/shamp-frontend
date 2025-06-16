@@ -4,6 +4,11 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ProjectBadge } from "@/components/ui/project-badge";
 import { PersonaBadge } from "@/components/ui/persona-badge";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { useTestRuns } from "@/hooks/use-testruns";
+import { Loader2, CalendarClock } from "lucide-react";
+import { toast } from "sonner";
 
 /**
  * DetailsSection
@@ -13,6 +18,26 @@ import { PersonaBadge } from "@/components/ui/persona-badge";
  * - Run statistics (successful / failed / total)
  */
 export default function DetailsSection({ test }: { test: Test }) {
+  const { startTestRun } = useTestRuns();
+  const [running, setRunning] = useState(false);
+
+  const handleRun = async () => {
+    if (running) return;
+    setRunning(true);
+    try {
+      await startTestRun(test._id);
+      toast.success("Test run started");
+    } catch {
+      toast.error("Failed to start test run");
+    }
+    setRunning(false);
+  };
+
+  const handleSchedule = () => {
+    // TODO: open schedule modal / route
+    alert("Scheduling feature coming soon!");
+  };
+
   // successfulRuns and failedRuns may be undefined on type Test, fallback to 0
   const successfulRuns = "successfulRuns" in test ? (test as unknown as { successfulRuns?: number }).successfulRuns ?? 0 : 0;
   const failedRuns = "failedRuns" in test ? (test as unknown as { failedRuns?: number }).failedRuns ?? 0 : 0;
@@ -26,15 +51,27 @@ export default function DetailsSection({ test }: { test: Test }) {
   return (
     <article className="p-4 space-y-6" aria-labelledby="test-details-heading">
       {/* Header */}
-      <header className="space-y-1">
-        <h2 id="test-details-heading" className="text-2xl font-semibold leading-tight">
-          {test.name}
-        </h2>
-        {test.description && (
-          <p className="text-sm text-muted-foreground max-w-prose">
-            {test.description}
-          </p>
-        )}
+      <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <section className="space-y-1 flex-1 min-w-0">
+          <h2 id="test-details-heading" className="text-2xl font-semibold leading-tight truncate">
+            {test.name}
+          </h2>
+          {test.description && (
+            <p className="text-sm text-muted-foreground max-w-prose line-clamp-2">
+              {test.description}
+            </p>
+          )}
+        </section>
+        <section className="flex items-center gap-4 shrink-0">
+          <Button onClick={handleRun} variant="secondary" disabled={running}>
+            {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Run test
+          </Button>
+          <Button variant="outline" onClick={handleSchedule} className="flex items-center gap-1">
+            <CalendarClock className="w-4 h-4" />
+            Schedule run
+          </Button>
+        </section>
       </header>
 
       <Separator />
