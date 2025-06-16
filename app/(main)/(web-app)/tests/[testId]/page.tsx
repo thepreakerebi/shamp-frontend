@@ -1,32 +1,50 @@
 "use client";
-import { useParams } from "next/navigation";
+import { useParams, notFound } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { useTests } from "@/hooks/use-tests";
 import DetailsSection from "./_components/details-section";
 import AnalysisSection from "./_components/analysis-section";
 import TestRunsSection from "./_components/test-runs-section";
+import { DetailsSectionSkeleton } from "./_components/details-section-skeleton";
+import { AnalysisSectionSkeleton } from "./_components/analysis-section-skeleton";
 
 export default function TestDetailPage() {
   const { testId } = useParams<{ testId: string }>();
   const { tests, getTestById } = useTests();
   const [test, setTest] = useState(() => tests?.find(t => t._id === testId));
+  const [loading, setLoading] = useState(!test);
 
   useEffect(() => {
     if (!test && testId) {
       (async () => {
+        setLoading(true);
         try {
           const fetched = await getTestById(testId);
           setTest(fetched);
-        } catch {}
+        } catch {
+          notFound();
+        } finally {
+          setLoading(false);
+        }
       })();
     }
   }, [test, testId, getTestById]);
 
   const [tab, setTab] = useState("details");
 
-  if (!test) {
-    return <main className="p-6">Loading…</main>;
+  if (loading && !test) {
+    return (
+      <main className="p-4 w-full flex flex-col gap-8">
+        <DetailsSectionSkeleton />
+        <AnalysisSectionSkeleton />
+      </main>
+    );
+  }
+
+  if (!loading && !test) {
+    notFound();
+    return null;
   }
 
   return (
@@ -40,13 +58,13 @@ export default function TestDetailPage() {
           </TabsList>
           <section className="flex-1 min-w-0">
             <TabsContent value="details">
-              <DetailsSection test={test} />
+              <DetailsSection test={test!} />
             </TabsContent>
             <TabsContent value="analysis">
-              <AnalysisSection test={test} />
+              <AnalysisSection test={test!} />
             </TabsContent>
             <TabsContent value="runs">
-              <TestRunsSection test={test} />
+              <TestRunsSection test={test!} />
             </TabsContent>
           </section>
         </div>
