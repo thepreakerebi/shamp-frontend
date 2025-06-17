@@ -25,9 +25,11 @@ interface RowActionsDropdownProps {
   testName?: string;
   onOpen?: () => void;
   actions: RowActionFns;
+  showOpen?: boolean;
+  showRun?: boolean;
 }
 
-function RowActionsDropdownComponent({ testId, testName, onOpen, actions }: RowActionsDropdownProps) {
+function RowActionsDropdownComponent({ testId, testName, onOpen, actions, showOpen = true, showRun = true }: RowActionsDropdownProps) {
   const router = useRouter();
   const { duplicateTest, moveTestToTrash, deleteTest } = actions;
   const [confirmState, setConfirmState] = useState<{
@@ -121,8 +123,8 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions }: RowA
           </Button>
         </CustomDropdownMenuTrigger>
         <CustomDropdownMenuContent align="end">
-          <CustomDropdownMenuItem data-stop-row onSelect={handleRun}>Run</CustomDropdownMenuItem>
-          <CustomDropdownMenuItem data-stop-row onSelect={handleOpen}>Open</CustomDropdownMenuItem>
+          {showRun && <CustomDropdownMenuItem data-stop-row onSelect={handleRun}>Run</CustomDropdownMenuItem>}
+          {showOpen && <CustomDropdownMenuItem data-stop-row onSelect={handleOpen}>Open</CustomDropdownMenuItem>}
           <CustomDropdownMenuItem data-stop-row onSelect={handleEdit}>Edit</CustomDropdownMenuItem>
           <CustomDropdownMenuItem data-stop-row onSelect={handleDuplicate}>Duplicate</CustomDropdownMenuItem>
           <CustomDropdownMenuItem data-stop-row onSelect={handleTrash}>Move to trash</CustomDropdownMenuItem>

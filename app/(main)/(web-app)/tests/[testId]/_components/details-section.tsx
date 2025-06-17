@@ -9,6 +9,8 @@ import { useState } from "react";
 import { useTestRuns } from "@/hooks/use-testruns";
 import { Loader2, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
+import { RowActionsDropdown } from "../../_components/row-actions-dropdown";
+import { useTests } from "@/hooks/use-tests";
 
 /**
  * DetailsSection
@@ -19,6 +21,7 @@ import { toast } from "sonner";
  */
 export default function DetailsSection({ test }: { test: Test }) {
   const { startTestRun } = useTestRuns();
+  const { moveTestToTrash, deleteTest, duplicateTest } = useTests();
   const [running, setRunning] = useState(false);
 
   const handleRun = async () => {
@@ -63,13 +66,20 @@ export default function DetailsSection({ test }: { test: Test }) {
           )}
         </section>
         <section className="flex items-center gap-4 shrink-0">
-          <Button onClick={handleRun} variant="secondary" disabled={running}>
-            {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Run test
-          </Button>
+          <RowActionsDropdown
+            testId={test._id}
+            testName={test.name}
+            actions={{ moveTestToTrash, deleteTest, duplicateTest }}
+            showOpen={false}
+            showRun={false}
+          />
           <Button variant="outline" onClick={handleSchedule} className="flex items-center gap-1">
             <CalendarClock className="w-4 h-4" />
             Schedule run
+          </Button>
+          <Button onClick={handleRun} variant="secondary" disabled={running}>
+            {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Run test
           </Button>
         </section>
       </header>
