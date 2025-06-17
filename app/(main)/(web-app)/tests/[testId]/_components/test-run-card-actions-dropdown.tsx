@@ -35,6 +35,7 @@ export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, acti
 
   const handleOpen = () => {
     if (onOpen) onOpen();
+    try { sessionStorage.setItem(`videoViewed:${runId}`, '1'); } catch {}
     router.push(`/testruns/${runId}`);
   };
 
