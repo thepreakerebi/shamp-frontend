@@ -106,7 +106,7 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
           </h3>
           <div className="flex items-center gap-2 mt-1">
             {(["finished", "stopped"].includes(run.browserUseStatus ?? "")) && statusBadge(run.status)}
-            {browserStatusBadge(run.browserUseStatus)}
+            {run.status !== 'cancelled' && browserStatusBadge(run.browserUseStatus)}
           </div>
         </section>
         <nav onClick={(e) => e.stopPropagation()} data-stop-row>
