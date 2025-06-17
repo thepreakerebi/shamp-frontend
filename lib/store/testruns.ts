@@ -28,7 +28,29 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
   testRunsError: null,
   successfulCount: null,
   failedCount: null,
-  setTestRuns: (testRuns) => set({ testRuns }),
+  setTestRuns: (incoming) =>
+    set((state) => {
+      if (!incoming) return { testRuns: null };
+
+      // Combine existing + incoming and deduplicate by _id
+      const map = new Map<string, typeof incoming[number]>();
+      [...incoming, ...(state.testRuns || [])].forEach((run) => {
+        map.set(run._id, run);
+      });
+
+      // Sort by creation time inferred from Mongo ObjectId (newest first)
+      const getTs = (id: string) => {
+        // Each ObjectId's first 8 chars are a hex timestamp
+        const ts = parseInt(id.substring(0, 8), 16);
+        return isNaN(ts) ? 0 : ts;
+      };
+
+      const merged = Array.from(map.values()).sort(
+        (a, b) => getTs(b._id) - getTs(a._id)
+      );
+
+      return { testRuns: merged };
+    }),
   setTestRunsLoading: (testRunsLoading) => set({ testRunsLoading }),
   setTestRunsError: (testRunsError) => set({ testRunsError }),
   setSuccessfulCount: (successfulCount) => set({ successfulCount }),
