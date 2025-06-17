@@ -122,6 +122,7 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
           </div>
           {/* Video status badge (separate row) */}
           {(() => {
+            if (run.status === 'cancelled') return null;
             const hasRecording = (run.recordings ?? []).length > 0;
             const waiting = run.browserUseStatus === 'finished' && !hasRecording;
             if (!waiting && (!hasRecording || videoViewed)) return null;

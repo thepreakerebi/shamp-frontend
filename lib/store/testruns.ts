@@ -32,11 +32,21 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
     set((state) => {
       if (!incoming) return { testRuns: null };
 
-      // Combine existing + incoming and deduplicate by _id
-      const map = new Map<string, typeof incoming[number]>();
-      [...incoming, ...(state.testRuns || [])].forEach((run) => {
-        map.set(run._id, run);
+      // Combine incoming with existing, but drop items that no longer exist on the server
+      // unless they are still in a transient state (running / pending / paused).
+      const incomingIds = new Set(incoming.map(r => r._id));
+      const combined: typeof incoming = [...incoming];
+      (state.testRuns || []).forEach((r) => {
+        if (!incomingIds.has(r._id)) {
+          if (['running', 'pending', 'paused'].includes(r.status)) {
+            combined.push(r);
+          }
+        }
       });
+
+      // Deduplicate by _id (incoming takes precedence)
+      const map = new Map<string, typeof combined[number]>();
+      combined.forEach(run => map.set(run._id, run));
 
       // Sort by creation time inferred from Mongo ObjectId (newest first)
       const getTs = (id: string) => {
