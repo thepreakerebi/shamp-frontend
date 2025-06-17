@@ -15,6 +15,7 @@ export interface TestRun {
   startedAt?: string;
   finishedAt?: string;
   trashed?: boolean;
+  browserUseStatus?: string;
   // Add other fields as needed
 }
 
@@ -89,31 +90,31 @@ export function useTestRuns() {
     socket.on("testRun:stopped", ({ testRunId }: { testRunId: string }) => {
       {
         const existing = store.testRuns?.find(r => r._id === testRunId);
-        if (existing) updateTestRunInList({ ...existing, status: 'cancelled' });
+        if (existing) updateTestRunInList({ ...existing, status: 'cancelled', browserUseStatus: 'stopped' });
       }
     });
     socket.on("testRun:paused", ({ testRunId }: { testRunId: string }) => {
       {
         const existing = store.testRuns?.find(r => r._id === testRunId);
-        if (existing) updateTestRunInList({ ...existing, status: 'cancelled' });
+        if (existing) updateTestRunInList({ ...existing, status: 'cancelled', browserUseStatus: 'cancelled' });
       }
     });
     socket.on("testRun:resumed", ({ testRunId }: { testRunId: string }) => {
       {
         const existing = store.testRuns?.find(r => r._id === testRunId);
-        if (existing) updateTestRunInList({ ...existing, status: 'running' });
+        if (existing) updateTestRunInList({ ...existing, status: 'running', browserUseStatus: 'running' });
       }
     });
     socket.on("testRun:finished", ({ testRunId }: { testRunId: string }) => {
       {
         const existing = store.testRuns?.find(r => r._id === testRunId);
-        if (existing) updateTestRunInList({ ...existing, status: 'succeeded' });
+        if (existing) updateTestRunInList({ ...existing, status: 'succeeded', browserUseStatus: 'finished' });
       }
     });
     socket.on("testRun:failed", ({ testRunId }: { testRunId: string }) => {
       {
         const existing = store.testRuns?.find(r => r._id === testRunId);
-        if (existing) updateTestRunInList({ ...existing, status: 'failed' });
+        if (existing) updateTestRunInList({ ...existing, status: 'failed', browserUseStatus: 'failed' });
       }
     });
     socket.on("testRun:artifact", () => {
@@ -159,7 +160,10 @@ export function useTestRuns() {
       body: JSON.stringify({ testId }),
     });
     if (!res.ok) throw new Error("Failed to start test run");
-    return res.json() as Promise<{ testRun: TestRun; message: string }>;
+    const data = (await res.json()) as { testRun: TestRun; message: string };
+    // Optimistically add to store so UI updates immediately
+    addTestRunToList(data.testRun);
+    return data;
   };
 
   // Stop, pause, resume, delete
