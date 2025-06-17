@@ -2,6 +2,7 @@ import { useAuth } from "@/lib/auth";
 import { useEffect, useCallback } from "react";
 import io from "socket.io-client";
 import { useTestRunsStore } from "@/lib/store/testruns";
+import { useTestsStore } from "@/lib/store/tests";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
@@ -98,6 +99,8 @@ export function useTestRuns() {
       if (idToRemove) {
         removeTestRunFromList(idToRemove);
         removeTrashedTestRun(idToRemove);
+        // also purge from tests store cache
+        useTestsStore.getState().removeTestRunFromList(idToRemove);
       }
     });
     socket.on("testRun:stopped", async ({ testRunId }: { testRunId: string }) => {
@@ -269,6 +272,7 @@ export function useTestRuns() {
     if (!res.ok) throw new Error("Failed to delete test run");
     const resJson = await res.json() as { success: boolean };
     removeTestRunFromList(id);
+    useTestsStore.getState().removeTestRunFromList(id);
     return resJson;
   };
 

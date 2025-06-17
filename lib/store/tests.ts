@@ -25,6 +25,7 @@ interface TestsState {
   addTrashedTest: (test: Test) => void;
   removeTrashedTest: (id: string) => void;
   reset: () => void;
+  removeTestRunFromList: (id: string, testId?: string) => void;
 }
 
 export const useTestsStore = create<TestsState>((set, get) => ({
@@ -81,4 +82,15 @@ export const useTestsStore = create<TestsState>((set, get) => ({
       countError: null,
       testRunsByTestId: {},
     }),
+  removeTestRunFromList: (id: string, testId?: string) => set((state) => {
+    const tr = state.testRunsByTestId;
+    if (testId && tr[testId]) {
+      tr[testId] = tr[testId].filter(r => r._id !== id);
+    } else {
+      Object.keys(tr).forEach(key => {
+        tr[key] = tr[key].filter(r => r._id !== id);
+      });
+    }
+    return { testRunsByTestId: { ...tr } };
+  }),
 })); 

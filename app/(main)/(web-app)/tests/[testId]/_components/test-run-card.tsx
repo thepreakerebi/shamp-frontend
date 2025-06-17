@@ -8,7 +8,7 @@ import { PauseIcon, PlayIcon, StopCircleIcon } from "lucide-react";
 import { useTestRuns } from "@/hooks/use-testruns";
 import { TestRunCardActionsDropdown } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card-actions-dropdown";
 import { Separator } from "@/components/ui/separator";
-import React from "react";
+// import React from "react"; // video badge logic temporarily disabled
 
 export function TestRunCard({ run }: { run: TestRunSummary }) {
   const router = useRouter();
@@ -20,18 +20,8 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
     moveTestRunToTrash,
   } = useTestRuns();
 
-  // Track whether user has already opened the run (to hide "video ready" badge afterwards)
-  const viewedKey = `videoViewed:${run._id}`;
-  const [videoViewed, setVideoViewed] = React.useState(() => typeof window !== 'undefined' && sessionStorage.getItem(viewedKey) === '1');
-
-  const markViewed = () => {
-    try { sessionStorage.setItem(viewedKey, '1'); } catch {}
-    setVideoViewed(true);
-  };
-
   // Handle navigation
   const handleOpen: React.MouseEventHandler<HTMLDivElement> = () => {
-    if (!videoViewed) markViewed();
     router.push(`/testruns/${run._id}`);
   };
 
@@ -120,20 +110,7 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
             {(["finished", "stopped"].includes(run.browserUseStatus ?? "")) && statusBadge(run.status)}
             {run.status !== 'cancelled' && browserStatusBadge(run.browserUseStatus)}
           </div>
-          {/* Video status badge (separate row) */}
-          {(() => {
-            if (run.status === 'cancelled') return null;
-            const hasRecording = (run.recordings ?? []).length > 0;
-            const waiting = run.browserUseStatus === 'finished' && !hasRecording;
-            if (!waiting && (!hasRecording || videoViewed)) return null;
-            return (
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant={waiting ? 'outline' : 'secondary'} className="px-1.5 py-0 text-xs">
-                  {waiting ? 'waiting for video' : 'video ready'}
-                </Badge>
-              </div>
-            );
-          })()}
+          {/* Video status badge disabled for now */}
         </section>
         <nav onClick={(e) => e.stopPropagation()} data-stop-row>
           <TestRunCardActionsDropdown
