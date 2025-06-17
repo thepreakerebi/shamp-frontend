@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import React from "react";
 import { Test, useTests } from "@/hooks/use-tests";
 import { useTestRunsStore } from "@/lib/store/testruns";
+import { useTestRuns } from "@/hooks/use-testruns";
 import { RowActionsDropdown } from "./row-actions-dropdown";
 import { useAuth } from "@/lib/auth";
 import { Separator } from "@/components/ui/separator";
@@ -15,6 +16,8 @@ export function TestCard({ test }: { test: Test }) {
   const router = useRouter();
   const { moveTestToTrash, deleteTest, duplicateTest } = useTests();
   const { user } = useAuth();
+  // Initialize real-time socket listeners (no values needed here)
+  useTestRuns();
   // successfulRuns and failedRuns may be undefined on type Test, fallback to 0
   const successfulRuns = 'successfulRuns' in test ? (test as unknown as { successfulRuns?: number }).successfulRuns ?? 0 : 0;
   const failedRuns = 'failedRuns' in test ? (test as unknown as { failedRuns?: number }).failedRuns ?? 0 : 0;
@@ -22,16 +25,14 @@ export function TestCard({ test }: { test: Test }) {
     ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns
     : successfulRuns + failedRuns;
 
-  // Subscribe directly to the test-runs store so this component re-renders
-  const isRunning = useTestRunsStore(
-    React.useCallback(
-      state =>
-        state.testRuns?.some(
-          r => r.test === test._id && r.browserUseStatus === "running"
-        ) ?? false,
-      [test._id]
-    )
-  );
+  const testRunsStore = useTestRunsStore(state => state.testRuns);
+  const isRunning = React.useMemo(() => {
+    return (
+      testRunsStore?.some(
+        r => r.test === test._id && r.browserUseStatus === "running"
+      ) ?? false
+    );
+  }, [testRunsStore, test._id]);
 
   const runningBadge = (
     <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-primary/10 text-primary-foreground dark:text-primary flex items-center gap-1">
