@@ -68,6 +68,8 @@ export function useTestRuns() {
     addTestRunToList,
     removeTestRunFromList,
     updateTestRunInList,
+    addTrashedTestRun,
+    removeTrashedTestRun,
   } = store;
 
   // Real-time updates
@@ -82,11 +84,18 @@ export function useTestRuns() {
       addTestRunToList(testRun);
     });
     socket.on("testRun:trashed", ({ _id }: { _id: string }) => {
-      removeTestRunFromList(_id);
+      const existing = store.testRuns?.find(r => r._id === _id);
+      if (existing) {
+        removeTestRunFromList(_id);
+        addTrashedTestRun({ ...existing, trashed: true });
+      }
     });
     socket.on("testRun:deleted", (payload: { _id?: string; testRunId?: string }) => {
       const idToRemove = payload.testRunId ?? payload._id;
-      if (idToRemove) removeTestRunFromList(idToRemove);
+      if (idToRemove) {
+        removeTestRunFromList(idToRemove);
+        removeTrashedTestRun(idToRemove);
+      }
     });
     socket.on("testRun:stopped", ({ testRunId }: { testRunId: string }) => {
       {
@@ -147,10 +156,15 @@ export function useTestRuns() {
       }
     );
     socket.on("testRun:chatMessage", () => {});
+    socket.on("testRun:restored", ({ testRun }: { testRun: TestRun }) => {
+      // remove from trash and add to active list
+      removeTrashedTestRun(testRun._id);
+      addTestRunToList(testRun);
+    });
     return () => {
       socket.disconnect();
     };
-  }, [token, addTestRunToList, removeTestRunFromList, updateTestRunInList]);
+  }, [token, addTestRunToList, removeTestRunFromList, updateTestRunInList, addTrashedTestRun, removeTrashedTestRun]);
 
   // Analytics
   const fetchSuccessfulCount = useCallback(async () => {
@@ -247,6 +261,7 @@ export function useTestRuns() {
     if (!res.ok) throw new Error("Failed to move test run to trash");
     const { testRun } = await res.json();
     removeTestRunFromList(id);
+    addTrashedTestRun({ ...testRun, trashed: true });
     return testRun;
   };
 
@@ -299,8 +314,23 @@ export function useTestRuns() {
     return res.json() as Promise<ChatMessage[]>;
   };
 
+  const restoreTestRunFromTrash = async (id: string) => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/testruns/${id}/restore`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to restore test run");
+    const { testRun } = await res.json();
+    removeTrashedTestRun(id);
+    addTestRunToList(testRun);
+    return testRun;
+  };
+
   return {
     testRuns: store.testRuns,
+    trashedTestRuns: store.trashedTestRuns,
     successfulCount: store.successfulCount,
     failedCount: store.failedCount,
     startTestRun,
@@ -315,5 +345,6 @@ export function useTestRuns() {
     getChatHistory,
     fetchSuccessfulCount,
     fetchFailedCount,
+    restoreTestRunFromTrash,
   };
 }

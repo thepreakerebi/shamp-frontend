@@ -3,6 +3,7 @@ import type { TestRun } from "@/hooks/use-testruns";
 
 interface TestRunsState {
   testRuns: TestRun[] | null;
+  trashedTestRuns: TestRun[] | null;
   testRunsLoading: boolean;
   testRunsError: string | null;
   successfulCount: number | null;
@@ -15,11 +16,14 @@ interface TestRunsState {
   updateTestRunInList: (run: TestRun) => void;
   removeTestRunFromList: (id: string) => void;
   addTestRunToList: (run: TestRun) => void;
+  addTrashedTestRun: (run: TestRun) => void;
+  removeTrashedTestRun: (id: string) => void;
   reset: () => void;
 }
 
 export const useTestRunsStore = create<TestRunsState>((set) => ({
   testRuns: null,
+  trashedTestRuns: null,
   testRunsLoading: true,
   testRunsError: null,
   successfulCount: null,
@@ -43,9 +47,18 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
     set((state) => ({
       testRuns: state.testRuns ? [run, ...state.testRuns] : [run],
     })),
+  addTrashedTestRun: (run) =>
+    set((state) => ({
+      trashedTestRuns: state.trashedTestRuns ? [run, ...state.trashedTestRuns] : [run],
+    })),
+  removeTrashedTestRun: (id) =>
+    set((state) => ({
+      trashedTestRuns: state.trashedTestRuns ? state.trashedTestRuns.filter((r) => r._id !== id) : null,
+    })),
   reset: () =>
     set({
       testRuns: null,
+      trashedTestRuns: null,
       testRunsLoading: true,
       testRunsError: null,
       successfulCount: null,
