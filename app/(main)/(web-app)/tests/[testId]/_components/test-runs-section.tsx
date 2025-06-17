@@ -43,6 +43,13 @@ export default function TestRunsSection({ test }: { test: Test }) {
     };
   }, [test?._id]);
 
+  // keep local state in sync when store updates (for delete/real-time)
+  useEffect(() => {
+    if (storeRuns !== null) {
+      setRuns(storeRuns as unknown as TestRunSummary[]);
+    }
+  }, [storeRuns]);
+
   const displayRuns = storeRuns !== null ? storeRuns : runs;
 
   return (
