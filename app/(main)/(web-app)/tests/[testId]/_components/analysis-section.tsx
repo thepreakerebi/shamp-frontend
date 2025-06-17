@@ -57,7 +57,7 @@ export default function AnalysisSection({ test }: { test: Test }) {
   const result = selected.result || ({} as AnalysisResult);
   const {
     overallSuccessRate,
-    aggregateStats,
+    // aggregateStats,
     overallSummary,
     commonFrustrations,
     blockers,
@@ -150,7 +150,7 @@ export default function AnalysisSection({ test }: { test: Test }) {
       )}
 
       {/* Aggregate stats */}
-      {aggregateStats && (
+      {/* {aggregateStats && (
         <Card>
           <CardHeader>
             <CardTitle>Aggregate stats</CardTitle>
@@ -171,7 +171,7 @@ export default function AnalysisSection({ test }: { test: Test }) {
             </ul>
           </CardContent>
         </Card>
-      )}
+      )} */}
 
       {/* List sections */}
       {listSections.map(({ label, items }) =>
