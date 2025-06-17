@@ -10,8 +10,8 @@ export interface TestRun {
   _id: string;
   test: string;
   persona: string;
-  status: string;
-  artifacts: string[];
+  status: "pending" | "running" | "paused" | "succeeded" | "failed" | "cancelled";
+  artifacts: Artifact[];
   startedAt?: string;
   finishedAt?: string;
   trashed?: boolean;
@@ -84,8 +84,9 @@ export function useTestRuns() {
     socket.on("testRun:trashed", ({ _id }: { _id: string }) => {
       removeTestRunFromList(_id);
     });
-    socket.on("testRun:deleted", ({ _id }: { _id: string }) => {
-      removeTestRunFromList(_id);
+    socket.on("testRun:deleted", (payload: { _id?: string; testRunId?: string }) => {
+      const idToRemove = payload.testRunId ?? payload._id;
+      if (idToRemove) removeTestRunFromList(idToRemove);
     });
     socket.on("testRun:stopped", ({ testRunId }: { testRunId: string }) => {
       {
@@ -96,7 +97,7 @@ export function useTestRuns() {
     socket.on("testRun:paused", ({ testRunId }: { testRunId: string }) => {
       {
         const existing = store.testRuns?.find(r => r._id === testRunId);
-        if (existing) updateTestRunInList({ ...existing, status: 'cancelled', browserUseStatus: 'cancelled' });
+        if (existing) updateTestRunInList({ ...existing, status: 'paused', browserUseStatus: 'paused' });
       }
     });
     socket.on("testRun:resumed", ({ testRunId }: { testRunId: string }) => {
@@ -105,21 +106,46 @@ export function useTestRuns() {
         if (existing) updateTestRunInList({ ...existing, status: 'running', browserUseStatus: 'running' });
       }
     });
-    socket.on("testRun:finished", ({ testRunId }: { testRunId: string }) => {
-      {
-        const existing = store.testRuns?.find(r => r._id === testRunId);
-        if (existing) updateTestRunInList({ ...existing, status: 'succeeded', browserUseStatus: 'finished' });
+    socket.on("testRun:finished", async ({ testRunId }: { testRunId: string }) => {
+      try {
+        // Fetch the latest status from the backend so we know whether it
+        // ended in "succeeded" or "failed".
+        const res = await fetch(`${API_BASE}/testruns/${testRunId}/status`, {
+          credentials: "include",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const run = (await res.json()) as TestRunStatus;
+          // Map only the fields we keep in the list
+          const existing = store.testRuns?.find(r => r._id === testRunId);
+          if (existing) {
+            updateTestRunInList({
+              ...existing,
+              status: run.status as typeof existing.status,
+              browserUseStatus: run.browserUseStatus,
+            });
+          }
+          return;
+        }
+      } catch {
+        /* swallow */
       }
+      // Fallback: assume success if we cannot fetch
+      const existing = store.testRuns?.find(r => r._id === testRunId);
+      if (existing) updateTestRunInList({ ...existing, status: "succeeded", browserUseStatus: "finished" });
     });
-    socket.on("testRun:failed", ({ testRunId }: { testRunId: string }) => {
-      {
+    socket.on(
+      "testRun:artifact",
+      ({ testRunId, artifact }: { testRunId: string; artifact: Artifact }) => {
         const existing = store.testRuns?.find(r => r._id === testRunId);
-        if (existing) updateTestRunInList({ ...existing, status: 'failed', browserUseStatus: 'failed' });
+        if (existing && !existing.artifacts.some(a => a._id === artifact._id)) {
+          updateTestRunInList({
+            ...existing,
+            artifacts: [...existing.artifacts, artifact],
+          });
+        }
       }
-    });
-    socket.on("testRun:artifact", () => {
-      // Optionally update artifacts in testRuns state
-    });
+    );
     socket.on("testRun:chatMessage", () => {});
     return () => {
       socket.disconnect();
@@ -262,9 +288,9 @@ export function useTestRuns() {
   const getChatHistory = async (params: { testId: string; testRunId?: string; personaId?: string }) => {
     if (!token) throw new Error("Not authenticated");
     const url = new URL(`${API_BASE}/testruns/chat/history`, window.location.origin);
-    url.searchParams.append('testId', params.testId);
-    if (params.testRunId) url.searchParams.append('testRunId', params.testRunId);
-    if (params.personaId) url.searchParams.append('personaId', params.personaId);
+    url.searchParams.append("testId", params.testId);
+    if (params.testRunId) url.searchParams.append("testRunId", params.testRunId);
+    if (params.personaId) url.searchParams.append("personaId", params.personaId);
     const res = await fetch(url.toString(), {
       credentials: "include",
       headers: { Authorization: `Bearer ${token}` },
@@ -290,4 +316,4 @@ export function useTestRuns() {
     fetchSuccessfulCount,
     fetchFailedCount,
   };
-} 
+}
