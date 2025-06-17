@@ -29,8 +29,6 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
     const map: Record<string, string> = {
       succeeded: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
       failed: "bg-red-500/10 text-red-700 dark:text-red-400",
-      running: "bg-primary/10 text-primary-foreground dark:text-primary",
-      cancelled: "bg-muted text-muted-foreground",
     };
     const cls = map[status] ?? "bg-muted text-muted-foreground";
     return (
@@ -107,7 +105,7 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
             {run.personaName}
           </h3>
           <div className="flex items-center gap-2 mt-1">
-            {run.browserUseStatus === "running" ? null : statusBadge(run.status)}
+            {(["finished", "stopped"].includes(run.browserUseStatus ?? "")) && statusBadge(run.status)}
             {browserStatusBadge(run.browserUseStatus)}
           </div>
         </section>
