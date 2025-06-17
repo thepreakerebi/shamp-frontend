@@ -21,11 +21,15 @@ interface TestsState {
   updateTestInList: (test: Test) => void;
   removeTestFromList: (id: string) => void;
   addTestToList: (test: Test) => void;
+  trashedTests: Test[] | null;
+  addTrashedTest: (test: Test) => void;
+  removeTrashedTest: (id: string) => void;
   reset: () => void;
 }
 
 export const useTestsStore = create<TestsState>((set, get) => ({
   tests: null,
+  trashedTests: null,
   testsLoading: true,
   testsError: null,
   count: 0,
@@ -58,9 +62,18 @@ export const useTestsStore = create<TestsState>((set, get) => ({
     set((state) => ({
       tests: state.tests ? [test, ...state.tests] : [test],
     })),
+  addTrashedTest: (test) =>
+    set((state) => ({
+      trashedTests: state.trashedTests ? [test, ...state.trashedTests] : [test],
+    })),
+  removeTrashedTest: (id) =>
+    set((state) => ({
+      trashedTests: state.trashedTests ? state.trashedTests.filter((t) => t._id !== id) : null,
+    })),
   reset: () =>
     set({
       tests: null,
+      trashedTests: null,
       testsLoading: true,
       testsError: null,
       count: 0,

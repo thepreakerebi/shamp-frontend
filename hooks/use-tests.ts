@@ -64,6 +64,9 @@ export function useTests() {
     countError,
     countLoading,
     setTests,
+    trashedTests,
+    addTrashedTest,
+    removeTrashedTest,
     setTestsLoading,
     setTestsError,
     setCount,
@@ -171,21 +174,30 @@ export function useTests() {
       transports: ["websocket"],
       auth: { token },
     });
-    const handleUpdate = () => {
+    socket.on("test:created", () => {
       refetch();
-    };
-    socket.on("test:created", handleUpdate);
-    socket.on("test:deleted", handleUpdate);
-    socket.on("test:updated", handleUpdate);
-    socket.on("test:trashed", handleUpdate);
+    });
+    socket.on("test:deleted", ({ _id }: { _id: string }) => {
+      useTestsStore.getState().removeTestFromList(_id);
+      removeTrashedTest(_id);
+    });
+    socket.on("test:trashed", (test: Test) => {
+      useTestsStore.getState().removeTestFromList(test._id);
+      addTrashedTest({ ...test, trashed: true });
+    });
+    socket.on("test:updated", (test: Test) => {
+      if (test.trashed) {
+        useTestsStore.getState().removeTestFromList(test._id);
+        addTrashedTest({ ...test, trashed: true });
+      } else {
+        removeTrashedTest(test._id);
+        useTestsStore.getState().updateTestInList(test);
+      }
+    });
     return () => {
-      socket.off("test:created", handleUpdate);
-      socket.off("test:deleted", handleUpdate);
-      socket.off("test:updated", handleUpdate);
-      socket.off("test:trashed", handleUpdate);
       socket.disconnect();
     };
-  }, [refetch, token]);
+  }, [token, refetch, addTrashedTest, removeTrashedTest]);
 
   // Get a single test by ID
   const getTestById = async (id: string): Promise<Test> => {
@@ -281,9 +293,8 @@ export function useTests() {
     if (!res.ok) throw new Error("Failed to move test to trash");
     const data = await res.json();
     const updated = data.test ?? data;
-    // remove from active tests list
     useTestsStore.getState().removeTestFromList(id);
-    refetch();
+    addTrashedTest({ ...updated, trashed: true });
     return updated;
   };
 
@@ -298,8 +309,8 @@ export function useTests() {
     if (!res.ok) throw new Error("Failed to restore test from trash");
     const data = await res.json();
     const restored = data.test ?? data;
+    removeTrashedTest(id);
     useTestsStore.getState().updateTestInList(restored);
-    refetch();
     return restored;
   };
 
@@ -355,5 +366,6 @@ export function useTests() {
     getTestAnalysisHistory,
     searchTests,
     getTestRunsForTest,
+    trashedTests,
   };
 } 
