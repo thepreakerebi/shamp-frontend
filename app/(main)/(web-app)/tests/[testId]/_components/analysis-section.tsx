@@ -10,6 +10,8 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { useState } from "react";
 
 interface AnalysisResult {
   overallSuccessRate?: {
@@ -38,10 +40,13 @@ interface AnalysisResult {
 }
 
 export default function AnalysisSection({ test }: { test: Test }) {
-  const analysisArr = (test as unknown as { analysis?: { result: AnalysisResult }[] }).analysis;
-  const latest = Array.isArray(analysisArr) && analysisArr.length > 0 ? analysisArr[0] : null;
+  const analysisArr = (test as unknown as { analysis?: { result: AnalysisResult; createdAt?: string; _id: string }[] }).analysis ?? [];
 
-  if (!latest) {
+  const [selectedId, setSelectedId] = useState<string | null>(analysisArr.length ? analysisArr[0]._id : null);
+
+  const selected = analysisArr.find(a => a._id === selectedId) ?? null;
+
+  if (!selected) {
     return (
       <article className="p-4 space-y-4">
         <p className="text-muted-foreground">No analysis available yet.</p>
@@ -49,7 +54,7 @@ export default function AnalysisSection({ test }: { test: Test }) {
     );
   }
 
-  const result = latest.result || ({} as AnalysisResult);
+  const result = selected.result || ({} as AnalysisResult);
   const {
     overallSuccessRate,
     aggregateStats,
@@ -71,9 +76,30 @@ export default function AnalysisSection({ test }: { test: Test }) {
 
   return (
     <article className="p-4 space-y-6" aria-labelledby="analysis-heading">
-      <h2 id="analysis-heading" className="sr-only">
-        Analysis details
-      </h2>
+      {/* Header with dropdown */}
+      <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">
+        <h2 id="analysis-heading" className="text-xl font-semibold">Analysis details</h2>
+        {analysisArr.length > 1 && (
+          <Select value={selectedId ?? undefined} onValueChange={setSelectedId}>
+            <SelectTrigger className="w-[220px] h-8">
+              <SelectValue placeholder="Select analysis" />
+            </SelectTrigger>
+            <SelectContent>
+              {analysisArr.map((a, idx) => {
+                const label = a.createdAt
+                  ? new Date(a.createdAt).toLocaleString(undefined, {
+                      month: 'long', day: 'numeric', year: 'numeric',
+                      hour: 'numeric', minute: '2-digit'
+                    })
+                  : `Analysis ${idx + 1}`;
+                return (
+                  <SelectItem key={a._id} value={a._id}>{label}</SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        )}
+      </section>
 
       {/* Summary */}
       {overallSummary && (
