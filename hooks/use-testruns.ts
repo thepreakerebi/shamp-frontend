@@ -147,10 +147,10 @@ export function useTestRuns() {
       "testRun:artifact",
       ({ testRunId, artifact }: { testRunId: string; artifact: Artifact }) => {
         const existing = store.testRuns?.find(r => r._id === testRunId);
-        if (existing && !existing.artifacts.some(a => a._id === artifact._id)) {
+        if (existing && !(existing.artifacts || []).some(a => a._id === artifact._id)) {
           updateTestRunInList({
             ...existing,
-            artifacts: [...existing.artifacts, artifact],
+            artifacts: [...(existing.artifacts ?? []), artifact],
           });
         }
       }

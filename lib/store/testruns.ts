@@ -44,9 +44,17 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
       testRuns: state.testRuns ? state.testRuns.filter((r) => r._id !== id) : null,
     })),
   addTestRunToList: (run) =>
-    set((state) => ({
-      testRuns: state.testRuns ? [run, ...state.testRuns] : [run],
-    })),
+    set((state) => {
+      const exists = state.testRuns?.some(r => r._id === run._id);
+      if (exists) {
+        return {
+          testRuns: state.testRuns?.map(r => (r._id === run._id ? run : r)) || [run],
+        };
+      }
+      return {
+        testRuns: state.testRuns ? [run, ...state.testRuns] : [run],
+      };
+    }),
   addTrashedTestRun: (run) =>
     set((state) => ({
       trashedTestRuns: state.trashedTestRuns ? [run, ...state.trashedTestRuns] : [run],
