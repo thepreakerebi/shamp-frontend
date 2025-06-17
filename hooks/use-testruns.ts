@@ -72,6 +72,9 @@ export function useTestRuns() {
     removeTrashedTestRun,
   } = store;
 
+  // Helper to always get the latest store snapshot inside socket listeners
+  const getState = useTestRunsStore.getState;
+
   // Real-time updates
   useEffect(() => {
     if (!token) return;
@@ -84,7 +87,7 @@ export function useTestRuns() {
       addTestRunToList(testRun);
     });
     socket.on("testRun:trashed", ({ _id }: { _id: string }) => {
-      const existing = store.testRuns?.find(r => r._id === _id);
+      const existing = getState().testRuns?.find(r => r._id === _id);
       if (existing) {
         removeTestRunFromList(_id);
         addTrashedTestRun({ ...existing, trashed: true });
@@ -99,19 +102,19 @@ export function useTestRuns() {
     });
     socket.on("testRun:stopped", ({ testRunId }: { testRunId: string }) => {
       {
-        const existing = store.testRuns?.find(r => r._id === testRunId);
+        const existing = getState().testRuns?.find(r => r._id === testRunId);
         if (existing) updateTestRunInList({ ...existing, status: 'cancelled', browserUseStatus: 'stopped' });
       }
     });
     socket.on("testRun:paused", ({ testRunId }: { testRunId: string }) => {
       {
-        const existing = store.testRuns?.find(r => r._id === testRunId);
+        const existing = getState().testRuns?.find(r => r._id === testRunId);
         if (existing) updateTestRunInList({ ...existing, status: 'paused', browserUseStatus: 'paused' });
       }
     });
     socket.on("testRun:resumed", ({ testRunId }: { testRunId: string }) => {
       {
-        const existing = store.testRuns?.find(r => r._id === testRunId);
+        const existing = getState().testRuns?.find(r => r._id === testRunId);
         if (existing) updateTestRunInList({ ...existing, status: 'running', browserUseStatus: 'running' });
       }
     });
@@ -126,7 +129,7 @@ export function useTestRuns() {
         if (res.ok) {
           const run = (await res.json()) as TestRunStatus;
           // Map only the fields we keep in the list
-          const existing = store.testRuns?.find(r => r._id === testRunId);
+          const existing = getState().testRuns?.find(r => r._id === testRunId);
           if (existing) {
             updateTestRunInList({
               ...existing,
@@ -140,13 +143,13 @@ export function useTestRuns() {
         /* swallow */
       }
       // Fallback: assume success if we cannot fetch
-      const existing = store.testRuns?.find(r => r._id === testRunId);
+      const existing = getState().testRuns?.find(r => r._id === testRunId);
       if (existing) updateTestRunInList({ ...existing, status: "succeeded", browserUseStatus: "finished" });
     });
     socket.on(
       "testRun:artifact",
       ({ testRunId, artifact }: { testRunId: string; artifact: Artifact }) => {
-        const existing = store.testRuns?.find(r => r._id === testRunId);
+        const existing = getState().testRuns?.find(r => r._id === testRunId);
         if (existing && !(existing.artifacts || []).some(a => a._id === artifact._id)) {
           updateTestRunInList({
             ...existing,

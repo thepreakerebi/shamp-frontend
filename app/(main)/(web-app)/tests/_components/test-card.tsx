@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import React from "react";
 import { Test, useTests } from "@/hooks/use-tests";
-import { useTestRuns } from "@/hooks/use-testruns";
+import { useTestRunsStore } from "@/lib/store/testruns";
 import { RowActionsDropdown } from "./row-actions-dropdown";
 import { useAuth } from "@/lib/auth";
 import { Separator } from "@/components/ui/separator";
@@ -14,7 +14,6 @@ import { Separator } from "@/components/ui/separator";
 export function TestCard({ test }: { test: Test }) {
   const router = useRouter();
   const { moveTestToTrash, deleteTest, duplicateTest } = useTests();
-  const { testRuns } = useTestRuns();
   const { user } = useAuth();
   // successfulRuns and failedRuns may be undefined on type Test, fallback to 0
   const successfulRuns = 'successfulRuns' in test ? (test as unknown as { successfulRuns?: number }).successfulRuns ?? 0 : 0;
@@ -23,10 +22,16 @@ export function TestCard({ test }: { test: Test }) {
     ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns
     : successfulRuns + failedRuns;
 
-  const isRunning = testRuns?.some(r => {
-    const browserStatus = (r as { browserUseStatus?: string }).browserUseStatus;
-    return r.test === test._id && browserStatus === "running";
-  });
+  // Subscribe directly to the test-runs store so this component re-renders
+  const isRunning = useTestRunsStore(
+    React.useCallback(
+      state =>
+        state.testRuns?.some(
+          r => r.test === test._id && r.browserUseStatus === "running"
+        ) ?? false,
+      [test._id]
+    )
+  );
 
   const runningBadge = (
     <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-primary/10 text-primary-foreground dark:text-primary flex items-center gap-1">
