@@ -26,6 +26,8 @@ interface ProjectsState {
   removeProjectFromList: (id: string) => void;
   addProjectToList: (project: Project) => void;
   reset: () => void;
+  addTrashedProject: (project: Project) => void;
+  removeTrashedProject: (id: string) => void;
 }
 
 export const useProjectsStore = create<ProjectsState>((set) => ({
@@ -112,4 +114,12 @@ export const useProjectsStore = create<ProjectsState>((set) => ({
       countLoading: true,
       countError: null,
     }),
+  addTrashedProject: (project) =>
+    set((state) => ({
+      trashedProjects: state.trashedProjects ? [project, ...state.trashedProjects] : [project],
+    })),
+  removeTrashedProject: (id) =>
+    set((state) => ({
+      trashedProjects: state.trashedProjects ? state.trashedProjects.filter((p) => p._id !== id) : null,
+    })),
 })); 

@@ -122,21 +122,30 @@ export function useProjects() {
       transports: ["websocket"],
       auth: { token },
     });
-    const handleUpdate = () => {
-      refetch();
-    };
-    socket.on("project:created", handleUpdate);
-    socket.on("project:deleted", handleUpdate);
-    socket.on("project:updated", handleUpdate);
-    socket.on("project:trashed", handleUpdate);
+    socket.on("project:created", (project: Project) => {
+      store.addProjectToList(project);
+    });
+    socket.on("project:deleted", ({ _id }: { _id: string }) => {
+      store.removeProjectFromList(_id);
+      store.removeTrashedProject(_id);
+    });
+    socket.on("project:trashed", (project: Project) => {
+      store.removeProjectFromList(project._id);
+      store.addTrashedProject({ ...project, trashed: true });
+    });
+    socket.on("project:updated", (project: Project) => {
+      if (project.trashed) {
+        store.removeProjectFromList(project._id);
+        store.addTrashedProject({ ...project, trashed: true });
+      } else {
+        store.removeTrashedProject(project._id);
+        store.updateProjectInList(project);
+      }
+    });
     return () => {
-      socket.off("project:created", handleUpdate);
-      socket.off("project:deleted", handleUpdate);
-      socket.off("project:updated", handleUpdate);
-      socket.off("project:trashed", handleUpdate);
       socket.disconnect();
     };
-  }, [refetch, token]);
+  }, [token, store.addProjectToList, store.removeProjectFromList, store.addTrashedProject, store.removeTrashedProject, store.updateProjectInList]);
 
   // Get a single project by ID
   const getProjectById = async (id: string): Promise<Project> => {
@@ -210,8 +219,8 @@ export function useProjects() {
     });
     if (!res.ok) throw new Error("Failed to move project to trash");
     const project = await res.json();
-    store.updateProjectInList(project);
-    refetch();
+    store.removeProjectFromList(id);
+    store.addTrashedProject({ ...project, trashed: true });
     return project;
   };
 
@@ -225,8 +234,8 @@ export function useProjects() {
     });
     if (!res.ok) throw new Error("Failed to restore project from trash");
     const project = await res.json();
-    store.updateProjectInList(project);
-    refetch();
+    store.removeTrashedProject(id);
+    store.addProjectToList(project);
     return project;
   };
 
