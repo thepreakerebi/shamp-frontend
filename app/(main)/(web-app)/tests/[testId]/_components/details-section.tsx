@@ -56,7 +56,7 @@ export default function DetailsSection({ test }: { test: Test }) {
       {/* Header */}
       <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <section className="space-y-1 flex-1 min-w-0">
-          <h2 id="test-details-heading" className="text-2xl font-semibold leading-tight truncate">
+          <h2 id="test-details-heading" className="text-xl font-semibold leading-tight truncate">
             {test.name}
           </h2>
           {test.description && (
