@@ -100,11 +100,30 @@ export function useTestRuns() {
         removeTrashedTestRun(idToRemove);
       }
     });
-    socket.on("testRun:stopped", ({ testRunId }: { testRunId: string }) => {
-      {
-        const existing = getState().testRuns?.find(r => r._id === testRunId);
-        if (existing) updateTestRunInList({ ...existing, status: 'cancelled', browserUseStatus: 'stopped' });
-      }
+    socket.on("testRun:stopped", async ({ testRunId }: { testRunId: string }) => {
+      const current = getState().testRuns?.find(r => r._id === testRunId);
+      if (!current) return;
+
+      // Attempt to get the definitive status from the backend; if the request
+      // fails we at least update browserUseStatus without touching status.
+      try {
+        const res = await fetch(`${API_BASE}/testruns/${testRunId}`, {
+          credentials: "include",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const run = (await res.json()) as TestRunStatus;
+          updateTestRunInList({
+            ...current,
+            status: run.status as typeof current.status,
+            browserUseStatus: run.browserUseStatus,
+          });
+          return;
+        }
+      } catch {/* ignore */}
+
+      // Fallback: keep existing status, only mark browserUseStatus stopped
+      updateTestRunInList({ ...current, browserUseStatus: "stopped" });
     });
     socket.on("testRun:paused", ({ testRunId }: { testRunId: string }) => {
       {
@@ -122,7 +141,7 @@ export function useTestRuns() {
       try {
         // Fetch the latest status from the backend so we know whether it
         // ended in "succeeded" or "failed".
-        const res = await fetch(`${API_BASE}/testruns/${testRunId}/status`, {
+        const res = await fetch(`${API_BASE}/testruns/${testRunId}`, {
           credentials: "include",
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -271,7 +290,7 @@ export function useTestRuns() {
   // Get status, media
   const getTestRunStatus = async (id: string): Promise<TestRunStatus> => {
     if (!token) throw new Error("Not authenticated");
-    const res = await fetch(`${API_BASE}/testruns/${id}/status`, {
+    const res = await fetch(`${API_BASE}/testruns/${id}`, {
       credentials: "include",
       headers: { Authorization: `Bearer ${token}` },
     });
