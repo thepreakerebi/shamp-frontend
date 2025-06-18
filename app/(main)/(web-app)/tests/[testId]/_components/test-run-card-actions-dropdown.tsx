@@ -39,6 +39,11 @@ export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, acti
     router.push(`/testruns/${runId}`);
   };
 
+  const handleOpenNewTab = () => {
+    try { sessionStorage.setItem(`videoViewed:${runId}`, '1'); } catch {}
+    window.open(`/testruns/${runId}`, "_blank");
+  };
+
   const handleMoveToTrash = () => {
     setConfirmState({ type: "trash", loading: false });
   };
@@ -74,6 +79,7 @@ export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, acti
         </CustomDropdownMenuTrigger>
         <CustomDropdownMenuContent align="end">
           <CustomDropdownMenuItem data-stop-row onSelect={handleOpen}>Open</CustomDropdownMenuItem>
+          <CustomDropdownMenuItem data-stop-row onSelect={handleOpenNewTab}>Open in new tab</CustomDropdownMenuItem>
           <CustomDropdownMenuItem data-stop-row onSelect={handleMoveToTrash}>Move to trash</CustomDropdownMenuItem>
           <CustomDropdownMenuItem variant="destructive" data-stop-row onSelect={handleDelete}>Delete</CustomDropdownMenuItem>
         </CustomDropdownMenuContent>
