@@ -3,6 +3,8 @@ import { useParams, notFound } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { useTests } from "@/hooks/use-tests";
+import type { Test as TestType } from "@/hooks/use-tests";
+import { useTestsStore } from "@/lib/store/tests";
 import DetailsSection from "./_components/details-section";
 import AnalysisSection from "./_components/analysis-section";
 import TestRunsSection from "./_components/test-runs-section";
@@ -22,6 +24,9 @@ export default function TestDetailPage() {
         try {
           const fetched = await getTestById(testId);
           setTest(fetched);
+          try {
+            useTestsStore.getState().updateTestInList(fetched as TestType);
+          } catch {}
         } catch {
           notFound();
         } finally {
