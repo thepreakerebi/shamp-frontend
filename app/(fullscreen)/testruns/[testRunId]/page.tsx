@@ -1,32 +1,89 @@
 "use client";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useTestRuns } from "@/hooks/use-testruns";
+import { useTestRuns, TestRunStatus } from "@/hooks/use-testruns";
+import dynamic from "next/dynamic";
+import StepNode from "./_components/step-node";
+
+// Dynamic React Flow components (SSR disabled)
+const ReactFlow = dynamic(() => import("reactflow").then(m => m.ReactFlow), { ssr: false });
+const Background = dynamic(() => import("reactflow").then(m => m.Background), { ssr: false });
+const Controls = dynamic(() => import("reactflow").then(m => m.Controls), { ssr: false });
+
+import type { Node } from "reactflow";
 
 export default function TestRunCanvasPage() {
   const { testRunId } = useParams<{ testRunId: string }>();
   const { getTestRunStatus } = useTestRuns();
   const [personaName, setPersonaName] = useState<string | undefined>();
+  const [nodes, setNodes] = useState<Node[]>([]);
+
+  // Map run.stepsWithScreenshots to React Flow nodes
+  const buildNodes = (run: TestRunStatus) => {
+    const steps = run.stepsWithScreenshots ?? [];
+    const baseX = 0;
+    const spacing = 320; // px between nodes horizontally
+    const built: Node[] = steps.map((s, idx) => ({
+      id: `step-${idx}`,
+      type: "step",
+      position: { x: baseX + idx * spacing, y: 0 },
+      data: {
+        screenshot: s.screenshot,
+        description: (s.step as Record<string, unknown>)?.evaluation_previous_goal as string ?? "",
+        nextGoal: (s.step as Record<string, unknown>)?.next_goal as string ?? "",
+      },
+    }));
+    setNodes(built);
+  };
 
   useEffect(() => {
     (async () => {
       if (!testRunId) return;
       try {
         const run = await getTestRunStatus(testRunId);
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error personaName may not be present in type
-        setPersonaName(run.personaName);
+        const pn = (run as { personaName?: string }).personaName;
+        setPersonaName(pn);
+        buildNodes(run as TestRunStatus);
       } catch {
         /* ignore */
       }
     })();
   }, [testRunId, getTestRunStatus]);
 
+  // Node types registration
+  const nodeTypes = { step: StepNode };
+
   return (
-    <div className="flex items-center justify-center h-screen w-full">
-      <h1 className="text-3xl font-bold">
-        {personaName ? `${personaName} Test Run` : "Loading..."}
-      </h1>
-    </div>
+    <section className="grid grid-cols-[320px_1fr_360px] h-screen w-full">
+      {/* Left summary panel placeholder */}
+      <aside className="border-r overflow-auto p-4">
+        <h2 className="text-lg font-semibold mb-2">Summary</h2>
+        <p className="text-sm text-muted-foreground">
+          {personaName ? `${personaName}'s run` : "Loading..."}
+        </p>
+      </aside>
+
+      {/* Center canvas */}
+      <section className="relative overflow-hidden">
+        {/* Only render React Flow on client */}
+        {ReactFlow && (
+          <ReactFlow
+            nodes={nodes}
+            nodeTypes={nodeTypes}
+            fitView
+            proOptions={{ hideAttribution: true }}
+          >
+            <Controls />
+            <Background />
+          </ReactFlow>
+        )}
+      </section>
+
+      {/* Right chat panel placeholder */}
+      <aside className="border-l overflow-auto p-4">
+        <h2 className="text-lg font-semibold mb-2">Chat</h2>
+        <p className="text-sm text-muted-foreground">Coming soon…</p>
+      </aside>
+    </section>
   );
 } 
