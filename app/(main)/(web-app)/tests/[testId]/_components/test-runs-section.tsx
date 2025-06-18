@@ -66,7 +66,7 @@ export default function TestRunsSection({ test }: { test: Test }) {
 
   return (
     <section className="p-4 space-y-4">
-      <section className="flex items-center justify-between gap-4 flex-wrap">
+      <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">
         <h2 className="text-xl font-semibold">Test runs</h2>
         <TestRunsFilter personaOptions={personaOptions} filters={filters} onChange={setFilters} />
       </section>

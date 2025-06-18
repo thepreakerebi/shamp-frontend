@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
 
 interface AnalysisResult {
@@ -40,7 +41,12 @@ interface AnalysisResult {
 }
 
 export default function AnalysisSection({ test }: { test: Test }) {
-  const analysisArr = (test as unknown as { analysis?: { result: AnalysisResult; createdAt?: string; _id: string }[] }).analysis ?? [];
+  const rawArr = (test as unknown as { analysis?: { result: AnalysisResult; createdAt?: string; _id: string }[] }).analysis ?? [];
+  const analysisArr = [...rawArr].sort((a,b)=>{
+    const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return db - da;
+  });
 
   const [selectedId, setSelectedId] = useState<string | null>(analysisArr.length ? analysisArr[0]._id : null);
 
@@ -85,17 +91,19 @@ export default function AnalysisSection({ test }: { test: Test }) {
               <SelectValue placeholder="Select analysis" />
             </SelectTrigger>
             <SelectContent>
-              {analysisArr.map((a, idx) => {
-                const label = a.createdAt
-                  ? new Date(a.createdAt).toLocaleString(undefined, {
-                      month: 'long', day: 'numeric', year: 'numeric',
-                      hour: 'numeric', minute: '2-digit'
-                    })
-                  : `Analysis ${idx + 1}`;
-                return (
-                  <SelectItem key={a._id} value={a._id}>{label}</SelectItem>
-                );
-              })}
+              <ScrollArea className="h-48">{/* 12rem */}
+                {analysisArr.map((a, idx) => {
+                  const label = a.createdAt
+                    ? new Date(a.createdAt).toLocaleString(undefined, {
+                        month: 'long', day: 'numeric', year: 'numeric',
+                        hour: 'numeric', minute: '2-digit'
+                      })
+                    : `Analysis ${idx + 1}`;
+                  return (
+                    <SelectItem key={a._id} value={a._id}>{label}</SelectItem>
+                  );
+                })}
+              </ScrollArea>
             </SelectContent>
           </Select>
         )}
