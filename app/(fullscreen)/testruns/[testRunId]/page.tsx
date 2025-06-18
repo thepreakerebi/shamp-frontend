@@ -74,6 +74,8 @@ export default function TestRunCanvasPage() {
             proOptions={{ hideAttribution: true }}
             panOnScroll
             zoomOnScroll={false}
+            minZoom={0.05}
+            maxZoom={4}
           >
             <Controls />
             <Background />
