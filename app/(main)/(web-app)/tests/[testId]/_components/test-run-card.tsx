@@ -8,6 +8,7 @@ import { PauseIcon, PlayIcon, StopCircleIcon } from "lucide-react";
 import { useTestRuns } from "@/hooks/use-testruns";
 import { TestRunCardActionsDropdown } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card-actions-dropdown";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
 // import React from "react"; // video badge logic temporarily disabled
 
 export function TestRunCard({ run }: { run: TestRunSummary }) {
@@ -72,18 +73,23 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
     e.stopPropagation();
     try {
       await pauseTestRun(run._id);
-    } catch {}
+      toast.success("Test run paused");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to pause test run");
+    }
   };
   const onResume = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
       await resumeTestRun(run._id);
+      toast.success("Test run resumed");
     } catch {}
   };
   const onStop = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
       await stopTestRun(run._id);
+      toast.success("Test run stopped");
     } catch {}
   };
 
@@ -121,7 +127,7 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
         </nav>
       </header>
 
-      {run.browserUseStatus === "running" && <Separator />}
+      {(run.browserUseStatus === "running" || run.browserUseStatus === "paused") && <Separator />}
 
       {/* Controls */}
       <footer className="flex items-center gap-2 mt-auto pt-1">
@@ -135,9 +141,19 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
             </Button>
           </>
         )}
-        {run.browserUseStatus === "cancelled" && (
+        {(run.browserUseStatus === "cancelled" || run.browserUseStatus === "paused") && (
           <Button size="icon" variant="ghost" onClick={onResume} aria-label="Resume test run">
             <PlayIcon className="w-4 h-4" />
+          </Button>
+        )}
+        {run.browserUseStatus === "paused" && (
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onStop}
+            aria-label="Stop test run"
+          >
+            <StopCircleIcon className="w-4 h-4" />
           </Button>
         )}
       </footer>
