@@ -20,7 +20,7 @@ export default function TestRunCanvasPage() {
 
   // Map run.stepsWithScreenshots to React Flow nodes
   const buildNodes = (run: TestRunStatus) => {
-    const steps = run.stepsWithScreenshots ?? [];
+    const steps = (run.stepsWithScreenshots ?? []).slice(1); // skip first step
     const baseX = 0;
     const spacing = 320; // px between nodes horizontally
     const built: Node[] = steps.map((s, idx) => ({
