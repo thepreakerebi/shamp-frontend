@@ -9,7 +9,7 @@ import RecordingNode from "./_components/recording-node";
 // Dynamic React Flow components (SSR disabled)
 const ReactFlow = dynamic(() => import("reactflow").then(m => m.ReactFlow), { ssr: false });
 const Background = dynamic(() => import("reactflow").then(m => m.Background), { ssr: false });
-const Controls = dynamic(() => import("reactflow").then(m => m.Controls), { ssr: false });
+// const Controls = dynamic(() => import("reactflow").then(m => m.Controls), { ssr: false });
 
 import type { Node } from "reactflow";
 
@@ -92,7 +92,7 @@ export default function TestRunCanvasPage() {
             minZoom={0.05}
             maxZoom={4}
           >
-            <Controls />
+            {/* <Controls /> */}
             <Background />
           </ReactFlow>
         )}
