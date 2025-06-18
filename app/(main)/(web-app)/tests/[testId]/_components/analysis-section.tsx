@@ -150,7 +150,7 @@ export default function AnalysisSection({ test }: { test: Test }) {
                 variant="secondary"
                 className="bg-red-500/10 text-red-700 dark:text-red-400"
               >
-                ✗ {overallSuccessRate.failed} failed
+                ✗ {overallSuccessRate.failed + (overallSuccessRate.partial ?? 0)} failed
               </Badge>
             </div>
           </CardContent>
