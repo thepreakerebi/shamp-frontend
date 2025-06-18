@@ -48,6 +48,7 @@
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.8",
     "react-hook-form": "^7.56.4",
+    "reactflow": "^11.11.4",
     "resend": "^4.5.2",
     "socket.io-client": "^4.8.1",
     "sonner": "^2.0.3",
