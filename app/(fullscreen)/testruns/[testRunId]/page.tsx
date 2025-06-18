@@ -13,6 +13,12 @@ const Controls = dynamic(() => import("reactflow").then(m => m.Controls), { ssr:
 
 import type { Node } from "reactflow";
 
+// Keep nodeTypes stable across renders to avoid React Flow warning #002
+const nodeTypes = {
+  step: StepNode,
+  recording: RecordingNode,
+};
+
 export default function TestRunCanvasPage() {
   const { testRunId } = useParams<{ testRunId: string }>();
   const { getTestRunStatus } = useTestRuns();
@@ -42,6 +48,7 @@ export default function TestRunCanvasPage() {
       position: { x: 0, y: recPosY },
       data: {
         url: run.recordings?.[0]?.url?.trim() ?? null,
+        testRunId,
       },
     };
     setNodes([...built, recNode]);
@@ -60,9 +67,6 @@ export default function TestRunCanvasPage() {
       }
     })();
   }, [testRunId, getTestRunStatus]);
-
-  // Node types registration
-  const nodeTypes = { step: StepNode, recording: RecordingNode };
 
   return (
     <section className="grid grid-cols-[320px_1fr_360px] h-screen w-full">

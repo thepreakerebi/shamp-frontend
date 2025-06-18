@@ -305,7 +305,30 @@ export function useTestRuns() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to fetch test run status");
-    return res.json() as Promise<TestRunStatus>;
+    const run = (await res.json()) as TestRunStatus;
+
+    // Always attempt to fetch latest media when a Browser-Use task ID is present.
+    if (run.browserUseTaskId) {
+      try {
+        const mediaRes = await getTestRunMedia(id);
+        const mediaArr = mediaRes as unknown as unknown[];
+        if (mediaArr && mediaArr.length) {
+          const normalised: Artifact[] = typeof mediaArr[0] === 'string'
+            ? (mediaArr as string[]).map((u, idx) => ({
+                _id: `${id}-media-${idx}`,
+                testRun: id,
+                type: 'recording',
+                url: u,
+              }))
+            : (mediaArr as Artifact[]);
+          run.recordings = normalised;
+        }
+      } catch {
+        /* media might not be ready yet; ignore */
+      }
+    }
+
+    return run;
   };
   const getTestRunMedia = async (id: string): Promise<Artifact[]> => {
     if (!token) throw new Error("Not authenticated");
