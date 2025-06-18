@@ -18,6 +18,7 @@ export interface TestRun {
   trashed?: boolean;
   browserUseStatus?: string;
   browserUseOutput?: string;
+  browserUseTaskId?: string;
   // Add other fields as needed
 }
 
@@ -41,6 +42,7 @@ export interface TestRunStatus extends TestRun {
   browserUseFinishedAt?: string;
   stepsWithScreenshots?: { step: Record<string, unknown>; screenshot: string | null }[];
   recordings?: Artifact[];
+  browserUseTaskId?: string;
   analysis?: Record<string, unknown>;
 }
 
