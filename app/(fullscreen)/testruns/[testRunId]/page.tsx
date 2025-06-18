@@ -41,7 +41,7 @@ export default function TestRunCanvasPage() {
       type: "recording",
       position: { x: 0, y: recPosY },
       data: {
-        url: run.recordings?.[0]?.url ?? null,
+        url: run.recordings?.[0]?.url?.trim() ?? null,
       },
     };
     setNodes([...built, recNode]);

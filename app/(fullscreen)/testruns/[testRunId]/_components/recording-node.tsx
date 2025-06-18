@@ -8,7 +8,13 @@ interface RecordingData {
 
 export default function RecordingNode({ data }: NodeProps<RecordingData>) {
   const [loaded, setLoaded] = useState(false);
-  const hasVideo = !!data.url;
+  const videoUrl = data.url?.trim();
+  const hasVideo = !!videoUrl;
+
+  // Helper to set loaded from multiple events
+  const handleLoaded = () => {
+    setLoaded(true);
+  };
 
   return (
     <section className="flex flex-col items-center justify-center max-w-[420px] border rounded-lg bg-card shadow relative">
@@ -19,10 +25,12 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
       )}
       {hasVideo && (
         <video
-          src={data.url!}
+          src={videoUrl!}
           controls
-          onLoadedData={() => setLoaded(true)}
-          className="w-full rounded-lg"
+          onLoadedData={handleLoaded}
+          onLoadedMetadata={handleLoaded}
+          onCanPlay={handleLoaded}
+          className="w-full rounded-lg bg-black"
         />
       )}
       {!loaded && hasVideo && (
