@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTestRuns, TestRunStatus } from "@/hooks/use-testruns";
 import dynamic from "next/dynamic";
 import StepNode from "./_components/step-node";
+import RecordingNode from "./_components/recording-node";
 
 // Dynamic React Flow components (SSR disabled)
 const ReactFlow = dynamic(() => import("reactflow").then(m => m.ReactFlow), { ssr: false });
@@ -33,7 +34,17 @@ export default function TestRunCanvasPage() {
         nextGoal: (s.step as Record<string, unknown>)?.next_goal as string ?? "",
       },
     }));
-    setNodes(built);
+    // Add recording node below with gap
+    const recPosY = 400;
+    const recNode: Node = {
+      id: "recording",
+      type: "recording",
+      position: { x: 0, y: recPosY },
+      data: {
+        url: run.recordings?.[0]?.url ?? null,
+      },
+    };
+    setNodes([...built, recNode]);
   };
 
   useEffect(() => {
@@ -51,7 +62,7 @@ export default function TestRunCanvasPage() {
   }, [testRunId, getTestRunStatus]);
 
   // Node types registration
-  const nodeTypes = { step: StepNode };
+  const nodeTypes = { step: StepNode, recording: RecordingNode };
 
   return (
     <section className="grid grid-cols-[320px_1fr_360px] h-screen w-full">

@@ -40,6 +40,7 @@ export interface TestRunStatus extends TestRun {
   browserUseCreatedAt?: string;
   browserUseFinishedAt?: string;
   stepsWithScreenshots?: { step: Record<string, unknown>; screenshot: string | null }[];
+  recordings?: Artifact[];
   analysis?: Record<string, unknown>;
 }
 
