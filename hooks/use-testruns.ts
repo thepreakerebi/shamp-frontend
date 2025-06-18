@@ -17,6 +17,7 @@ export interface TestRun {
   finishedAt?: string;
   trashed?: boolean;
   browserUseStatus?: string;
+  browserUseOutput?: string;
   // Add other fields as needed
 }
 
@@ -120,6 +121,7 @@ export function useTestRuns() {
             ...current,
             status: run.status as typeof current.status,
             browserUseStatus: run.browserUseStatus,
+            browserUseOutput: (run as TestRunStatus).browserUseOutput,
           });
           return;
         }
@@ -157,6 +159,7 @@ export function useTestRuns() {
               ...existing,
               status: run.status as typeof existing.status,
               browserUseStatus: run.browserUseStatus,
+              browserUseOutput: (run as TestRunStatus).browserUseOutput,
             });
           }
           return;
