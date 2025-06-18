@@ -72,6 +72,8 @@ export default function TestRunCanvasPage() {
             nodeTypes={nodeTypes}
             fitView
             proOptions={{ hideAttribution: true }}
+            panOnScroll
+            zoomOnScroll={false}
           >
             <Controls />
             <Background />
