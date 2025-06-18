@@ -1,7 +1,6 @@
 "use client";
 import { NodeProps } from "reactflow";
 import Image from "next/image";
-import { Separator } from "@/components/ui/separator";
 
 interface StepData {
   screenshot?: string | null;
@@ -17,12 +16,14 @@ export default function StepNode({ data }: NodeProps<StepData>) {
         {data.description && (
           <p className="whitespace-pre-line">{data.description}</p>
         )}
+        {/*
         {data.description && data.nextGoal && <Separator />}
         {data.nextGoal && (
           <p className="text-muted-foreground whitespace-pre-line">
             → {data.nextGoal}
           </p>
         )}
+        */}
       </section>
 
       {/* Screenshot */}
