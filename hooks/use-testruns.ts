@@ -126,7 +126,7 @@ export function useTestRuns() {
       } catch {/* ignore */}
 
       // Fallback: keep existing status, only mark browserUseStatus stopped
-      updateTestRunInList({ ...current, browserUseStatus: "stopped" });
+      // updateTestRunInList({ ...current, browserUseStatus: "stopped" });
     });
     socket.on("testRun:paused", ({ testRunId }: { testRunId: string }) => {
       {

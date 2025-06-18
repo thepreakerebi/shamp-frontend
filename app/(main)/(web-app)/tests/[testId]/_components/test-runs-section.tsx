@@ -7,6 +7,7 @@ import { useTestRunsStore } from "@/lib/store/testruns";
 import { useTestsStore } from "@/lib/store/tests";
 import { TestRunCard } from "./test-run-card";
 import { TestRunsCardSkeleton } from "./test-runs-card-skeleton";
+import TestRunsFilter from "./test-runs-filter";
 
 export default function TestRunsSection({ test }: { test: Test }) {
   const { getTestRunsForTest } = useTests();
@@ -15,6 +16,7 @@ export default function TestRunsSection({ test }: { test: Test }) {
   const testsStore = useTestsStore();
   const [runs, setRuns] = useState<TestRunSummary[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [filters, setFilters] = useState({ result: 'any', run: 'any', persona: 'any' });
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -52,16 +54,29 @@ export default function TestRunsSection({ test }: { test: Test }) {
 
   const displayRuns = storeRuns !== null ? storeRuns : runs;
 
+  const filtered = (displayRuns ?? []).filter(r => {
+    if (filters.result !== 'any' && r.status !== filters.result) return false;
+    if (filters.run !== 'any' && r.browserUseStatus !== filters.run) return false;
+    const pName = (r as { personaName?: string }).personaName;
+    if (filters.persona !== 'any' && pName !== filters.persona) return false;
+    return true;
+  });
+
+  const personaOptions = Array.from(new Set((displayRuns ?? []).map(r=>(r as { personaName?: string }).personaName).filter(Boolean))) as string[];
+
   return (
     <section className="p-4 space-y-4">
-      <h2 className="text-xl font-semibold">Test runs</h2>
+      <section className="flex items-center justify-between gap-4 flex-wrap">
+        <h2 className="text-xl font-semibold">Test runs</h2>
+        <TestRunsFilter personaOptions={personaOptions} filters={filters} onChange={setFilters} />
+      </section>
       {loading && <TestRunsCardSkeleton />}
-      {!loading && (displayRuns?.length ?? 0) === 0 && (
+      {!loading && (filtered.length === 0) && (
         <p className="text-muted-foreground text-sm">No runs yet.</p>
       )}
-      {!loading && displayRuns && displayRuns.length > 0 && (
+      {!loading && filtered.length > 0 && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {displayRuns.map(run => (
+          {filtered.map(run => (
             <TestRunCard key={run._id} run={run} />
           ))}
         </div>
