@@ -9,6 +9,7 @@ import { SummaryPanel } from "./_components/summary-panel";
 import { ChatPanel } from "./_components/chat-panel";
 import SummaryPanelContentSkeleton from "./_components/summary-panel-content-skeleton";
 import ChatPanelContentSkeleton from "./_components/chat-panel-content-skeleton";
+import { TestRunToolbar } from "./_components/test-run-toolbar";
 
 // Dynamic React Flow components (SSR disabled)
 const ReactFlow = dynamic(() => import("reactflow").then(m => m.ReactFlow), { ssr: false });
@@ -109,6 +110,9 @@ export default function TestRunCanvasPage() {
       ) : (
         <ChatPanelContentSkeleton />
       )}
+
+      {/* Bottom toolbar */}
+      {run && <TestRunToolbar run={run} />}
     </section>
   );
 } 
