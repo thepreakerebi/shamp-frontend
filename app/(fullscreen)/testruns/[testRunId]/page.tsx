@@ -1,5 +1,5 @@
 "use client";
-import { useParams } from "next/navigation";
+import { useParams, notFound } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTestRuns, TestRunStatus } from "@/hooks/use-testruns";
 import dynamic from "next/dynamic";
@@ -30,6 +30,7 @@ export default function TestRunCanvasPage() {
   const [personaName, setPersonaName] = useState<string | undefined>();
   const [nodes, setNodes] = useState<Node[]>([]);
   const [run, setRun] = useState<TestRunStatus | null>(null);
+  const [fetchError, setFetchError] = useState(false);
 
   // Map run.stepsWithScreenshots to React Flow nodes
   const buildNodes = (run: TestRunStatus) => {
@@ -76,10 +77,15 @@ export default function TestRunCanvasPage() {
         setRun(run as TestRunStatus);
         buildNodes(run as TestRunStatus);
       } catch {
-        /* ignore */
+        setFetchError(true);
       }
     })();
   }, [testRunId, getTestRunStatus]);
+
+  if (fetchError) {
+    notFound();
+    return null;
+  }
 
   return (
     <section className="grid grid-cols-[320px_1fr_360px] h-screen w-full">
