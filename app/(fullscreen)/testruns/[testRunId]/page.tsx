@@ -7,6 +7,8 @@ import StepNode from "./_components/step-node";
 import RecordingNode from "./_components/recording-node";
 import { SummaryPanel } from "./_components/summary-panel";
 import { ChatPanel } from "./_components/chat-panel";
+import SummaryPanelContentSkeleton from "./_components/summary-panel-content-skeleton";
+import ChatPanelContentSkeleton from "./_components/chat-panel-content-skeleton";
 
 // Dynamic React Flow components (SSR disabled)
 const ReactFlow = dynamic(() => import("reactflow").then(m => m.ReactFlow), { ssr: false });
@@ -75,8 +77,10 @@ export default function TestRunCanvasPage() {
   return (
     <section className="grid grid-cols-[320px_1fr_360px] h-screen w-full">
       {/* Left summary panel */}
-      {run && (
+      {run ? (
         <SummaryPanel run={run} personaName={personaName} />
+      ) : (
+        <SummaryPanelContentSkeleton />
       )}
 
       {/* Center canvas */}
@@ -100,8 +104,10 @@ export default function TestRunCanvasPage() {
       </section>
 
       {/* Right chat panel */}
-      {run && (
+      {run ? (
         <ChatPanel run={run} personaName={personaName} />
+      ) : (
+        <ChatPanelContentSkeleton />
       )}
     </section>
   );
