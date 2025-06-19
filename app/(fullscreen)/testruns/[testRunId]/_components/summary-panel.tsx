@@ -7,6 +7,8 @@ import { ThemeSwitcher } from "@/app/(main)/(web-app)/_components/theme-switcher
 import { useRouter } from "next/navigation";
 import type { TestRunStatus } from "@/hooks/use-testruns";
 import React from "react";
+import { TestRunCardActionsDropdown } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card-actions-dropdown";
+import { useTestRuns } from "@/hooks/use-testruns";
 
 interface Props {
   run: TestRunStatus;
@@ -15,6 +17,7 @@ interface Props {
 
 export function SummaryPanel({ run, personaName }: Props) {
   const router = useRouter();
+  const { deleteTestRun, moveTestRunToTrash } = useTestRuns();
 
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
@@ -63,6 +66,10 @@ export function SummaryPanel({ run, personaName }: Props) {
   const narration = narrationMatch ? narrationMatch[1].trim() : undefined;
   const summary = summaryMatch ? summaryMatch[1].trim() : undefined;
 
+  const handleActionComplete = () => {
+    router.push('/test-runs');
+  };
+
   return (
     <aside className="flex flex-col h-full overflow-hidden border-r">
       {/* Header */}
@@ -71,10 +78,18 @@ export function SummaryPanel({ run, personaName }: Props) {
           <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Back">
             <ArrowLeftIcon className="w-4 h-4" />
           </Button>
-          <section>
+          <section className="flex-1">
             <h2 className="font-semibold text-lg leading-none">Summary</h2>
             {personaName && <p className="text-xs text-muted-foreground mt-1">{personaName}&rsquo;s run</p>}
           </section>
+          {/* Actions dropdown */}
+          <TestRunCardActionsDropdown
+            runId={run._id}
+            runPersonaName={personaName}
+            actions={{ deleteTestRun, moveTestRunToTrash }}
+            showOpenOptions={false}
+            onActionComplete={handleActionComplete}
+          />
         </section>
         <section className="flex items-center gap-2">
           {(["finished", "stopped"].includes(run.browserUseStatus ?? "")) && statusBadge(run.status)}

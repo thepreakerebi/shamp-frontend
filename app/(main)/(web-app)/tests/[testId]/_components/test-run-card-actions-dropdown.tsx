@@ -22,9 +22,11 @@ interface Props {
   runPersonaName?: string;
   onOpen?: () => void;
   actions: ActionsFns;
+  showOpenOptions?: boolean;
+  onActionComplete?: () => void;
 }
 
-export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, actions }: Props) {
+export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, actions, showOpenOptions = true, onActionComplete }: Props) {
   const router = useRouter();
   const { deleteTestRun, moveTestRunToTrash } = actions;
 
@@ -67,6 +69,7 @@ export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, acti
       toast.error(err instanceof Error ? err.message : "Action failed");
     }
     setConfirmState({ type: null, loading: false });
+    if (onActionComplete) onActionComplete();
   };
 
   return (
@@ -78,8 +81,12 @@ export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, acti
           </Button>
         </CustomDropdownMenuTrigger>
         <CustomDropdownMenuContent align="end">
-          <CustomDropdownMenuItem data-stop-row onSelect={handleOpen}>Open</CustomDropdownMenuItem>
-          <CustomDropdownMenuItem data-stop-row onSelect={handleOpenNewTab}>Open in new tab</CustomDropdownMenuItem>
+          {showOpenOptions && (
+            <>
+              <CustomDropdownMenuItem data-stop-row onSelect={handleOpen}>Open</CustomDropdownMenuItem>
+              <CustomDropdownMenuItem data-stop-row onSelect={handleOpenNewTab}>Open in new tab</CustomDropdownMenuItem>
+            </>
+          )}
           <CustomDropdownMenuItem data-stop-row onSelect={handleMoveToTrash}>Move to trash</CustomDropdownMenuItem>
           <CustomDropdownMenuItem variant="destructive" data-stop-row onSelect={handleDelete}>Delete</CustomDropdownMenuItem>
         </CustomDropdownMenuContent>
