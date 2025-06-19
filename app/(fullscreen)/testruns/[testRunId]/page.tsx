@@ -46,12 +46,18 @@ export default function TestRunCanvasPage() {
         nextGoal: (s.step as Record<string, unknown>)?.next_goal as string ?? "",
       },
     }));
-    // Add recording node below with gap
-    const recPosY = 400;
+
+    // Compute center X based on step nodes
+    const centerX = built.length
+      ? built[0].position.x + ((built[built.length - 1].position.x - built[0].position.x) / 2)
+      : 0;
+
+    // Add recording node below with gap, centered
+    const recPosY = 800;
     const recNode: Node = {
       id: "recording",
       type: "recording",
-      position: { x: 0, y: recPosY },
+      position: { x: centerX, y: recPosY },
       data: {
         url: run.recordings?.[0]?.url?.trim() ?? null,
         testRunId,

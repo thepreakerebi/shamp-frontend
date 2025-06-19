@@ -7,6 +7,7 @@ import type { ChatMessage as BaseChatMessage, TestRunStatus } from "@/hooks/use-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/auth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface ChatMessage extends BaseChatMessage {
   id?: string;
@@ -130,7 +131,12 @@ export function ChatPanel({ run, personaName }: Props) {
         {messages.map((m, idx) => (
           <section key={idx} className={m.role === "user" ? "flex items-start justify-end gap-2" : "flex items-start gap-2"}>
             {m.role === "agent" && PersonaAvatar}
-            <section className="rounded-lg bg-muted px-3 py-2 text-sm max-w-[75%] whitespace-pre-line">
+            <section
+              className={cn(
+                "text-sm whitespace-pre-line max-w-[75%]",
+                m.role === "user" && "rounded-lg bg-muted px-3 py-2"
+              )}
+            >
               {m.loading ? (
                 <Skeleton className="h-4 w-24" />
               ) : (
