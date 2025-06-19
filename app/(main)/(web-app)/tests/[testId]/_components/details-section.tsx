@@ -11,7 +11,7 @@ import { Loader2, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { RowActionsDropdown } from "../../_components/row-actions-dropdown";
 import { useTests } from "@/hooks/use-tests";
-import { ScheduleTestRunModal } from "./schedule-test-run-modal";
+import { useRouter } from "next/navigation";
 
 /**
  * DetailsSection
@@ -24,7 +24,7 @@ export default function DetailsSection({ test }: { test: Test }) {
   const { startTestRun } = useTestRuns();
   const { moveTestToTrash, deleteTest, duplicateTest } = useTests();
   const [running, setRunning] = useState(false);
-  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const router = useRouter();
 
   const handleRun = async () => {
     if (running) return;
@@ -39,7 +39,7 @@ export default function DetailsSection({ test }: { test: Test }) {
   };
 
   const handleSchedule = () => {
-    setScheduleOpen(true);
+    router.push(`/tests/${test._id}/schedule-run`);
   };
 
   // successfulRuns and failedRuns may be undefined on type Test, fallback to 0
@@ -150,9 +150,6 @@ export default function DetailsSection({ test }: { test: Test }) {
           </Badge>
         )}
       </footer>
-
-      {/* Schedule modal */}
-      <ScheduleTestRunModal open={scheduleOpen} onOpenChange={setScheduleOpen} test={test} />
     </article>
   );
 } 

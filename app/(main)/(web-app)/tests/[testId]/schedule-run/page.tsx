@@ -1,0 +1,222 @@
+"use client";
+import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/lib/auth";
+import { useTests } from "@/hooks/use-tests";
+import { usePersonas } from "@/hooks/use-personas";
+import type { Persona } from "@/hooks/use-personas";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from "@/components/ui/command";
+import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { ChevronsUpDown, Check } from "lucide-react";
+import Image from "next/image";
+import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import { format } from "date-fns";
+
+export default function ScheduleRunPage() {
+  const { testId } = useParams<{ testId: string }>();
+  const router = useRouter();
+  const { token } = useAuth();
+  const { getTestById } = useTests();
+  const { personas: allPersonas } = usePersonas();
+
+  const [loading, setLoading] = useState(true);
+  const [personaOptions, setPersonaOptions] = useState<Persona[]>([]);
+  const [selectedPersona, setSelectedPersona] = useState<string>("");
+  const [openSelect, setOpenSelect] = useState(false);
+  const [runDate, setRunDate] = useState<Date | undefined>(undefined);
+  const [runHour, setRunHour] = useState<string>("");
+  const [runMinute, setRunMinute] = useState<string>("");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{ personaId?: string; runAt?: string }>({});
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const test = await getTestById(testId);
+        const map = new Map<string, Persona>();
+        const raw = (test as unknown as { personas?: Persona[] }).personas;
+        if (Array.isArray(raw)) {
+          raw.forEach(p => map.set(p._id, p));
+        }
+        const names = (test as unknown as { personaNames?: string[] }).personaNames;
+        if (Array.isArray(names) && allPersonas) {
+          names.forEach(nm => {
+            const match = allPersonas.find(p => p.name === nm);
+            if (match) {
+              map.set(match._id, match);
+            }
+          });
+        }
+        setPersonaOptions(Array.from(map.values()));
+      } catch {
+        toast.error("Failed to load test");
+        router.back();
+      } finally {
+        setLoading(false);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testId]);
+
+  const doSchedule = async () => {
+    if (!selectedPersona || !runDate || runHour === "" || runMinute === "") return;
+    if (!token) { toast.error("Not authenticated"); return; }
+    try {
+      setSubmitting(true);
+      const payload: Record<string, unknown> = {
+        testId,
+        personaId: selectedPersona,
+      };
+      const dateTime = new Date(runDate);
+      dateTime.setHours(parseInt(runHour, 10), parseInt(runMinute, 10), 0, 0);
+
+      let endpoint = "/testschedules/schedule";
+      if (isRecurring) {
+        const rule = `${dateTime.getUTCMinutes()} ${dateTime.getUTCHours()} * * *`;
+        payload.recurrenceRule = rule;
+        endpoint = "/testschedules/recurring";
+      } else {
+        payload.scheduledFor = dateTime.toISOString();
+      }
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}${endpoint}`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("Failed to schedule");
+      toast.success(isRecurring ? "Recurring schedule created" : "Test run scheduled");
+      router.push(`/tests/${testId}?tab=runs`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to schedule");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const errs: typeof errors = {};
+    if (!selectedPersona) errs.personaId = "Persona is required";
+    if (!runDate || runHour === "" || runMinute === "") errs.runAt = "Date & time required";
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    await doSchedule();
+  };
+
+  if (loading) {
+    return <main className="p-6">Loading…</main>;
+  }
+
+  return (
+    <main className="p-4 w-full max-w-md mx-auto space-y-6">
+      <h1 className="text-2xl font-semibold">Schedule Test Run</h1>
+
+      <form onSubmit={submit} className="space-y-6">
+        {/* Persona select */}
+        <section className="space-y-2">
+          <label className="text-sm font-medium">Persona</label>
+          <Popover open={openSelect} onOpenChange={setOpenSelect}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" role="combobox" className="w-full justify-between">
+                {selectedPersona ? personaOptions.find(p=>p._id===selectedPersona)?.name : "Select persona"}
+                <ChevronsUpDown className="size-4 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Search persona…" className="h-9" />
+                <CommandList>
+                  <CommandEmpty>No persona found.</CommandEmpty>
+                  {personaOptions.map(p => (
+                    <CommandItem key={p._id} value={p.name} onSelect={()=>{ setSelectedPersona(p._id); setOpenSelect(false); }}>
+                      <div className="flex items-center gap-2 w-full">
+                        {p.avatarUrl ? (
+                          <Image src={p.avatarUrl} alt={p.name} width={24} height={24} className="rounded-full object-cover border" unoptimized />
+                        ) : (
+                          <span className="w-6 h-6 rounded-full flex items-center justify-center bg-muted text-[10px] font-medium text-muted-foreground border">{p.name[0]?.toUpperCase() || "?"}</span>
+                        )}
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-medium truncate">{p.name}</span>
+                          {p.description && <span className="text-xs text-muted-foreground line-clamp-2">{p.description}</span>}
+                        </div>
+                      </div>
+                      <Check className={`ml-auto size-4 ${selectedPersona === p._id ? "opacity-100" : "opacity-0"}`} />
+                    </CommandItem>
+                  ))}
+                  {errors.personaId && <p className="text-destructive text-xs mt-1">{errors.personaId}</p>}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </section>
+
+        {/* Date */}
+        <section className="space-y-2">
+          <label className="text-sm font-medium">Run date</label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-start font-normal">
+                {runDate ? format(runDate, "PPP") : "Pick a date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={runDate}
+                onSelect={(d)=>{setRunDate(d); setErrors({...errors, runAt: undefined});}}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </section>
+
+        {/* Time */}
+        <section className="space-y-2">
+          <label className="text-sm font-medium">Run time (UTC)</label>
+          <div className="flex items-center gap-2">
+            <Select value={runHour} onValueChange={v=>{setRunHour(v); setErrors({...errors, runAt: undefined});}}>
+              <SelectTrigger className="w-20 justify-between">
+                <SelectValue placeholder="HH" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({length:24}).map((_,i)=>(
+                  <SelectItem key={i} value={String(i).padStart(2,"0")}>{String(i).padStart(2,"0")}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-muted-foreground">:</span>
+            <Select value={runMinute} onValueChange={v=>{setRunMinute(v); setErrors({...errors, runAt: undefined});}}>
+              <SelectTrigger className="w-20 justify-between">
+                <SelectValue placeholder="MM" />
+              </SelectTrigger>
+              <SelectContent>
+                {['00','15','30','45'].map(m=>(
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {errors.runAt && <p className="text-destructive text-xs mt-1">{errors.runAt}</p>}
+        </section>
+
+        {/* Recurring */}
+        <section className="flex items-center gap-2">
+          <Checkbox id="recurring" checked={isRecurring} onCheckedChange={v=>setIsRecurring(!!v)} />
+          <label htmlFor="recurring" className="text-sm select-none">Make recurring (daily at selected time)</label>
+        </section>
+
+        {/* Actions */}
+        <section className="flex justify-end gap-2">
+          <Button variant="ghost" type="button" onClick={()=>router.back()} disabled={submitting}>Cancel</Button>
+          <Button type="submit" disabled={submitting} variant="default">{isRecurring?"Create schedule":"Schedule"}</Button>
+        </section>
+      </form>
+    </main>
+  );
+} 
