@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import StepNode from "./_components/step-node";
 import RecordingNode from "./_components/recording-node";
 import { SummaryPanel } from "./_components/summary-panel";
+import { ChatPanel } from "./_components/chat-panel";
 
 // Dynamic React Flow components (SSR disabled)
 const ReactFlow = dynamic(() => import("reactflow").then(m => m.ReactFlow), { ssr: false });
@@ -98,11 +99,10 @@ export default function TestRunCanvasPage() {
         )}
       </section>
 
-      {/* Right chat panel placeholder */}
-      <aside className="border-l overflow-auto p-4">
-        <h2 className="text-lg font-semibold mb-2">Chat</h2>
-        <p className="text-sm text-muted-foreground">Coming soon…</p>
-      </aside>
+      {/* Right chat panel */}
+      {run && (
+        <ChatPanel run={run} personaName={personaName} />
+      )}
     </section>
   );
 } 
