@@ -68,19 +68,24 @@ export default function TestRunCanvasPage() {
   };
 
   useEffect(() => {
+    if (!testRunId) return;
+    // Fetch only if we haven't loaded this run yet
+    if (run) return;
+
     (async () => {
-      if (!testRunId) return;
       try {
-        const run = await getTestRunStatus(testRunId);
-        const pn = (run as { personaName?: string }).personaName;
+        const fetched = await getTestRunStatus(testRunId);
+        const pn = (fetched as { personaName?: string }).personaName;
         setPersonaName(pn);
-        setRun(run as TestRunStatus);
-        buildNodes(run as TestRunStatus);
+        setRun(fetched as TestRunStatus);
+        buildNodes(fetched as TestRunStatus);
       } catch {
         setFetchError(true);
       }
     })();
-  }, [testRunId, getTestRunStatus]);
+    // Intentionally omit getTestRunStatus from deps to avoid effect re-running
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testRunId, run]);
 
   if (fetchError) {
     notFound();
