@@ -10,6 +10,9 @@ import { CreateDropdownButton } from './create-persona-dropdown-button';
 import { useCreateBatchPersonasModal } from '@/app/(main)/(web-app)/personas/_components/create-batch-personas-modal';
 import { useImportPersonasModal } from '@/app/(main)/(web-app)/personas/_components/import-personas-modal';
 import { CreateTestDropdownButton } from '@/app/(main)/(web-app)/tests/_components/create-test-dropdown-button';
+import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { StartTestRunModal } from '@/app/(main)/(web-app)/test-runs/_components/start-test-run-modal';
 
 export function Topbar() {
   const pathname = usePathname();
@@ -18,6 +21,7 @@ export function Topbar() {
   const { setOpen: setCreatePersonaOpen } = useCreatePersonaModal();
   const { setOpen: setBatchModalOpen } = useCreateBatchPersonasModal();
   const { setOpen: setImportModalOpen } = useImportPersonasModal();
+  const [modalOpen, setModalOpen] = useState(false);
 
   // Only shift when expanded on desktop
   const isExpandedDesktop = !isMobile && state === 'expanded';
@@ -27,6 +31,7 @@ export function Topbar() {
   // TODO: Replace with real modal handlers when implemented
   const handleSingleTest = () => router.push('/tests/create');
   const handleBatchTests = () => console.log('Create batch tests');
+  const handleStartTest = () => setModalOpen(true);
 
   return (
     <section
@@ -55,6 +60,12 @@ export function Topbar() {
             onBatchTests={handleBatchTests}
           />
         )}
+        {pathname === '/test-runs' && (
+          <Button variant="secondary" onClick={handleStartTest}>
+            Run test
+          </Button>
+        )}
+        <StartTestRunModal open={modalOpen} onOpenChange={setModalOpen} />
         {/* Add more buttons for other pages here as needed */}
       </section>
     </section>

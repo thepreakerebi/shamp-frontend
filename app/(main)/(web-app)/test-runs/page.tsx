@@ -33,11 +33,11 @@ export default function TestRunsListPage() {
         <p className="text-muted-foreground mt-2">No runs yet.</p>
       )}
       {!loading && filtered.length > 0 && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <section className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filtered.map(run => (
             <TestRunCard key={run._id} run={run as TestRunSummary} />
           ))}
-        </div>
+        </section>
       )}
     </section>
   );
