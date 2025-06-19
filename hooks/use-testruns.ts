@@ -366,7 +366,20 @@ export function useTestRuns() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to fetch chat history");
-    return res.json() as Promise<ChatMessage[]>;
+    const raw = (await res.json()) as Record<string, unknown>[];
+    // Backend stores chat messages under `text` but UI expects `message`.
+    const normalised: ChatMessage[] = raw.map(m => {
+      const rec = m as Record<string, unknown>;
+      return {
+        testId: rec.testId as string | undefined,
+        testRunId: rec.testRunId as string | undefined,
+        personaId: rec.personaId as string | undefined,
+        message: (rec.message ?? rec.text ?? "") as string,
+        role: (rec.role as "user" | "agent") ?? "agent",
+        createdAt: (rec.timestamp as string | undefined) ?? undefined,
+      };
+    });
+    return normalised;
   };
 
   const restoreTestRunFromTrash = async (id: string) => {
