@@ -1,4 +1,4 @@
-import { Home, ListChecks, PlayCircle, Settings, LogOut, HelpCircle, Users, Trash2, Calendar } from "lucide-react";
+import { Home, ListChecks, PlayCircle, Settings, LogOut, Users, Trash2 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -45,11 +45,6 @@ const items = [
     title: "Test Runs",
     url: "/test-runs",
     icon: PlayCircle,
-  },
-  {
-    title: "Schedules",
-    url: "/schedules",
-    icon: Calendar,
   },
   {
     title: "Settings",
@@ -147,13 +142,6 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="mt-auto flex flex-col gap-2 border-t pt-4">
         <ThemeSwitcher />
-        <Link
-          href="/help"
-          className={cn(sidebarMenuButtonVariants({ variant: "default", size: "default" }), "w-full flex items-center gap-2 justify-start")}
-        >
-          <HelpCircle className="size-5 mr-2" />
-          <span>Help</span>
-        </Link>
         <button
           type="button"
           aria-label="Logout"

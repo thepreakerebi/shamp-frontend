@@ -4,6 +4,7 @@ import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 const TAB_LIST = [
   { key: "individuals", label: "Individuals" },
   { key: "groups", label: "Groups" },
+  { key: "schedules", label: "Schedules" },
 ];
 
 export function TestsTab() {

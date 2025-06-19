@@ -6,6 +6,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { TestsTab } from "./_components/tests-tab";
 import { TestsList } from "./_components/tests-list";
 import { BatchTestsList } from "./_components/batch-tests-list";
+import { SchedulesList } from "./_components/schedules-list";
 import { useTests } from "@/hooks/use-tests";
 
 export default function TestsPage() {
@@ -13,7 +14,8 @@ export default function TestsPage() {
   useTests();
 
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") === "groups" ? "groups" : "individuals";
+  const initialParam = searchParams.get("tab");
+  const initialTab = initialParam === "groups" ? "groups" : initialParam === "schedules" ? "schedules" : "individuals";
   const [tab, setTab] = useState(initialTab);
 
   return (
@@ -27,6 +29,9 @@ export default function TestsPage() {
             </TabsContent>
             <TabsContent value="groups">
               <BatchTestsList />
+            </TabsContent>
+            <TabsContent value="schedules">
+              <SchedulesList />
             </TabsContent>
           </section>
         </nav>
