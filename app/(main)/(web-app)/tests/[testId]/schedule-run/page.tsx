@@ -15,6 +15,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
+import { useTestsStore } from "@/lib/store/tests";
 
 export default function ScheduleRunPage() {
   const { testId } = useParams<{ testId: string }>();
@@ -22,6 +23,7 @@ export default function ScheduleRunPage() {
   const { token } = useAuth();
   const { getTestById } = useTests();
   const { personas: allPersonas } = usePersonas();
+  const updateTestInList = useTestsStore(state=>state.updateTestInList);
 
   const [loading, setLoading] = useState(true);
   const [personaOptions, setPersonaOptions] = useState<Persona[]>([]);
@@ -53,6 +55,8 @@ export default function ScheduleRunPage() {
             }
           });
         }
+        const updatedTest = test as unknown as import("@/hooks/use-tests").Test;
+        updateTestInList(updatedTest);
         setPersonaOptions(Array.from(map.values()));
       } catch {
         toast.error("Failed to load test");
@@ -92,7 +96,7 @@ export default function ScheduleRunPage() {
       });
       if (!res.ok) throw new Error("Failed to schedule");
       toast.success(isRecurring ? "Recurring schedule created" : "Test run scheduled");
-      router.push(`/tests/${testId}?tab=runs`);
+      router.push(`/tests?tab=schedules`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to schedule");
     } finally {
