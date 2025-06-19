@@ -4,7 +4,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useTestRuns } from "@/hooks/use-testruns";
 import type { ChatMessage, TestRunStatus } from "@/hooks/use-testruns";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/lib/auth";
 
 interface Props {
   run: TestRunStatus;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function ChatPanel({ run, personaName }: Props) {
+  const { user } = useAuth();
   const { getChatHistory, chatWithAgent } = useTestRuns();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -66,15 +68,33 @@ export function ChatPanel({ run, personaName }: Props) {
     }
   };
 
+  // Avatar helpers
   const PersonaAvatar = (
-    <Avatar className="w-6 h-6">
-      <AvatarFallback>{personaName?.[0]?.toUpperCase() || "P"}</AvatarFallback>
+    <Avatar className="size-6">
+      {run.personaAvatarUrl ? (
+        <AvatarImage src={run.personaAvatarUrl} alt={personaName || "Persona"} />
+      ) : (
+        <AvatarFallback>{personaName?.[0]?.toUpperCase() || "P"}</AvatarFallback>
+      )}
     </Avatar>
   );
 
+  function getInitials(firstName?: string, lastName?: string, email?: string) {
+    if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    if (firstName) return firstName[0].toUpperCase();
+    if (email) return email[0].toUpperCase();
+    return "?";
+  }
+
   const UserAvatar = (
-    <Avatar className="w-6 h-6">
-      <AvatarFallback>You</AvatarFallback>
+    <Avatar>
+      {user?.profilePicture ? (
+        <AvatarImage src={user.profilePicture} alt={user?.firstName || user?.email || "User"} />
+      ) : (
+        <AvatarFallback>
+          {getInitials(user?.firstName, user?.lastName, user?.email)}
+        </AvatarFallback>
+      )}
     </Avatar>
   );
 

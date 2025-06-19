@@ -44,6 +44,7 @@ export interface TestRunStatus extends TestRun {
   recordings?: Artifact[];
   browserUseTaskId?: string;
   analysis?: Record<string, unknown>;
+  personaAvatarUrl?: string;
 }
 
 export interface ChatMessage {
