@@ -11,6 +11,7 @@ import { Loader2, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { RowActionsDropdown } from "../../_components/row-actions-dropdown";
 import { useTests } from "@/hooks/use-tests";
+import { ScheduleTestRunModal } from "./schedule-test-run-modal";
 
 /**
  * DetailsSection
@@ -23,6 +24,7 @@ export default function DetailsSection({ test }: { test: Test }) {
   const { startTestRun } = useTestRuns();
   const { moveTestToTrash, deleteTest, duplicateTest } = useTests();
   const [running, setRunning] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   const handleRun = async () => {
     if (running) return;
@@ -37,8 +39,7 @@ export default function DetailsSection({ test }: { test: Test }) {
   };
 
   const handleSchedule = () => {
-    // TODO: open schedule modal / route
-    alert("Scheduling feature coming soon!");
+    setScheduleOpen(true);
   };
 
   // successfulRuns and failedRuns may be undefined on type Test, fallback to 0
@@ -48,8 +49,10 @@ export default function DetailsSection({ test }: { test: Test }) {
     ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns
     : successfulRuns + failedRuns;
 
-  const personaNames: string[] | undefined =
-    (test as unknown as { personaNames?: string[] }).personaNames;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const personaNames: string[] | undefined = (test as unknown as { personaNames?: string[] }).personaNames;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const personasWithIds: Array<{ _id: string; name: string }> | undefined = (test as unknown as { personas?: Array<{ _id: string; name: string }> }).personas;
 
   return (
     <article className="p-4 space-y-6" aria-labelledby="test-details-heading">
@@ -107,6 +110,8 @@ export default function DetailsSection({ test }: { test: Test }) {
           <div className="flex flex-wrap items-center gap-2">
             {personaNames && personaNames.length > 0 ? (
               personaNames.map(name => <PersonaBadge key={name} name={name} />)
+            ) : personasWithIds && personasWithIds.length > 0 ? (
+              personasWithIds.map(p => <PersonaBadge key={p._id} name={p.name} />)
             ) : test.persona && typeof test.persona === "object" && "name" in test.persona ? (
               <PersonaBadge name={(test.persona as { _id: string; name: string }).name} />
             ) : (
@@ -145,6 +150,9 @@ export default function DetailsSection({ test }: { test: Test }) {
           </Badge>
         )}
       </footer>
+
+      {/* Schedule modal */}
+      <ScheduleTestRunModal open={scheduleOpen} onOpenChange={setScheduleOpen} test={test} />
     </article>
   );
 } 
