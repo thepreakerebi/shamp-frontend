@@ -5,6 +5,7 @@ import { useTestRuns, TestRunStatus } from "@/hooks/use-testruns";
 import dynamic from "next/dynamic";
 import StepNode from "./_components/step-node";
 import RecordingNode from "./_components/recording-node";
+import { SummaryPanel } from "./_components/summary-panel";
 
 // Dynamic React Flow components (SSR disabled)
 const ReactFlow = dynamic(() => import("reactflow").then(m => m.ReactFlow), { ssr: false });
@@ -24,6 +25,7 @@ export default function TestRunCanvasPage() {
   const { getTestRunStatus } = useTestRuns();
   const [personaName, setPersonaName] = useState<string | undefined>();
   const [nodes, setNodes] = useState<Node[]>([]);
+  const [run, setRun] = useState<TestRunStatus | null>(null);
 
   // Map run.stepsWithScreenshots to React Flow nodes
   const buildNodes = (run: TestRunStatus) => {
@@ -61,6 +63,7 @@ export default function TestRunCanvasPage() {
         const run = await getTestRunStatus(testRunId);
         const pn = (run as { personaName?: string }).personaName;
         setPersonaName(pn);
+        setRun(run as TestRunStatus);
         buildNodes(run as TestRunStatus);
       } catch {
         /* ignore */
@@ -70,13 +73,10 @@ export default function TestRunCanvasPage() {
 
   return (
     <section className="grid grid-cols-[320px_1fr_360px] h-screen w-full">
-      {/* Left summary panel placeholder */}
-      <aside className="border-r overflow-auto p-4">
-        <h2 className="text-lg font-semibold mb-2">Summary</h2>
-        <p className="text-sm text-muted-foreground">
-          {personaName ? `${personaName}'s run` : "Loading..."}
-        </p>
-      </aside>
+      {/* Left summary panel */}
+      {run && (
+        <SummaryPanel run={run} personaName={personaName} />
+      )}
 
       {/* Center canvas */}
       <section className="relative overflow-hidden">
