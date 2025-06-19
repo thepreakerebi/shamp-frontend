@@ -6,6 +6,7 @@ import { useTestRuns } from "@/hooks/use-testruns";
 import { TestRunCard } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card";
 import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-card-skeleton";
 import TestRunsFilter from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-filter";
+import { TestRunsListEmpty } from "./_components/test-runs-list-empty";
 
 export default function TestRunsListPage() {
   const { testRuns: displayRuns, testRunsLoading: loading } = useTestRuns();
@@ -29,8 +30,8 @@ export default function TestRunsListPage() {
         <TestRunsFilter personaOptions={personaOptions} filters={filters} onChange={setFilters} />
       </section>
       {loading && <TestRunsCardSkeleton />}
-      {!loading && (filtered.length === 0) && (
-        <p className="text-muted-foreground mt-2">No runs yet.</p>
+      {!loading && filtered.length === 0 && (
+        <TestRunsListEmpty />
       )}
       {!loading && filtered.length > 0 && (
         <section className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
