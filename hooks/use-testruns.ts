@@ -7,6 +7,10 @@ import { useTestsStore } from "@/lib/store/tests";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
 
+// --- Singleton guards so side-effects run only once per browser session ---
+let socketInitialized = false;
+let runsFetchedOnce = false;
+
 export interface TestRun {
   _id: string;
   test: string;
@@ -76,14 +80,18 @@ export function useTestRuns() {
     updateTestRunInList,
     addTrashedTestRun,
     removeTrashedTestRun,
+    setTestRuns,
+    setTestRunsLoading,
+    setTestRunsError,
   } = store;
 
   // Helper to always get the latest store snapshot inside socket listeners
   const getState = useTestRunsStore.getState;
 
-  // Real-time updates
+  // Real-time updates (initialize socket only once)
   useEffect(() => {
-    if (!token) return;
+    if (!token || socketInitialized) return;
+    socketInitialized = true;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
       auth: { token },
@@ -196,7 +204,7 @@ export function useTestRuns() {
     return () => {
       socket.disconnect();
     };
-  }, [token, addTestRunToList, removeTestRunFromList, updateTestRunInList, addTrashedTestRun, removeTrashedTestRun]);
+  }, [token]);
 
   // Analytics
   const fetchSuccessfulCount = useCallback(async () => {
@@ -397,8 +405,32 @@ export function useTestRuns() {
     return testRun;
   };
 
+  // Fetch all accessible test runs once per session after authentication
+  useEffect(() => {
+    if (!token || runsFetchedOnce) return;
+    runsFetchedOnce = true;
+
+    (async () => {
+      if (!getState().testRunsLoading) setTestRunsLoading(true);
+      setTestRunsError(null);
+      try {
+        const data = (await fetcher("/testruns", token)) as TestRunStatus[];
+        setTestRuns(data as unknown as TestRun[]);
+      } catch (err: unknown) {
+        setTestRunsError(
+          err instanceof Error ? err.message : "Failed to fetch test runs",
+        );
+        setTestRuns(null);
+      } finally {
+        setTestRunsLoading(false);
+      }
+    })();
+  }, [token]);
+
   return {
     testRuns: store.testRuns,
+    testRunsLoading: store.testRunsLoading,
+    testRunsError: store.testRunsError,
     trashedTestRuns: store.trashedTestRuns,
     successfulCount: store.successfulCount,
     failedCount: store.failedCount,
