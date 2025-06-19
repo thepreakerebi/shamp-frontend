@@ -67,59 +67,75 @@ export function SummaryPanel({ run, personaName }: Props) {
     <aside className="flex flex-col h-full overflow-hidden border-r">
       {/* Header */}
       <header className="p-4 flex flex-col gap-4 border-b">
-        <div className="flex items-start gap-2">
+        <section className="flex items-start gap-2">
           <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Back">
             <ArrowLeftIcon className="w-4 h-4" />
           </Button>
-          <div>
+          <section>
             <h2 className="font-semibold text-lg leading-none">Summary</h2>
             {personaName && <p className="text-xs text-muted-foreground mt-1">{personaName}&rsquo;s run</p>}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+          </section>
+        </section>
+        <section className="flex items-center gap-2">
           {(["finished", "stopped"].includes(run.browserUseStatus ?? "")) && statusBadge(run.status)}
           {run.status !== "cancelled" && browserStatusBadge(run.browserUseStatus)}
-        </div>
+        </section>
       </header>
 
       {/* Scrollable content */}
       <section className="flex-1 overflow-auto p-4 space-y-6">
         {narration && (
-          <div>
+          <section>
             <h3 className="font-semibold mb-1">Narration</h3>
             <p className="whitespace-pre-line text-sm text-muted-foreground">{narration}</p>
-          </div>
+          </section>
         )}
         {summary && (
-          <div>
+          <section>
             <h3 className="font-semibold mb-1">Run Summary</h3>
             <p className="whitespace-pre-line text-sm text-muted-foreground">{summary}</p>
-          </div>
+          </section>
         )}
         {run.analysis && (
-          <div className="space-y-4">
+          <section className="space-y-4">
             <h3 className="font-semibold">AI Analysis</h3>
             {Object.entries(run.analysis).map(([key, value]) => {
+              // Skip empty values
+              if (value === undefined || value === null) return null;
+
               if (Array.isArray(value)) {
+                if (value.length === 0) return null;
                 return (
-                  <div key={key}>
+                  <section key={key}>
                     <h4 className="font-medium capitalize mb-1">{key}</h4>
                     <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                       {value.map((v, i) => (
                         <li key={i}>{String(v)}</li>
                       ))}
                     </ul>
-                  </div>
+                  </section>
                 );
               }
-              if (typeof value === "string" || typeof value === "number") {
+
+              if (typeof value === "string") {
+                if (value.trim() === "") return null;
                 return (
-                  <p key={key} className="text-sm text-muted-foreground"><span className="font-medium capitalize">{key}: </span>{String(value)}</p>
+                  <section key={key}>
+                    <p className="text-sm text-muted-foreground"><span className="font-medium capitalize">{key}: </span>{value}</p>
+                  </section>
+                );
+              }
+
+              if (typeof value === "number") {
+                return (
+                  <section key={key}>
+                    <p className="text-sm text-muted-foreground"><span className="font-medium capitalize">{key}: </span>{value}</p>
+                  </section>
                 );
               }
               return null;
             })}
-          </div>
+          </section>
         )}
       </section>
 
