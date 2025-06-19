@@ -3,9 +3,15 @@ import React, { useEffect, useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useTestRuns } from "@/hooks/use-testruns";
-import type { ChatMessage, TestRunStatus } from "@/hooks/use-testruns";
+import type { ChatMessage as BaseChatMessage, TestRunStatus } from "@/hooks/use-testruns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/auth";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface ChatMessage extends BaseChatMessage {
+  id?: string;
+  loading?: boolean;
+}
 
 interface Props {
   run: TestRunStatus;
@@ -46,6 +52,18 @@ export function ChatPanel({ run, personaName }: Props) {
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setSending(true);
+
+    // Add loading placeholder for persona response
+    const placeholderId = `${Date.now()}-${Math.random()}`;
+    const loadingMsg: ChatMessage = {
+      id: placeholderId,
+      message: "", // empty, will render skeleton
+      role: "agent",
+      testRunId: run._id,
+      loading: true,
+    };
+    setMessages(prev => [...prev, loadingMsg]);
+
     try {
       const res = await chatWithAgent({ testRunId: run._id, message: userMsg.message });
       const agentMsg: ChatMessage = {
@@ -53,9 +71,11 @@ export function ChatPanel({ run, personaName }: Props) {
         role: "agent",
         testRunId: run._id,
       };
-      setMessages(prev => [...prev, agentMsg]);
+      // Replace placeholder with actual message
+      setMessages(prev => prev.map(m => (m.id === placeholderId ? agentMsg : m)));
     } catch {
-      // rollback?
+      // If failed, remove placeholder
+      setMessages(prev => prev.filter(m => m.id !== placeholderId));
     } finally {
       setSending(false);
     }
@@ -110,9 +130,13 @@ export function ChatPanel({ run, personaName }: Props) {
         {messages.map((m, idx) => (
           <section key={idx} className={m.role === "user" ? "flex items-start justify-end gap-2" : "flex items-start gap-2"}>
             {m.role === "agent" && PersonaAvatar}
-            <p className="rounded-lg bg-muted px-3 py-2 text-sm max-w-[75%] whitespace-pre-line">
-              {m.message}
-            </p>
+            <section className="rounded-lg bg-muted px-3 py-2 text-sm max-w-[75%] whitespace-pre-line">
+              {m.loading ? (
+                <Skeleton className="h-4 w-24" />
+              ) : (
+                m.message
+              )}
+            </section>
             {m.role === "user" && UserAvatar}
           </section>
         ))}
