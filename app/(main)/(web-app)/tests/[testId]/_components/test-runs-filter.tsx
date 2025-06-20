@@ -34,6 +34,7 @@ export default function TestRunsFilter({ personaOptions, filters, onChange }: Pr
                 <SelectItem value="any">Any</SelectItem>
                 <SelectItem value="succeeded">Succeeded</SelectItem>
                 <SelectItem value="failed">Failed</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
