@@ -23,6 +23,7 @@ export interface TestRun {
   browserUseStatus?: string;
   browserUseOutput?: string;
   browserUseTaskId?: string;
+  scheduledFor?: string;
   // Add other fields as needed
 }
 

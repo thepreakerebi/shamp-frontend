@@ -9,9 +9,14 @@ import { useTestRuns } from "@/hooks/use-testruns";
 import { TestRunCardActionsDropdown } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card-actions-dropdown";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { format } from "date-fns";
 // import React from "react"; // video badge logic temporarily disabled
 
-export function TestRunCard({ run }: { run: TestRunSummary }) {
+interface ScheduledRunSummary extends TestRunSummary {
+  scheduledFor?: string;
+}
+
+export function TestRunCard({ run }: { run: ScheduledRunSummary }) {
   const router = useRouter();
   const {
     pauseTestRun,
@@ -118,6 +123,11 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
             {run.status === 'pending' ? statusBadge('pending') : (["finished", "stopped"].includes(run.browserUseStatus ?? "")) && statusBadge(run.status)}
             {run.status !== 'cancelled' && browserStatusBadge(run.browserUseStatus)}
           </div>
+          {run.status === 'pending' && run.scheduledFor && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Runs {format(new Date(run.scheduledFor), "p · MMM dd")}
+            </p>
+          )}
           {/* Video status badge disabled for now */}
         </section>
         <nav onClick={(e) => e.stopPropagation()} data-stop-row>
@@ -125,6 +135,7 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
             runId={run._id}
             runPersonaName={run.personaName}
             actions={{ deleteTestRun, moveTestRunToTrash }}
+            showOpenOptions={run.status !== 'pending'}
           />
         </nav>
       </header>
