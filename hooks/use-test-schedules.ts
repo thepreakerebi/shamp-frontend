@@ -188,6 +188,35 @@ export function useTestSchedules() {
     [token, removeScheduleFromList, removeTrashedSchedule]
   );
 
+  // Update recurring schedule
+  const updateRecurringSchedule = useCallback(
+    async (id: string, recurrenceRule: string) => {
+      if (!token) throw new Error("Not authenticated");
+      try {
+        const res = await fetch(`${API_BASE}/testschedules/recurring/${id}`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ recurrenceRule }),
+        });
+        if (!res.ok) {
+          const errTxt = await res.text().catch(()=>"Failed");
+          throw new Error(errTxt || "Failed to update schedule");
+        }
+        const sched = (await res.json()) as TestSchedule;
+        updateScheduleInList(sched);
+        toast.success("Schedule updated");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to update schedule");
+        throw err;
+      }
+    },
+    [token, updateScheduleInList]
+  );
+
   return {
     schedules,
     schedulesLoading,
@@ -200,5 +229,6 @@ export function useTestSchedules() {
     moveScheduleToTrash,
     restoreScheduleFromTrash,
     deleteSchedule,
+    updateRecurringSchedule,
   };
 } 

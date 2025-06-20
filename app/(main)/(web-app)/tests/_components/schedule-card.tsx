@@ -40,9 +40,9 @@ export function ScheduleCard({ schedule }: { schedule: TestSchedule }) {
         <nav onClick={(e)=>e.stopPropagation()} data-stop-row>
           <ScheduleRowActionsDropdown
             scheduleId={schedule._id}
-            testId={schedule.testId}
             testName={schedule.testName}
             actions={{ moveScheduleToTrash, deleteSchedule }}
+            currentRule={schedule.recurrenceRule}
           />
         </nav>
       </header>

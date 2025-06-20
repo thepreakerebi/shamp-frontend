@@ -7,9 +7,9 @@ import {
 } from "@/components/ui/custom-dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { EllipsisVerticalIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import React, { useState } from "react";
+import { EditScheduleModal } from "./edit-schedule-modal";
 
 interface ActionFns {
   moveScheduleToTrash: (id: string) => Promise<unknown>;
@@ -18,23 +18,23 @@ interface ActionFns {
 
 interface Props {
   scheduleId: string;
-  testId: string;
   testName?: string;
+  currentRule?: string;
   onEdit?: ()=>void;
   actions: ActionFns;
 }
 
-export function ScheduleRowActionsDropdown({ scheduleId, testId, testName, onEdit, actions }: Props) {
-  const router = useRouter();
+export function ScheduleRowActionsDropdown({ scheduleId, testName, currentRule, onEdit, actions }: Props) {
   const { moveScheduleToTrash, deleteSchedule } = actions;
   const [trashOpen, setTrashOpen] = useState(false);
   const [trashLoading, setTrashLoading] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const handleEdit = () => {
     if (onEdit) { onEdit(); return; }
-    router.push(`/tests/${testId}/schedule/${scheduleId}/edit`);
+    setEditOpen(true);
   };
 
   const confirmTrash = async () => {
@@ -93,6 +93,8 @@ export function ScheduleRowActionsDropdown({ scheduleId, testId, testName, onEdi
         loading={deleteLoading}
         onConfirm={confirmDelete}
       />
+
+      <EditScheduleModal open={editOpen} setOpen={setEditOpen} scheduleId={scheduleId} currentRule={currentRule} />
     </>
   );
 } 
