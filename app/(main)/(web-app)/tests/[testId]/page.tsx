@@ -1,5 +1,5 @@
 "use client";
-import { useParams, notFound } from "next/navigation";
+import { useParams, useSearchParams, notFound } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { useTests } from "@/hooks/use-tests";
@@ -36,7 +36,11 @@ export default function TestDetailPage() {
     }
   }, [test, testId, getTestById]);
 
-  const [tab, setTab] = useState("details");
+  // Determine initial tab from query param if provided
+  const searchParams = useSearchParams();
+  const initialTabParam = searchParams.get("tab");
+  const initialTab = initialTabParam === "analysis" || initialTabParam === "runs" ? initialTabParam : "details";
+  const [tab, setTab] = useState(initialTab);
 
   if (loading && !test) {
     return (

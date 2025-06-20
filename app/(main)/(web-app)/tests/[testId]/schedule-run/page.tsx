@@ -10,12 +10,13 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from "@/components/ui/command";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { ChevronsUpDown, Check } from "lucide-react";
+import { ChevronsUpDown, Check, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { useTestsStore } from "@/lib/store/tests";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function ScheduleRunPage() {
   const { testId } = useParams<{ testId: string }>();
@@ -33,8 +34,9 @@ export default function ScheduleRunPage() {
   const [runHour, setRunHour] = useState<string>("");
   const [runMinute, setRunMinute] = useState<string>("");
   const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState<"daily" | "weekly" | "monthly">("daily");
   const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ personaId?: string; runAt?: string }>({});
+  const [errors, setErrors] = useState<{ personaId?: string; runDate?: string; runTime?: string }>({});
 
   useEffect(() => {
     (async () => {
@@ -82,7 +84,18 @@ export default function ScheduleRunPage() {
 
       let endpoint = "/testschedules/schedule";
       if (isRecurring) {
-        const rule = `${dateTime.getUTCMinutes()} ${dateTime.getUTCHours()} * * *`;
+        let rule = "";
+        const min = dateTime.getUTCMinutes();
+        const hr = dateTime.getUTCHours();
+        if (recurrenceType === "daily") {
+          rule = `${min} ${hr} * * *`;
+        } else if (recurrenceType === "weekly") {
+          const dow = dateTime.getUTCDay(); // 0 (Sun) - 6 (Sat)
+          rule = `${min} ${hr} * * ${dow}`;
+        } else {
+          const dom = dateTime.getUTCDate();
+          rule = `${min} ${hr} ${dom} * *`;
+        }
         payload.recurrenceRule = rule;
         endpoint = "/testschedules/recurring";
       } else {
@@ -96,7 +109,11 @@ export default function ScheduleRunPage() {
       });
       if (!res.ok) throw new Error("Failed to schedule");
       toast.success(isRecurring ? "Recurring schedule created" : "Test run scheduled");
-      router.push(`/tests?tab=schedules`);
+      if (isRecurring) {
+        router.push(`/tests?tab=schedules`);
+      } else {
+        router.push(`/tests/${testId}?tab=runs`);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to schedule");
     } finally {
@@ -108,7 +125,8 @@ export default function ScheduleRunPage() {
     e.preventDefault();
     const errs: typeof errors = {};
     if (!selectedPersona) errs.personaId = "Persona is required";
-    if (!runDate || runHour === "" || runMinute === "") errs.runAt = "Date & time required";
+    if (!runDate) errs.runDate = "Date is required";
+    if (runHour === "" || runMinute === "") errs.runTime = "Time is required";
     if (Object.keys(errs).length) { setErrors(errs); return; }
     await doSchedule();
   };
@@ -153,11 +171,11 @@ export default function ScheduleRunPage() {
                       <Check className={`ml-auto size-4 ${selectedPersona === p._id ? "opacity-100" : "opacity-0"}`} />
                     </CommandItem>
                   ))}
-                  {errors.personaId && <p className="text-destructive text-xs mt-1">{errors.personaId}</p>}
                 </CommandList>
               </Command>
             </PopoverContent>
           </Popover>
+          {errors.personaId && <p className="text-destructive text-xs mt-1">{errors.personaId}</p>}
         </section>
 
         {/* Date */}
@@ -173,18 +191,19 @@ export default function ScheduleRunPage() {
               <Calendar
                 mode="single"
                 selected={runDate}
-                onSelect={(d)=>{setRunDate(d); setErrors({...errors, runAt: undefined});}}
+                onSelect={(d)=>{setRunDate(d); setErrors({...errors, runDate: undefined});}}
                 initialFocus
               />
             </PopoverContent>
           </Popover>
+          {errors.runDate && <p className="text-destructive text-xs mt-1">{errors.runDate}</p>}
         </section>
 
         {/* Time */}
         <section className="space-y-2">
           <label className="text-sm font-medium">Run time (UTC)</label>
           <div className="flex items-center gap-2">
-            <Select value={runHour} onValueChange={v=>{setRunHour(v); setErrors({...errors, runAt: undefined});}}>
+            <Select value={runHour} onValueChange={v=>{setRunHour(v); setErrors({...errors, runTime: undefined});}}>
               <SelectTrigger className="w-20 justify-between">
                 <SelectValue placeholder="HH" />
               </SelectTrigger>
@@ -195,7 +214,7 @@ export default function ScheduleRunPage() {
               </SelectContent>
             </Select>
             <span className="text-muted-foreground">:</span>
-            <Select value={runMinute} onValueChange={v=>{setRunMinute(v); setErrors({...errors, runAt: undefined});}}>
+            <Select value={runMinute} onValueChange={v=>{setRunMinute(v); setErrors({...errors, runTime: undefined});}}>
               <SelectTrigger className="w-20 justify-between">
                 <SelectValue placeholder="MM" />
               </SelectTrigger>
@@ -206,19 +225,42 @@ export default function ScheduleRunPage() {
               </SelectContent>
             </Select>
           </div>
-          {errors.runAt && <p className="text-destructive text-xs mt-1">{errors.runAt}</p>}
+          {errors.runTime && <p className="text-destructive text-xs mt-1">{errors.runTime}</p>}
         </section>
 
         {/* Recurring */}
-        <section className="flex items-center gap-2">
-          <Checkbox id="recurring" checked={isRecurring} onCheckedChange={v=>setIsRecurring(!!v)} />
-          <label htmlFor="recurring" className="text-sm select-none">Make recurring (daily at selected time)</label>
+        <section className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Checkbox id="recurring" checked={isRecurring} className="data-[state=checked]:bg-secondary data-[state=checked]:text-secondary-foreground" onCheckedChange={v=>setIsRecurring(!!v)} />
+            <label htmlFor="recurring" className="text-sm select-none">Make recurring</label>
+          </div>
+          {isRecurring && (
+            <div className="pl-6">
+              <RadioGroup value={recurrenceType} onValueChange={(v: "daily" | "weekly" | "monthly")=>setRecurrenceType(v)} className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="daily" id="daily" className="data-[state=checked]:bg-secondary data-[state=checked]:text-secondary-foreground" />
+                  <label htmlFor="daily" className="text-sm select-none">Daily</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="weekly" id="weekly" className="data-[state=checked]:bg-secondary data-[state=checked]:text-secondary-foreground" />
+                  <label htmlFor="weekly" className="text-sm select-none">Weekly</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="monthly" id="monthly" className="data-[state=checked]:bg-secondary data-[state=checked]:text-secondary-foreground" />
+                  <label htmlFor="monthly" className="text-sm select-none">Monthly</label>
+                </div>
+              </RadioGroup>
+            </div>
+          )}
         </section>
 
         {/* Actions */}
         <section className="flex justify-end gap-2">
           <Button variant="ghost" type="button" onClick={()=>router.back()} disabled={submitting}>Cancel</Button>
-          <Button type="submit" disabled={submitting} variant="default">{isRecurring?"Create schedule":"Schedule"}</Button>
+          <Button type="submit" disabled={submitting} variant="default">
+            {submitting && <Loader2 className="mr-2 size-4 animate-spin" />} 
+            {isRecurring?"Create schedule":"Schedule"}
+          </Button>
         </section>
       </form>
     </main>
