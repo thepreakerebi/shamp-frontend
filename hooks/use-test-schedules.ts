@@ -166,6 +166,28 @@ export function useTestSchedules() {
     [token, updateScheduleInList, removeTrashedSchedule]
   );
 
+  // Delete schedule (recurring)
+  const deleteSchedule = useCallback(
+    async (id: string) => {
+      if (!token) throw new Error("Not authenticated");
+      try {
+        const res = await fetch(`${API_BASE}/testschedules/recurring/${id}`, {
+          method: "DELETE",
+          credentials: "include",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Failed to delete schedule");
+        removeScheduleFromList(id);
+        removeTrashedSchedule(id);
+        toast.success("Schedule deleted");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to delete schedule");
+        throw err;
+      }
+    },
+    [token, removeScheduleFromList, removeTrashedSchedule]
+  );
+
   return {
     schedules,
     schedulesLoading,
@@ -177,5 +199,6 @@ export function useTestSchedules() {
     fetchTrashedSchedules,
     moveScheduleToTrash,
     restoreScheduleFromTrash,
+    deleteSchedule,
   };
 } 
