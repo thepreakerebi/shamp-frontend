@@ -23,6 +23,7 @@ export default function EditScheduledRunPage() {
   const [loading, setLoading] = useState(true);
   const [personaOptions, setPersonaOptions] = useState<Persona[]>([]);
   const [selectedPersona, setSelectedPersona] = useState<string>("");
+  const [personaLabel, setPersonaLabel] = useState<string>("");
   const [openSelect, setOpenSelect] = useState(false);
   const [runDate, setRunDate] = useState<Date | undefined>();
   const [runHour, setRunHour] = useState<string>("");
@@ -41,15 +42,32 @@ export default function EditScheduledRunPage() {
           router.back();
           return;
         }
-        // Persona list is from all personas; just ensure current persona included
-        setSelectedPersona(run.persona);
+        // Try to determine persona id from run or by name
+        let preselectId = "";
+        const runObj = run as unknown as Record<string, unknown>;
+        if (typeof runObj.persona === "string") {
+          preselectId = runObj.persona;
+        }
+        const pName = runObj.personaName as string | undefined;
+        if (!preselectId && pName && allPersonas) {
+          const match = allPersonas.find(p=>p.name===pName);
+          if (match) preselectId = match._id;
+        }
+        setSelectedPersona(preselectId);
+        setPersonaLabel(pName || "");
         if (run.scheduledFor) {
           const dt = new Date(run.scheduledFor);
           setRunDate(dt);
           setRunHour(String(dt.getUTCHours()).padStart(2, "0"));
           setRunMinute(String(dt.getUTCMinutes()).padStart(2, "0"));
         }
-        if (allPersonas) setPersonaOptions(allPersonas);
+        if (allPersonas) {
+          const opts = [...allPersonas];
+          if (pName && !opts.find(p=>p.name===pName)) {
+            opts.push({ _id: "__current__", name: pName } as unknown as Persona);
+          }
+          setPersonaOptions(opts);
+        }
       } catch {
         toast.error("Failed to load scheduled run");
         router.back();
@@ -93,7 +111,7 @@ export default function EditScheduledRunPage() {
           <Popover open={openSelect} onOpenChange={setOpenSelect}>
             <PopoverTrigger asChild>
               <Button variant="outline" role="combobox" className="w-full justify-between">
-                {selectedPersona ? personaOptions.find(p=>p._id===selectedPersona)?.name : "Select persona"}
+                {selectedPersona ? (personaOptions.find(p=>p._id===selectedPersona)?.name || personaLabel) : "Select persona"}
                 <ChevronsUpDown className="size-4 opacity-50" />
               </Button>
             </PopoverTrigger>

@@ -23,6 +23,11 @@ export function Breadcrumbs() {
   const projectId = homeIdx !== -1 && segments.length > homeIdx + 1 ? segments[homeIdx + 1] : undefined;
   const personasIdx = segments.indexOf("personas");
   const testsIdx = segments.indexOf("tests");
+  const scheduleRunIdx = segments.indexOf("schedule-run");
+  let pathIdEdit: string | undefined = undefined;
+  if (scheduleRunIdx !== -1 && segments.length > scheduleRunIdx + 1) {
+    pathIdEdit = segments[scheduleRunIdx + 1];
+  }
   let personaId: string | undefined = undefined;
   let batchPersonasId: string | undefined = undefined;
   let testId: string | undefined = undefined;
@@ -171,6 +176,12 @@ export function Breadcrumbs() {
           }
           if (segment === testId && testName) {
             display = testName;
+          }
+          if (segment === "schedule-run") {
+            display = "Edit scheduled run";
+          }
+          if (segment === pathIdEdit && pathIdEdit) {
+            return null;
           }
           if (segment === "personas" && batchQueryName) {
             return (
