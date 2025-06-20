@@ -9,10 +9,34 @@ import { Filter } from "lucide-react";
 import { useProjects, type Project } from "@/hooks/use-projects";
 import { usePersonas, type Persona as PersonaType } from "@/hooks/use-personas";
 import { useTestSchedules } from "@/hooks/use-test-schedules";
+import { useAuth } from "@/lib/auth";
+
+// Helper to build query params object for searchSchedules
+const buildParams = (
+  query: string,
+  projSel: string[],
+  persSel: string[],
+  userFullName: string | undefined
+) => {
+  const params: Record<string, string> = {};
+  if (query.trim()) {
+    const lower = query.trim().toLowerCase();
+    if (lower === "you" && userFullName) {
+      params.q = userFullName;
+    } else {
+      params.q = query.trim();
+    }
+  }
+  if (projSel.length) params.project = projSel.join(",");
+  if (persSel.length) params.persona = persSel.join(",");
+  return params;
+};
 
 export function SchedulesCardToolbar() {
   const [query, setQuery] = useState("");
-  const { fetchSchedules } = useTestSchedules();
+  const { fetchSchedules, searchSchedules } = useTestSchedules();
+  const { user } = useAuth();
+  const userFullName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || undefined;
 
   const { projects } = useProjects();
   const { personas } = usePersonas();
@@ -26,10 +50,16 @@ export function SchedulesCardToolbar() {
   };
 
   // Debounced search
-  useEffect(()=>{
-    const t = setTimeout(()=>{ /* TODO integrate search API */ },400);
-    return ()=> clearTimeout(t);
-  },[query, projSel, persSel]);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      searchSchedules(buildParams(query, projSel, persSel, userFullName));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [query, projSel, persSel, searchSchedules, userFullName]);
+
+  const applyFilters = () => {
+    searchSchedules(buildParams(query, projSel, persSel, userFullName));
+  };
 
   return (
     <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-2 py-4">
@@ -72,8 +102,8 @@ export function SchedulesCardToolbar() {
               </div>
             )}
             <div className="flex justify-end gap-2">
-              <Button size="sm" variant="ghost" onClick={()=>{ setProjSel([]); setPersSel([]); /* reset search */ setQuery(""); fetchSchedules(); }}>Reset</Button>
-              <Button size="sm" onClick={()=>{/* TODO apply filters*/}}>Apply</Button>
+              <Button size="sm" variant="ghost" onClick={() => { setProjSel([]); setPersSel([]); setQuery(""); fetchSchedules(); }}>Reset</Button>
+              <Button size="sm" onClick={applyFilters}>Apply</Button>
             </div>
           </div>
         </PopoverContent>

@@ -218,6 +218,66 @@ export function useTestSchedules() {
     [token, updateScheduleInList]
   );
 
+  // Remote search/filter for schedules
+  const searchSchedules = useCallback(
+    async (params: Record<string, string | number | undefined>) => {
+      if (!token) return;
+      setSchedulesLoading(true);
+      setSchedulesError(null);
+      try {
+        const filtered: Record<string, string> = {};
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== "") {
+            filtered[key] = String(value);
+          }
+        });
+
+        // If no filters, fetch the full list instead of paginated search
+        if (Object.keys(filtered).length === 0) {
+          await fetchSchedules();
+          return;
+        }
+
+        const qs = new URLSearchParams(filtered).toString();
+        const resp = await fetcher(`/tests/search?${qs}`, token);
+
+        type SearchResp = { data: Array<{ _id: string }> } | Array<{ _id: string }>;
+        const testsResp = resp as unknown as SearchResp;
+        const testsArr: Array<{ _id: string }> = Array.isArray(testsResp)
+          ? testsResp
+          : Array.isArray((testsResp as { data: unknown }).data)
+          ? (testsResp as { data: Array<{ _id: string }> }).data
+          : [];
+
+        const idSet = new Set<string>(testsArr.map((t) => String(t._id)));
+
+        const currentSchedules = useTestSchedulesStore.getState().schedules ?? [];
+        const matched = currentSchedules.filter((s) => idSet.has(s.testId));
+
+        setSchedules(matched);
+      } catch {
+        // Remote search failed – fallback to simple client-side filtering
+        const current = useTestSchedulesStore.getState().schedules ?? [];
+        const queryLower = (params.q as string | undefined)?.toLowerCase() ?? "";
+        const projectsSel = (params.project as string | undefined)?.split(",") ?? [];
+        const personasSel = (params.persona as string | undefined)?.split(",") ?? [];
+
+        const filteredLocal = current.filter((s) => {
+          const matchesQuery = !queryLower ||
+            s.testName.toLowerCase().includes(queryLower) ||
+            (s.testDescription && s.testDescription.toLowerCase().includes(queryLower));
+          const matchesProject = !projectsSel.length || (s.projectName && projectsSel.includes(s.projectName));
+          const matchesPersona = !personasSel.length || (s.personaName && personasSel.includes(s.personaName));
+          return matchesQuery && matchesProject && matchesPersona;
+        });
+        setSchedules(filteredLocal);
+      } finally {
+        setSchedulesLoading(false);
+      }
+    },
+    [token, setSchedules, setSchedulesLoading, setSchedulesError, fetchSchedules]
+  );
+
   return {
     schedules,
     schedulesLoading,
@@ -232,5 +292,6 @@ export function useTestSchedules() {
     deleteSchedule,
     updateRecurringSchedule,
     addScheduleToList,
+    searchSchedules,
   };
 } 
