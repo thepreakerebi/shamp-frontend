@@ -9,6 +9,7 @@ import { MoveProjectToTrashModal } from "../../_components/move-project-to-trash
 import { toast } from "sonner";
 import { ProjectListEmpty } from "./project-list-empty";
 import { CreateProjectModalProvider, useCreateProjectModal } from "../../_components/create-project-modal";
+import { EditProjectModal } from "../../_components/edit-project-modal";
 
 function ProjectCard({ project, onEdit, onTrash }: { project: Project, onEdit?: () => void, onTrash?: () => void }) {
   // Fallback logic for image: previewImageUrl -> favicon -> placeholder
@@ -26,7 +27,7 @@ function ProjectCard({ project, onEdit, onTrash }: { project: Project, onEdit?: 
   };
   const handleEdit = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (onEdit) onEdit();
+    onEdit?.();
   };
   const handleTrash = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -35,15 +36,15 @@ function ProjectCard({ project, onEdit, onTrash }: { project: Project, onEdit?: 
 
   return (
     <article
-      className="rounded-2xl overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 h-full group hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+      role="button"
+      tabIndex={0}
+      onClick={handleOpen}
+      className="rounded-2xl cursor-pointer overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 h-full group hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-secondary"
     >
-      {/* URL Preview (clickable) */}
-      <button
-        type="button"
-        className="relative h-32 w-full bg-muted flex items-center justify-center cursor-pointer outline-none group/image"
-        onClick={handleOpen}
-        tabIndex={0}
-        aria-label={`Open project ${project.name}`}
+      {/* URL Preview */}
+      <div
+        className="relative h-32 w-full bg-muted flex items-center justify-center select-none"
+        aria-hidden="true"
       >
         <Image
           src={imgSrc}
@@ -60,7 +61,7 @@ function ProjectCard({ project, onEdit, onTrash }: { project: Project, onEdit?: 
             }
           }}
         />
-      </button>
+      </div>
       {/* Card Content */}
       <section className="flex flex-col gap-1 flex-1 justify-end p-4">
         <header>
@@ -84,11 +85,13 @@ function ProjectCard({ project, onEdit, onTrash }: { project: Project, onEdit?: 
             )}
             {` · ${project.testRunsCount ?? 0} test run${(project.testRunsCount ?? 0) === 1 ? "" : "s"}`}
           </h3>
-          <ProjectCardDropdown
-            onOpen={handleOpen}
-            onEdit={handleEdit}
-            onTrash={handleTrash}
-          />
+          <nav onClick={(e)=>e.stopPropagation()} data-stop-row>
+            <ProjectCardDropdown
+              onOpen={handleOpen}
+              onEdit={handleEdit}
+              onTrash={handleTrash}
+            />
+          </nav>
         </footer>
       </section>
     </article>
@@ -101,6 +104,10 @@ function ProjectsListInner() {
   const [trashModalOpen, setTrashModalOpen] = React.useState(false);
   const [trashingProject, setTrashingProject] = React.useState<Project | null>(null);
   const [trashLoading, setTrashLoading] = React.useState(false);
+
+  // Edit modal state
+  const [editModalOpen, setEditModalOpen] = React.useState(false);
+  const [editingProject, setEditingProject] = React.useState<Project | null>(null);
 
   if (projectsLoading && (!projects || projects.length === 0)) return <ProjectListSkeleton count={3} />;
   if (projectsError) return <div className="text-destructive">Error loading projects: {projectsError}</div>;
@@ -131,7 +138,10 @@ function ProjectsListInner() {
           <ProjectCard
             key={project._id}
             project={project}
-            onEdit={() => {}}
+            onEdit={() => {
+              setEditingProject(project);
+              setEditModalOpen(true);
+            }}
             onTrash={() => {
               setTrashingProject(project);
               setTrashModalOpen(true);
@@ -145,6 +155,15 @@ function ProjectsListInner() {
         project={trashingProject}
         onConfirm={handleMoveToTrash}
         loading={trashLoading}
+      />
+
+      <EditProjectModal
+        open={editModalOpen}
+        setOpen={setEditModalOpen}
+        project={editingProject}
+        onSuccess={() => {
+          /* Refresh handled inside modal via router.refresh */
+        }}
       />
     </>
   );
