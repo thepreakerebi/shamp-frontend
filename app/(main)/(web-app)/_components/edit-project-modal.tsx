@@ -12,7 +12,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useRouter } from "next/navigation";
 import { Loader2, Trash2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
@@ -32,7 +31,6 @@ export function EditProjectModal({ open, setOpen, project, onSuccess }: EditProj
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<{ name?: string; url?: string }>({});
-  const router = useRouter();
   const { updateProject } = useProjects();
   const prevOpen = React.useRef(false);
 
@@ -129,9 +127,6 @@ export function EditProjectModal({ open, setOpen, project, onSuccess }: EditProj
         toast.success("Project updated!");
         setOpen(false);
         if (onSuccess) onSuccess();
-        setTimeout(() => {
-          router.refresh();
-        }, 300);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to update project");

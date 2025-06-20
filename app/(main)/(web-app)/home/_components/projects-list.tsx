@@ -21,6 +21,15 @@ function ProjectCard({ project, onEdit, onTrash }: { project: Project, onEdit?: 
   const [triedFavicon, setTriedFavicon] = React.useState(!project.previewImageUrl);
   const router = useRouter();
 
+  // When project URL or preview image changes (e.g., after editing), refresh the image source.
+  React.useEffect(() => {
+    const initialSrc = project.previewImageUrl
+      ? project.previewImageUrl
+      : `https://www.google.com/s2/favicons?domain=${encodeURIComponent(project.url ?? "")}&sz=128`;
+    setImgSrc(initialSrc);
+    setTriedFavicon(!project.previewImageUrl);
+  }, [project.previewImageUrl, project.url]);
+
   const handleOpen = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     router.push(`/home/${project._id}`);

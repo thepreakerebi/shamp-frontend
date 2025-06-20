@@ -98,9 +98,17 @@ export const useProjectsStore = create<ProjectsState>((set) => ({
       projects: state.projects ? state.projects.filter((p) => p._id !== id) : null,
     })),
   addProjectToList: (project) =>
-    set((state) => ({
-      projects: state.projects ? [project, ...state.projects] : [project],
-    })),
+    set((state) => {
+      const exists = state.projects?.some((p) => p._id === project._id);
+      if (exists) {
+        return {
+          projects: state.projects?.map((p) => (p._id === project._id ? { ...p, ...project } : p)) || [project],
+        };
+      }
+      return {
+        projects: state.projects ? [project, ...state.projects] : [project],
+      };
+    }),
   reset: () =>
     set({
       projects: null,
