@@ -1,6 +1,6 @@
 "use client";
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTestRuns } from "@/hooks/use-testruns";
 import { usePersonas } from "@/hooks/use-personas";
 import type { Persona } from "@/hooks/use-personas";
@@ -31,6 +31,7 @@ export default function EditScheduledRunPage() {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<{ personaId?: string; runDate?: string; runTime?: string; dateTime?: string }>({});
   const [dateOpen, setDateOpen] = useState(false);
+  const userPickedPersona = useRef(false);
 
   // Load existing run + personas
   useEffect(() => {
@@ -54,8 +55,10 @@ export default function EditScheduledRunPage() {
           const match = allPersonas.find(p=>p.name===pName);
           if (match) preselectId = match._id;
         }
-        setSelectedPersona(preselectId);
-        setPersonaLabel(pName || "");
+        if (!userPickedPersona.current && !selectedPersona) {
+          setSelectedPersona(preselectId);
+          setPersonaLabel(pName || "");
+        }
         if (run.scheduledFor) {
           const dt = new Date(run.scheduledFor);
           setRunDate(dt);
@@ -130,7 +133,7 @@ export default function EditScheduledRunPage() {
                 <CommandList>
                   <CommandEmpty>No persona found.</CommandEmpty>
                   {personaOptions.map(p=> (
-                    <CommandItem key={p._id} value={p.name} onSelect={()=>{ setSelectedPersona(p._id); setOpenSelect(false); }}>
+                    <CommandItem key={p._id} value={p.name} onSelect={()=>{ setSelectedPersona(p._id); userPickedPersona.current=true; setOpenSelect(false); }}>
                       <div className="flex items-center gap-2 w-full">
                         {p.avatarUrl ? (
                           <Image src={p.avatarUrl} alt={p.name} width={24} height={24} className="rounded-full object-cover border" unoptimized />
