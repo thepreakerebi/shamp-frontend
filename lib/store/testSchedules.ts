@@ -4,6 +4,8 @@ export interface TestSchedule {
   _id: string;
   testId: string;
   testName: string;
+  testDescription?: string;
+  projectName?: string;
   personaName?: string;
   nextRun: string;
   recurrenceRule?: string;
