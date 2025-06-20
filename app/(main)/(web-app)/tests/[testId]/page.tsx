@@ -18,23 +18,27 @@ export default function TestDetailPage() {
   const [loading, setLoading] = useState(!test);
 
   useEffect(() => {
-    if (!test && testId) {
-      (async () => {
-        setLoading(true);
+    if (!testId) return;
+    let mounted = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const fetched = await getTestById(testId);
+        if (!mounted) return;
+        setTest(fetched);
         try {
-          const fetched = await getTestById(testId);
-          setTest(fetched);
-          try {
-            useTestsStore.getState().updateTestInList(fetched as TestType);
-          } catch {}
-        } catch {
-          notFound();
-        } finally {
+          useTestsStore.getState().updateTestInList(fetched as TestType);
+        } catch {}
+      } catch {
+        if (mounted) notFound();
+      } finally {
+        if (mounted) {
           setLoading(false);
         }
-      })();
-    }
-  }, [test, testId, getTestById]);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [testId, getTestById]);
 
   // Determine initial tab from query param if provided
   const searchParams = useSearchParams();
