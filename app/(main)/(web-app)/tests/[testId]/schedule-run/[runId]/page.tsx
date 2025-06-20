@@ -13,6 +13,7 @@ import { ChevronsUpDown, Check, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { EditScheduledRunPageSkeleton } from "../../_components/edit-scheduled-run-page-skeleton";
 
 export default function EditScheduledRunPage() {
   const { testId, runId } = useParams<{ testId: string; runId: string }>();
@@ -109,7 +110,7 @@ export default function EditScheduledRunPage() {
     } finally { setSaving(false); }
   };
 
-  if (loading) return <main className="p-6">Loading…</main>;
+  if (loading) return <EditScheduledRunPageSkeleton />;
 
   const displayDate = runDate ? format(runDate, "PPP") : "Pick a date";
 

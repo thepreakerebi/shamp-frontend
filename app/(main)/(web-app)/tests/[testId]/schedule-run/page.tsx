@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { useTestsStore } from "@/lib/store/tests";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useTestRunsStore } from "@/lib/store/testruns";
+import { ScheduleRunPageSkeleton } from "../_components/schedule-run-page-skeleton";
 
 export default function ScheduleRunPage() {
   const { testId } = useParams<{ testId: string }>();
@@ -162,7 +163,7 @@ export default function ScheduleRunPage() {
   };
 
   if (loading) {
-    return <main className="p-6">Loading…</main>;
+    return <ScheduleRunPageSkeleton />;
   }
 
   return (
