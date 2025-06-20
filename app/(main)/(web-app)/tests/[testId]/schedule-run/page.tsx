@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { useTestsStore } from "@/lib/store/tests";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useTestRunsStore } from "@/lib/store/testruns";
 
 export default function ScheduleRunPage() {
   const { testId } = useParams<{ testId: string }>();
@@ -25,6 +26,7 @@ export default function ScheduleRunPage() {
   const { getTestById } = useTests();
   const { personas: allPersonas } = usePersonas();
   const updateTestInList = useTestsStore(state=>state.updateTestInList);
+  const addTestRunToList = useTestRunsStore(state=>state.addTestRunToList);
 
   const [loading, setLoading] = useState(true);
   const [personaOptions, setPersonaOptions] = useState<Persona[]>([]);
@@ -108,6 +110,26 @@ export default function ScheduleRunPage() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("Failed to schedule");
+      let newRun: import("@/hooks/use-testruns").TestRun | null = null;
+      try {
+        newRun = await res.json();
+      } catch {}
+
+      // If a non-recurring run was created, optimistically add to stores for immediate UI update
+      if (!isRecurring && newRun && newRun._id) {
+        try {
+          type RunWithPersona = import("@/hooks/use-testruns").TestRun & { personaName?: string };
+          const runWithPersona: RunWithPersona = {
+            ...newRun,
+            personaName: personaOptions.find(p=>p._id === selectedPersona)?.name,
+          } as RunWithPersona;
+          addTestRunToList(runWithPersona);
+          // also update test-specific cache
+          const prev = useTestsStore.getState().getTestRunsForTest(testId) || [];
+          useTestsStore.getState().setTestRunsForTest(testId, [runWithPersona, ...prev]);
+        } catch {}
+      }
+
       toast.success(isRecurring ? "Recurring schedule created" : "Test run scheduled");
       if (isRecurring) {
         router.push(`/tests?tab=schedules`);
