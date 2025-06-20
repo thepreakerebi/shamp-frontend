@@ -178,7 +178,8 @@ export function Breadcrumbs() {
             display = testName;
           }
           if (segment === "schedule-run") {
-            display = "Edit scheduled run";
+            // Show different label depending on whether we are editing an existing run (has an id) or creating a new one
+            display = pathIdEdit ? "Edit scheduled run" : "Schedule run";
           }
           if (segment === pathIdEdit && pathIdEdit) {
             return null;
