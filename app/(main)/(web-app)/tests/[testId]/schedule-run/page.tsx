@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { useTestsStore } from "@/lib/store/tests";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useTestRunsStore } from "@/lib/store/testruns";
+import { useTestSchedulesStore } from "@/lib/store/testSchedules";
 import { ScheduleRunPageSkeleton } from "../_components/schedule-run-page-skeleton";
 
 export default function ScheduleRunPage() {
@@ -28,6 +29,7 @@ export default function ScheduleRunPage() {
   const { personas: allPersonas } = usePersonas();
   const updateTestInList = useTestsStore(state=>state.updateTestInList);
   const addTestRunToList = useTestRunsStore(state=>state.addTestRunToList);
+  const addScheduleToList = useTestSchedulesStore(state=>state.addScheduleToList);
 
   const [loading, setLoading] = useState(true);
   const [personaOptions, setPersonaOptions] = useState<Persona[]>([]);
@@ -118,31 +120,34 @@ export default function ScheduleRunPage() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("Failed to schedule");
-      let newRun: import("@/hooks/use-testruns").TestRun | null = null;
-      try {
-        newRun = await res.json();
-      } catch {}
 
-      // If a non-recurring run was created, optimistically add to stores for immediate UI update
-      if (!isRecurring && newRun && newRun._id) {
-        try {
+      // Parse response body exactly once to avoid errors when reading twice.
+      const data = await res.json();
+
+      if (isRecurring) {
+        // Expecting a TestSchedule object in the response
+        const created = data as import("@/lib/store/testSchedules").TestSchedule;
+        if (created && created._id) {
+          addScheduleToList(created);
+        }
+        toast.success("Recurring schedule created");
+        router.push(`/tests?tab=schedules`);
+      } else {
+        // Expecting a TestRun object in the response
+        const newRun = data as import("@/hooks/use-testruns").TestRun;
+        if (newRun && newRun._id) {
           type RunWithPersona = import("@/hooks/use-testruns").TestRun & { personaName?: string; test: string };
           const runWithPersona: RunWithPersona = {
             ...newRun,
             test: testId,
             personaName: personaOptions.find(p=>p._id === selectedPersona)?.name,
           } as RunWithPersona;
+          // Optimistically update stores so UI refreshes immediately
           addTestRunToList(runWithPersona);
-          // also update test-specific cache
           const prev = useTestsStore.getState().getTestRunsForTest(testId) || [];
           useTestsStore.getState().setTestRunsForTest(testId, [runWithPersona, ...prev]);
-        } catch {}
-      }
-
-      toast.success(isRecurring ? "Recurring schedule created" : "Test run scheduled");
-      if (isRecurring) {
-        router.push(`/tests?tab=schedules`);
-      } else {
+        }
+        toast.success("Test run scheduled");
         router.push(`/tests/${testId}?tab=runs`);
       }
     } catch (err) {

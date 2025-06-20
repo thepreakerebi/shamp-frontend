@@ -40,6 +40,7 @@ export function useTestSchedules() {
     removeScheduleFromList,
     addTrashedSchedule,
     removeTrashedSchedule,
+    addScheduleToList,
   } = store;
 
   // Initial fetch (only once)
@@ -61,7 +62,7 @@ export function useTestSchedules() {
     });
 
     socket.on("schedule:created", (schedule: TestSchedule) => {
-      updateScheduleInList(schedule);
+      addScheduleToList(schedule);
     });
     socket.on("schedule:updated", (schedule: TestSchedule) => {
       updateScheduleInList(schedule);
@@ -86,7 +87,7 @@ export function useTestSchedules() {
     return () => {
       socket.disconnect();
     };
-  }, [token, updateScheduleInList, removeScheduleFromList, addTrashedSchedule, removeTrashedSchedule]);
+  }, [token, updateScheduleInList, removeScheduleFromList, addTrashedSchedule, removeTrashedSchedule, addScheduleToList]);
 
   // Fetch all schedules for the admin group
   const fetchSchedules = useCallback(async () => {
@@ -230,5 +231,6 @@ export function useTestSchedules() {
     restoreScheduleFromTrash,
     deleteSchedule,
     updateRecurringSchedule,
+    addScheduleToList,
   };
 } 

@@ -29,6 +29,7 @@ interface TestSchedulesState {
   removeScheduleFromList: (id: string) => void;
   addTrashedSchedule: (s: TestSchedule) => void;
   removeTrashedSchedule: (id: string) => void;
+  addScheduleToList: (s: TestSchedule) => void;
 }
 
 export const useTestSchedulesStore = create<TestSchedulesState>((set) => ({
@@ -45,11 +46,17 @@ export const useTestSchedulesStore = create<TestSchedulesState>((set) => ({
   setTrashedSchedulesLoading: (trashedSchedulesLoading) => set({ trashedSchedulesLoading }),
   setTrashedSchedulesError: (trashedSchedulesError) => set({ trashedSchedulesError }),
   updateScheduleInList: (schedule) =>
-    set((state) => ({
-      schedules: state.schedules
-        ? state.schedules.map((s) => (s._id === schedule._id ? schedule : s))
-        : [schedule],
-    })),
+    set((state) => {
+      if (!state.schedules) {
+        return { schedules: [schedule] };
+      }
+      const exists = state.schedules.some((s) => s._id === schedule._id);
+      return {
+        schedules: exists
+          ? state.schedules.map((s) => (s._id === schedule._id ? schedule : s))
+          : [schedule, ...state.schedules],
+      };
+    }),
   removeScheduleFromList: (id) =>
     set((state) => ({
       schedules: state.schedules ? state.schedules.filter((s) => s._id !== id) : null,
@@ -62,4 +69,12 @@ export const useTestSchedulesStore = create<TestSchedulesState>((set) => ({
     set((state) => ({
       trashedSchedules: state.trashedSchedules ? state.trashedSchedules.filter((s) => s._id !== id) : null,
     })),
+  addScheduleToList: (schedule) =>
+    set((state) => {
+      if (!state.schedules) return { schedules: [schedule] };
+      const exists = state.schedules.some(s=>s._id===schedule._id);
+      return {
+        schedules: exists ? state.schedules.map(s=> s._id===schedule._id ? schedule : s) : [schedule, ...state.schedules]
+      };
+    }),
 })); 
