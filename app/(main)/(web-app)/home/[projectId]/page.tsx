@@ -11,7 +11,12 @@ import { useProjectsStore } from "@/lib/store/projects";
 export default function ProjectDetailsPage() {
   const [tab, setTab] = useState("details");
   const { projectId } = useParams();
-  const project = useProjectsStore((s) => s.projects?.find((p) => p._id === projectId) || null);
+  const projects = useProjectsStore((s) => s.projects);
+  const project = projects?.find((p) => p._id === projectId) || null;
+
+  if (projects === null) {
+    return null;
+  }
 
   if (!project) {
     notFound();
