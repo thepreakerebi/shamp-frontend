@@ -118,9 +118,10 @@ export default function ScheduleRunPage() {
       // If a non-recurring run was created, optimistically add to stores for immediate UI update
       if (!isRecurring && newRun && newRun._id) {
         try {
-          type RunWithPersona = import("@/hooks/use-testruns").TestRun & { personaName?: string };
+          type RunWithPersona = import("@/hooks/use-testruns").TestRun & { personaName?: string; test: string };
           const runWithPersona: RunWithPersona = {
             ...newRun,
+            test: testId,
             personaName: personaOptions.find(p=>p._id === selectedPersona)?.name,
           } as RunWithPersona;
           addTestRunToList(runWithPersona);

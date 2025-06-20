@@ -413,6 +413,7 @@ export function useTestRuns() {
   const updateScheduledTestRun = async (
     id: string,
     update: Partial<{ personaId: string; scheduledFor: string }>,
+    personaName?: string,
   ): Promise<TestRun> => {
     if (!token) throw new Error("Not authenticated");
     const res = await fetch(`${API_BASE}/testschedules/schedule/${id}`, {
@@ -425,9 +426,24 @@ export function useTestRuns() {
       body: JSON.stringify(update),
     });
     if (!res.ok) throw new Error("Failed to update scheduled test run");
-    const run = (await res.json()) as TestRun;
-    // Optimistically update store list
+    const runRaw = (await res.json()) as TestRun & { test?: string };
+    const run = personaName ? ({ ...runRaw, personaName } as TestRun & { test?: string }) : runRaw;
+    // Optimistically update global list
     updateTestRunInList(run);
+
+    // Also update per-test cache in TestsStore if we have the test id
+    if (run.test) {
+      const testsStore = useTestsStore.getState();
+      const prevRuns = testsStore.getTestRunsForTest(run.test) || [];
+      const existsIdx = prevRuns.findIndex(r=>r._id === run._id);
+      let updatedArr;
+      if (existsIdx !== -1) {
+        updatedArr = prevRuns.map(r=> r._id === run._id ? (run as unknown as TestRun) : r);
+      } else {
+        updatedArr = [run as unknown as TestRun, ...prevRuns];
+      }
+      testsStore.setTestRunsForTest(run.test, updatedArr);
+    }
     return run;
   };
 

@@ -89,7 +89,8 @@ export default function EditScheduledRunPage() {
       setSaving(true);
       const dt = new Date(runDate!);
       dt.setHours(parseInt(runHour,10), parseInt(runMinute,10), 0,0);
-      await updateScheduledTestRun(runId, { personaId: selectedPersona, scheduledFor: dt.toISOString() });
+      const pName = personaOptions.find(p=>p._id===selectedPersona)?.name || personaLabel;
+      await updateScheduledTestRun(runId, { personaId: selectedPersona, scheduledFor: dt.toISOString() }, pName);
       toast.success("Scheduled run updated");
       router.push(`/tests/${testId}?tab=runs`);
     } catch(err){
