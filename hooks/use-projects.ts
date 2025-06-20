@@ -191,9 +191,19 @@ export function useProjects() {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to update project");
-    const project = await res.json();
-    store.updateProjectInList(project);
-    return project;
+    const projectResp: Project = await res.json();
+
+    // Backend omits decrypted credentials in the response for security. To keep the UI in sync
+    // after editing credentials, merge the credentials that were just submitted (if provided)
+    // into the project object before updating the store.
+    const mergedProject: Project = {
+      ...projectResp,
+      ...(payload.authCredentials !== undefined && { authCredentials: payload.authCredentials }),
+      ...(payload.paymentCredentials !== undefined && { paymentCredentials: payload.paymentCredentials }),
+    } as Project;
+
+    store.updateProjectInList(mergedProject);
+    return mergedProject;
   };
 
   // Delete a project
