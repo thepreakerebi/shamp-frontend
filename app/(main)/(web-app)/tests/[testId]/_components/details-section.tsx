@@ -5,9 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { ProjectBadge } from "@/components/ui/project-badge";
 import { PersonaBadge } from "@/components/ui/persona-badge";
 import { Button } from "@/components/ui/button";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useTestRuns } from "@/hooks/use-testruns";
-import { usePersonas } from "@/hooks/use-personas";
 import { Loader2, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { RowActionsDropdown } from "../../_components/row-actions-dropdown";
@@ -26,7 +25,6 @@ export default function DetailsSection({ test }: { test: Test }) {
   const { moveTestToTrash, deleteTest, duplicateTest } = useTests();
   const [running, setRunning] = useState(false);
   const router = useRouter();
-  const { personas: allPersonas } = usePersonas();
 
   const handleRun = async () => {
     if (running) return;
@@ -44,32 +42,6 @@ export default function DetailsSection({ test }: { test: Test }) {
     router.push(`/tests/${test._id}/schedule-run`);
   };
 
-  // Build list of persona names robustly
-  const displayedPersonaNames = useMemo(() => {
-    const namesArr: unknown = (test as unknown as { personaNames?: unknown }).personaNames;
-    if (Array.isArray(namesArr) && namesArr.length && namesArr.every(n=>typeof n === "string")) {
-      return namesArr as string[];
-    }
-
-    const personasField = (test as unknown as { personas?: unknown }).personas as unknown;
-    if (Array.isArray(personasField) && personasField.length) {
-      return (personasField as unknown[]).map((p) => {
-        if (p && typeof p === "object" && "name" in p) return (p as {name:string}).name;
-        if (typeof p === "string" && allPersonas) {
-          const match = allPersonas.find(ap => ap._id === p);
-          return match?.name;
-        }
-        return undefined;
-      }).filter((v): v is string => Boolean(v));
-    }
-
-    // fallback single persona field
-    if (test.persona && typeof test.persona === "object" && "name" in test.persona) {
-      return [(test.persona as { name: string }).name];
-    }
-    return [];
-  }, [test, allPersonas]);
-
   // successfulRuns and failedRuns may be undefined on type Test, fallback to 0
   const successfulRuns = "successfulRuns" in test ? (test as unknown as { successfulRuns?: number }).successfulRuns ?? 0 : 0;
   const failedRuns = "failedRuns" in test ? (test as unknown as { failedRuns?: number }).failedRuns ?? 0 : 0;
@@ -77,7 +49,8 @@ export default function DetailsSection({ test }: { test: Test }) {
     ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns
     : successfulRuns + failedRuns;
 
-  // Prepare badges content using computed names or detailed objects
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const personaNames: string[] | undefined = (test as unknown as { personaNames?: string[] }).personaNames;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const personasWithIds: Array<{ _id: string; name: string }> | undefined = (test as unknown as { personas?: Array<{ _id: string; name: string }> }).personas;
 
@@ -135,8 +108,8 @@ export default function DetailsSection({ test }: { test: Test }) {
         <div className="space-y-2 flex-1">
           <h3 className="text-sm font-medium text-muted-foreground">Personas</h3>
           <div className="flex flex-wrap items-center gap-2">
-            {displayedPersonaNames && displayedPersonaNames.length > 0 ? (
-              displayedPersonaNames.map(name => <PersonaBadge key={name} name={name} />)
+            {personaNames && personaNames.length > 0 ? (
+              personaNames.map(name => <PersonaBadge key={name} name={name} />)
             ) : personasWithIds && personasWithIds.length > 0 ? (
               personasWithIds.map(p => <PersonaBadge key={p._id} name={p.name} />)
             ) : test.persona && typeof test.persona === "object" && "name" in test.persona ? (
