@@ -29,7 +29,8 @@ export default function EditScheduledRunPage() {
   const [runHour, setRunHour] = useState<string>("");
   const [runMinute, setRunMinute] = useState<string>("");
   const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState<{ personaId?: string; runDate?: string; runTime?: string }>({});
+  const [errors, setErrors] = useState<{ personaId?: string; runDate?: string; runTime?: string; dateTime?: string }>({});
+  const [dateOpen, setDateOpen] = useState(false);
 
   // Load existing run + personas
   useEffect(() => {
@@ -89,6 +90,13 @@ export default function EditScheduledRunPage() {
       setSaving(true);
       const dt = new Date(runDate!);
       dt.setHours(parseInt(runHour,10), parseInt(runMinute,10), 0,0);
+
+      if (dt.getTime() < Date.now()) {
+        setErrors({ dateTime: "Selected date/time is in the past" });
+        setSaving(false);
+        return;
+      }
+
       const pName = personaOptions.find(p=>p._id===selectedPersona)?.name || personaLabel;
       await updateScheduledTestRun(runId, { personaId: selectedPersona, scheduledFor: dt.toISOString() }, pName);
       toast.success("Scheduled run updated");
@@ -147,17 +155,18 @@ export default function EditScheduledRunPage() {
         {/* Date */}
         <section className="space-y-2">
           <label className="text-sm font-medium">Run date</label>
-          <Popover>
+          <Popover open={dateOpen} onOpenChange={setDateOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" className="w-full justify-start font-normal">
                 {displayDate}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="p-0" align="start">
-              <Calendar mode="single" selected={runDate} onSelect={(d)=>{ setRunDate(d); setErrors({...errors, runDate: undefined}); }} initialFocus />
+              <Calendar mode="single" selected={runDate} onSelect={(d)=>{ setRunDate(d); setErrors({...errors, runDate: undefined}); setDateOpen(false);} } initialFocus disabled={{ before: new Date() }} />
             </PopoverContent>
           </Popover>
           {errors.runDate && <p className="text-destructive text-xs mt-1">{errors.runDate}</p>}
+          {errors.dateTime && <p className="text-destructive text-xs mt-1">{errors.dateTime}</p>}
         </section>
 
         {/* Time */}
