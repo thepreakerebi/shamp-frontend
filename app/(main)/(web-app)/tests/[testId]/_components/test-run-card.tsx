@@ -23,6 +23,7 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
 
   // Handle navigation
   const handleOpen: React.MouseEventHandler<HTMLDivElement> = () => {
+    if (run.status === 'pending') return; // Non-clickable for scheduled runs
     router.push(`/testruns/${run._id}`);
   };
 
@@ -31,6 +32,7 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
     const map: Record<string, string> = {
       succeeded: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
       failed: "bg-red-500/10 text-red-700 dark:text-red-400",
+      pending: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
     };
     const cls = map[status] ?? "bg-muted text-muted-foreground";
     return (
@@ -95,9 +97,9 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
 
   return (
     <section
-      role="button"
+      role={run.status === 'pending' ? undefined : 'button'}
       onClick={handleOpen}
-      className="rounded-3xl border dark:border-0 bg-card/80 hover:bg-muted/50 transition-all cursor-pointer flex flex-col p-4 gap-3 relative"
+      className={cn("rounded-3xl border dark:border-0 bg-card/80 transition-all flex flex-col p-4 gap-3 relative", run.status === 'pending' ? 'cursor-default' : 'hover:bg-muted/50 cursor-pointer')}
     >
       {/* Header */}
       <header className="flex items-start gap-3">
@@ -113,7 +115,7 @@ export function TestRunCard({ run }: { run: TestRunSummary }) {
           </h3>
           {/* Main status / browser badges */}
           <div className="flex items-center gap-2 mt-1">
-            {(["finished", "stopped"].includes(run.browserUseStatus ?? "")) && statusBadge(run.status)}
+            {run.status === 'pending' ? statusBadge('pending') : (["finished", "stopped"].includes(run.browserUseStatus ?? "")) && statusBadge(run.status)}
             {run.status !== 'cancelled' && browserStatusBadge(run.browserUseStatus)}
           </div>
           {/* Video status badge disabled for now */}
