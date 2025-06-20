@@ -6,6 +6,7 @@ export interface TestSchedule {
   testName: string;
   personaName?: string;
   nextRun: string;
+  recurrenceRule?: string;
   trashed?: boolean;
 }
 
