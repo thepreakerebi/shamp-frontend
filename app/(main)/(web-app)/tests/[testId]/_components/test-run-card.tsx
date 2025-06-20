@@ -100,6 +100,9 @@ export function TestRunCard({ run }: { run: ScheduledRunSummary }) {
     } catch {}
   };
 
+  const runWithTest = run as unknown as { test?: string };
+  const editPath = run.status === 'pending' && runWithTest.test ? `/tests/${runWithTest.test}/schedule-run/${run._id}` : undefined;
+
   return (
     <section
       role={run.status === 'pending' ? undefined : 'button'}
@@ -136,6 +139,7 @@ export function TestRunCard({ run }: { run: ScheduledRunSummary }) {
             runPersonaName={run.personaName}
             actions={{ deleteTestRun, moveTestRunToTrash }}
             showOpenOptions={run.status !== 'pending'}
+            editPath={editPath}
           />
         </nav>
       </header>

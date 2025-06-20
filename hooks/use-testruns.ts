@@ -409,6 +409,28 @@ export function useTestRuns() {
     return testRun;
   };
 
+  // Update a pending scheduled test run (date/time/persona)
+  const updateScheduledTestRun = async (
+    id: string,
+    update: Partial<{ personaId: string; scheduledFor: string }>,
+  ): Promise<TestRun> => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/testschedules/schedule/${id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(update),
+    });
+    if (!res.ok) throw new Error("Failed to update scheduled test run");
+    const run = (await res.json()) as TestRun;
+    // Optimistically update store list
+    updateTestRunInList(run);
+    return run;
+  };
+
   // Fetch all accessible test runs once per session after authentication
   useEffect(() => {
     if (!token || runsFetchedOnce) return;
@@ -451,5 +473,6 @@ export function useTestRuns() {
     fetchSuccessfulCount,
     fetchFailedCount,
     restoreTestRunFromTrash,
+    updateScheduledTestRun,
   };
 } 

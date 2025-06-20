@@ -24,9 +24,10 @@ interface Props {
   actions: ActionsFns;
   showOpenOptions?: boolean;
   onActionComplete?: () => void;
+  editPath?: string;
 }
 
-export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, actions, showOpenOptions = true, onActionComplete }: Props) {
+export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, actions, showOpenOptions = true, onActionComplete, editPath }: Props) {
   const router = useRouter();
   const { deleteTestRun, moveTestRunToTrash } = actions;
 
@@ -52,6 +53,11 @@ export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, acti
 
   const handleDelete = () => {
     setConfirmState({ type: "delete", loading: false });
+  };
+
+  const handleEdit = () => {
+    if (!editPath) return;
+    router.push(editPath);
   };
 
   const confirmAction = async () => {
@@ -86,6 +92,9 @@ export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, acti
               <CustomDropdownMenuItem data-stop-row onSelect={handleOpen}>Open</CustomDropdownMenuItem>
               <CustomDropdownMenuItem data-stop-row onSelect={handleOpenNewTab}>Open in new tab</CustomDropdownMenuItem>
             </>
+          )}
+          {editPath && (
+            <CustomDropdownMenuItem data-stop-row onSelect={handleEdit}>Edit schedule</CustomDropdownMenuItem>
           )}
           <CustomDropdownMenuItem data-stop-row onSelect={handleMoveToTrash}>Move to trash</CustomDropdownMenuItem>
           <CustomDropdownMenuItem variant="destructive" data-stop-row onSelect={handleDelete}>Delete</CustomDropdownMenuItem>
