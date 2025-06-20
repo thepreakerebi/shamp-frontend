@@ -100,6 +100,9 @@ export function useTestRuns() {
     socket.on("testRun:started", ({ testRun }: { testRun: TestRun }) => {
       addTestRunToList(testRun);
     });
+    socket.on("testRun:scheduled", ({ testRun }: { testRun: TestRun }) => {
+      addTestRunToList(testRun);
+    });
     socket.on("testRun:trashed", ({ _id }: { _id: string }) => {
       const existing = getState().testRuns?.find(r => r._id === _id);
       if (existing) {
