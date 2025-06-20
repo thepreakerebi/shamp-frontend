@@ -10,12 +10,13 @@ import { useCreateBatchPersonasModal } from "./create-batch-personas-modal";
 import { DeleteBatchPersonasModal } from "./delete-batch-personas-modal";
 import { EditBatchPersonaNameModal } from "./edit-batch-persona-name-modal";
 import { BatchPersona } from "@/hooks/use-batch-personas";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 // Optionally, you can create skeleton/empty components for batch personas as well
 
 export function BatchPersonasList() {
   const { batchPersonas, batchPersonasLoading, batchPersonasError, deleteBatchPersona } = useBatchPersonas();
+  const router = useRouter();
   const { setOpen: setCreateBatchOpen } = useCreateBatchPersonasModal();
 
   // State for delete modal
@@ -64,20 +65,22 @@ export function BatchPersonasList() {
         return (
           <section
             key={batch._id}
-            className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border hover:bg-muted/60 transition-colors"
+            role="button"
+            tabIndex={0}
+            onClick={()=>router.push(`/personas/batch/${batch._id}`)}
+            className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border hover:bg-muted/60 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-secondary"
           >
             <section className="flex-shrink-0">
-                <Link href={`/personas/batch/${batch._id}`} aria-label={`View batch persona ${batch.name}`} tabIndex={0}>
               <BatchPersonasImage avatarUrls={avatarUrls} />
-                </Link>
             </section>
             <section className="flex flex-col w-full min-w-0 gap-1">
               <h3 className="font-semibold text-lg truncate w-full" title={batch.name}>{batch.name}</h3>
               <p className="text-sm text-muted-foreground truncate w-full">{Array.isArray(batch.personas) ? batch.personas.length : 0} personas</p>
             </section>
-            <BatchPersonaCardDropdown
-              batchPersonaId={batch._id}
-              onOpen={() => {}}
+            <nav onClick={(e)=>e.stopPropagation()} data-stop-row>
+              <BatchPersonaCardDropdown
+                batchPersonaId={batch._id}
+                onOpen={() => {}}
                 onRename={() => {
                   setRenamingBatchPersona(batch);
                   setRenameOpen(true);
@@ -86,7 +89,8 @@ export function BatchPersonasList() {
                   setDeletingBatchPersona(batch);
                   setDeleteOpen(true);
                 }}
-            />
+              />
+            </nav>
           </section>
         );
       })}
