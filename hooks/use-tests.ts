@@ -43,6 +43,7 @@ export interface TestRunSummary {
   stepsWithScreenshots?: { step: Record<string, unknown>; screenshot: string | null }[];
   recordings?: Record<string, unknown>[];
   analysis?: Record<string, unknown>;
+  scheduledFor?: string;
 }
 
 const fetcher = (url: string, token: string) =>
