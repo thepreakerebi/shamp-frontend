@@ -1,5 +1,5 @@
 "use client";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, RefreshCwIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,18 @@ interface Props {
 export function SummaryPanel({ run, personaName }: Props) {
   const router = useRouter();
   const { deleteTestRun, moveTestRunToTrash, testRuns } = useTestRuns();
+
+  const [showRefresh, setShowRefresh] = React.useState(() => {
+    if (typeof window === "undefined") return true;
+    return !sessionStorage.getItem(`run_refresh_${run._id}`);
+  });
+
+  // Persist dismissal once run id changes
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!showRefresh) return;
+    // Ensure flag exists for new runs only when previously dismissed
+  }, [run._id]);
 
   // Pick latest run data from store if available
   const liveRun = (testRuns ?? []).find(r => r._id === run._id) as TestRunStatus | undefined;
@@ -122,6 +134,22 @@ export function SummaryPanel({ run, personaName }: Props) {
         <section className="flex items-center gap-2">
           {( ["finished", "stopped"].includes(active.browserUseStatus ?? "") ) && statusBadge(active.status)}
           {active.status !== "cancelled" && browserStatusBadge(active.browserUseStatus)}
+          {active.browserUseStatus === "stopped" && showRefresh && (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Refresh"
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  sessionStorage.setItem(`run_refresh_${run._id}`, "done");
+                }
+                setShowRefresh(false);
+                if (typeof window !== "undefined") window.location.reload();
+              }}
+            >
+              <RefreshCwIcon className="w-4 h-4" />
+            </Button>
+          )}
         </section>
       </header>
 
