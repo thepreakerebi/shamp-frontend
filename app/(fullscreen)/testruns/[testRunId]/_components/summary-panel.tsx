@@ -76,6 +76,24 @@ export function SummaryPanel({ run, personaName }: Props) {
     narration = active.browserUseOutput.trim();
   }
 
+  // Pull additional analysis data for prominent display
+  const analysisSummary = (() => {
+    if (!active.analysis || typeof active.analysis !== "object") return undefined;
+    const obj = active.analysis as Record<string, unknown>;
+    const val = obj["summary"];
+    return typeof val === "string" ? val : undefined;
+  })();
+
+  const personaAlignment = (() => {
+    if (!active.analysis || typeof active.analysis !== "object") return undefined;
+    const obj = active.analysis as Record<string, unknown>;
+    const val1 = obj["personaAlignment"];
+    if (typeof val1 === "string") return val1;
+    const val2 = obj["persona_alignment"];
+    if (typeof val2 === "string") return val2;
+    return undefined;
+  })();
+
   const handleActionComplete = () => {
     router.push('/test-runs');
   };
@@ -121,12 +139,41 @@ export function SummaryPanel({ run, personaName }: Props) {
             <p className="whitespace-pre-line text-sm text-muted-foreground">{summary}</p>
           </section>
         )}
+        {analysisSummary && (
+          <section>
+            <h3 className="font-semibold mb-1">Summary</h3>
+            <p className="whitespace-pre-line text-sm text-muted-foreground">{analysisSummary}</p>
+          </section>
+        )}
+        {personaAlignment && (
+          <section>
+            <h3 className="font-semibold mb-1">Persona Alignment</h3>
+            <p className="whitespace-pre-line text-sm text-muted-foreground">{personaAlignment}</p>
+          </section>
+        )}
         {active.analysis && (
           <section className="space-y-4">
             <h3 className="font-semibold">AI Analysis</h3>
             {Object.entries(active.analysis).map(([key, value]) => {
               // Skip empty values
               if (value === undefined || value === null) return null;
+
+              // Exclude keys we show elsewhere or user does not want
+              const excludedKeys = [
+                "summary",
+                "personaAlignment",
+                "persona_alignment",
+                "helpRequests",
+                "help_requests",
+                "backtracks",
+                "goalsAchieved",
+                "goals_achieved",
+                "errorsDetected",
+                "errors_detected",
+                "stepsCount",
+                "steps_count",
+              ];
+              if (excludedKeys.includes(key)) return null;
 
               if (Array.isArray(value)) {
                 if (value.length === 0) return null;
