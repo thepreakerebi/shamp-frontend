@@ -17,7 +17,11 @@ interface Props {
 
 export function SummaryPanel({ run, personaName }: Props) {
   const router = useRouter();
-  const { deleteTestRun, moveTestRunToTrash } = useTestRuns();
+  const { deleteTestRun, moveTestRunToTrash, testRuns } = useTestRuns();
+
+  // Pick latest run data from store if available
+  const liveRun = (testRuns ?? []).find(r => r._id === run._id) as TestRunStatus | undefined;
+  const active = liveRun ?? run;
 
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
@@ -61,8 +65,8 @@ export function SummaryPanel({ run, personaName }: Props) {
   };
 
   // Extract narration and summary from browserUseOutput
-  const narrationMatch = run.browserUseOutput?.match(/<narration>([\s\S]*?)<\/narration>/i);
-  const summaryMatch = run.browserUseOutput?.match(/<summary>([\s\S]*?)<\/summary>/i);
+  const narrationMatch = active.browserUseOutput?.match(/<narration>([\s\S]*?)<\/narration>/i);
+  const summaryMatch = active.browserUseOutput?.match(/<summary>([\s\S]*?)<\/summary>/i);
   const narration = narrationMatch ? narrationMatch[1].trim() : undefined;
   const summary = summaryMatch ? summaryMatch[1].trim() : undefined;
 
@@ -92,8 +96,8 @@ export function SummaryPanel({ run, personaName }: Props) {
           />
         </section>
         <section className="flex items-center gap-2">
-          {(["finished", "stopped"].includes(run.browserUseStatus ?? "")) && statusBadge(run.status)}
-          {run.status !== "cancelled" && browserStatusBadge(run.browserUseStatus)}
+          {( ["finished", "stopped"].includes(active.browserUseStatus ?? "") ) && statusBadge(active.status)}
+          {active.status !== "cancelled" && browserStatusBadge(active.browserUseStatus)}
         </section>
       </header>
 
@@ -111,10 +115,10 @@ export function SummaryPanel({ run, personaName }: Props) {
             <p className="whitespace-pre-line text-sm text-muted-foreground">{summary}</p>
           </section>
         )}
-        {run.analysis && (
+        {active.analysis && (
           <section className="space-y-4">
             <h3 className="font-semibold">AI Analysis</h3>
-            {Object.entries(run.analysis).map(([key, value]) => {
+            {Object.entries(active.analysis).map(([key, value]) => {
               // Skip empty values
               if (value === undefined || value === null) return null;
 
