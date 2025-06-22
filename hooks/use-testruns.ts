@@ -259,7 +259,12 @@ export function useTestRuns() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to stop test run");
-    return res.json() as Promise<{ success: boolean; testRun: TestRun }>;
+    const data = (await res.json()) as { status: string; browserUseStatus: string };
+    const existing = getState().testRuns?.find(r=>r._id===id);
+    if (existing) {
+      updateTestRunInList({ ...existing, status: data.status as TestRun["status"], browserUseStatus: data.browserUseStatus });
+    }
+    return data;
   };
   const pauseTestRun = async (id: string) => {
     if (!token) throw new Error("Not authenticated");
@@ -269,7 +274,10 @@ export function useTestRuns() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to pause test run");
-    return res.json() as Promise<{ success: boolean; testRun: TestRun }>;
+    const data = (await res.json()) as { status: string; browserUseStatus: string };
+    const existing = getState().testRuns?.find(r=>r._id===id);
+    if (existing) updateTestRunInList({ ...existing, status: data.status as TestRun["status"], browserUseStatus: data.browserUseStatus });
+    return data;
   };
   const resumeTestRun = async (id: string) => {
     if (!token) throw new Error("Not authenticated");
@@ -279,7 +287,10 @@ export function useTestRuns() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to resume test run");
-    return res.json() as Promise<{ success: boolean; testRun: TestRun }>;
+    const data = (await res.json()) as { status: string; browserUseStatus: string };
+    const existing = getState().testRuns?.find(r=>r._id===id);
+    if (existing) updateTestRunInList({ ...existing, status: data.status as TestRun["status"], browserUseStatus: data.browserUseStatus });
+    return data;
   };
   const deleteTestRun = async (id: string) => {
     if (!token) throw new Error("Not authenticated");
