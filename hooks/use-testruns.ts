@@ -231,12 +231,13 @@ export function useTestRuns() {
           if (existing) {
             const updated = {
               ...existing,
-              status: run.status as typeof existing.status,
-              browserUseStatus: run.browserUseStatus,
-              browserUseOutput: (run as TestRunStatus).browserUseOutput,
+              ...run,
             } as TestRun;
             updateTestRunInList(updated);
             syncRunToTestCache(updated);
+          } else {
+            // not in list yet – add with full payload
+            addRunToStores(run as unknown as TestRun);
           }
           return;
         }
