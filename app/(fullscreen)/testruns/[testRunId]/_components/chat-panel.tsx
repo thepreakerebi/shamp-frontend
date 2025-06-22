@@ -21,11 +21,16 @@ interface Props {
 
 export function ChatPanel({ run, personaName }: Props) {
   const { user } = useAuth();
-  const { getChatHistory, chatWithAgent } = useTestRuns();
+  const { getChatHistory, chatWithAgent, testRuns } = useTestRuns();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const canChat = ["finished", "stopped"].includes(run.browserUseStatus ?? "");
+
+  // Determine live browserUseStatus so UI reacts to real-time changes
+  const liveRun = (testRuns ?? []).find(r => r._id === run._id);
+  const browserStatus = liveRun?.browserUseStatus ?? run.browserUseStatus;
+  const canChat = ["finished", "stopped"].includes(browserStatus ?? "");
+
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch history on mount
