@@ -89,6 +89,19 @@ export function useTestRuns() {
   // Helper to always get the latest store snapshot inside socket listeners
   const getState = useTestRunsStore.getState;
 
+  // Helper: add or update a run in global list AND per-test cache
+  const addRunToStores = (run: TestRun) => {
+    addTestRunToList(run);
+    const testId = (run as { test?: string }).test;
+    if (testId) {
+      const testsStore = useTestsStore.getState();
+      const prev = testsStore.getTestRunsForTest(testId) || [];
+      const idx = prev.findIndex(r=>r._id === run._id);
+      const nextArr = idx === -1 ? [run, ...prev] : prev.map(r=> r._id===run._id? run: r);
+      testsStore.setTestRunsForTest(testId, nextArr);
+    }
+  };
+
   // Real-time updates (initialize socket only once)
   useEffect(() => {
     if (!token || socketInitialized) return;
@@ -99,16 +112,17 @@ export function useTestRuns() {
     });
     // Listen for test run events
     socket.on("testRun:started", ({ testRun }: { testRun: TestRun }) => {
-      addTestRunToList(testRun);
+      addRunToStores(testRun);
     });
     socket.on("testRun:scheduled", ({ testRun }: { testRun: TestRun }) => {
-      addTestRunToList(testRun);
+      addRunToStores(testRun);
     });
     socket.on("testRun:trashed", ({ _id }: { _id: string }) => {
       const existing = getState().testRuns?.find(r => r._id === _id);
       if (existing) {
         removeTestRunFromList(_id);
         addTrashedTestRun({ ...existing, trashed: true });
+        useTestsStore.getState().removeTestRunFromList(_id);
       }
     });
     socket.on("testRun:deleted", (payload: { _id?: string; testRunId?: string }) => {
@@ -133,12 +147,19 @@ export function useTestRuns() {
         });
         if (res.ok) {
           const run = (await res.json()) as TestRunStatus;
-          updateTestRunInList({
+          const updated = {
             ...current,
             status: run.status as typeof current.status,
             browserUseStatus: run.browserUseStatus,
             browserUseOutput: (run as TestRunStatus).browserUseOutput,
-          });
+          } as TestRun;
+          updateTestRunInList(updated);
+          if ((updated as { test?: string }).test) {
+            const tId = (updated as { test?: string }).test as string;
+            const testsStore = useTestsStore.getState();
+            const prevRuns = testsStore.getTestRunsForTest(tId) || [];
+            testsStore.setTestRunsForTest(tId, prevRuns.map(r=> r._id===updated._id ? updated : r));
+          }
           return;
         }
       } catch {/* ignore */}
@@ -149,13 +170,31 @@ export function useTestRuns() {
     socket.on("testRun:paused", ({ testRunId }: { testRunId: string }) => {
       {
         const existing = getState().testRuns?.find(r => r._id === testRunId);
-        if (existing) updateTestRunInList({ ...existing, status: 'paused', browserUseStatus: 'paused' });
+        if (existing) {
+          const updated = { ...existing, status: 'paused', browserUseStatus: 'paused' } as TestRun;
+          updateTestRunInList(updated);
+          if ((updated as { test?: string }).test) {
+            const tId = (updated as { test?: string }).test as string;
+            const testsStore = useTestsStore.getState();
+            const prevRuns = testsStore.getTestRunsForTest(tId) || [];
+            testsStore.setTestRunsForTest(tId, prevRuns.map(r=> r._id===updated._id? updated: r));
+          }
+        }
       }
     });
     socket.on("testRun:resumed", ({ testRunId }: { testRunId: string }) => {
       {
         const existing = getState().testRuns?.find(r => r._id === testRunId);
-        if (existing) updateTestRunInList({ ...existing, status: 'running', browserUseStatus: 'running' });
+        if (existing) {
+          const updated = { ...existing, status: 'running', browserUseStatus: 'running' } as TestRun;
+          updateTestRunInList(updated);
+          if ((updated as { test?: string }).test) {
+            const tId = (updated as { test?: string }).test as string;
+            const testsStore = useTestsStore.getState();
+            const prevRuns = testsStore.getTestRunsForTest(tId) || [];
+            testsStore.setTestRunsForTest(tId, prevRuns.map(r=> r._id===updated._id? updated: r));
+          }
+        }
       }
     });
     socket.on("testRun:finished", async ({ testRunId }: { testRunId: string }) => {
@@ -171,12 +210,19 @@ export function useTestRuns() {
           // Map only the fields we keep in the list
           const existing = getState().testRuns?.find(r => r._id === testRunId);
           if (existing) {
-            updateTestRunInList({
+            const updated = {
               ...existing,
               status: run.status as typeof existing.status,
               browserUseStatus: run.browserUseStatus,
               browserUseOutput: (run as TestRunStatus).browserUseOutput,
-            });
+            } as TestRun;
+            updateTestRunInList(updated);
+            if ((updated as { test?: string }).test) {
+              const tId = (updated as { test?: string }).test as string;
+              const testsStore = useTestsStore.getState();
+              const prevRuns = testsStore.getTestRunsForTest(tId) || [];
+              testsStore.setTestRunsForTest(tId, prevRuns.map(r=> r._id===updated._id? updated: r));
+            }
           }
           return;
         }
@@ -185,7 +231,16 @@ export function useTestRuns() {
       }
       // Fallback: assume success if we cannot fetch
       const existing = getState().testRuns?.find(r => r._id === testRunId);
-      if (existing) updateTestRunInList({ ...existing, status: "succeeded", browserUseStatus: "finished" });
+      if (existing) {
+        const updated = { ...existing, status: "succeeded", browserUseStatus: "finished" } as TestRun;
+        updateTestRunInList(updated);
+        if ((updated as { test?: string }).test) {
+          const tId = (updated as { test?: string }).test as string;
+          const testsStore = useTestsStore.getState();
+          const prevRuns = testsStore.getTestRunsForTest(tId) || [];
+          testsStore.setTestRunsForTest(tId, prevRuns.map(r=> r._id===updated._id? updated: r));
+        }
+      }
     });
     socket.on(
       "testRun:artifact",
@@ -203,7 +258,7 @@ export function useTestRuns() {
     socket.on("testRun:restored", ({ testRun }: { testRun: TestRun }) => {
       // remove from trash and add to active list
       removeTrashedTestRun(testRun._id);
-      addTestRunToList(testRun);
+      addRunToStores(testRun);
     });
     return () => {
       socket.disconnect();
@@ -246,7 +301,7 @@ export function useTestRuns() {
     if (!res.ok) throw new Error("Failed to start test run");
     const data = (await res.json()) as { testRun: TestRun; message: string };
     // Optimistically add to store so UI updates immediately
-    addTestRunToList(data.testRun);
+    addRunToStores(data.testRun);
     return data;
   };
 
@@ -262,7 +317,14 @@ export function useTestRuns() {
     const data = (await res.json()) as { status: string; browserUseStatus: string };
     const existing = getState().testRuns?.find(r=>r._id===id);
     if (existing) {
-      updateTestRunInList({ ...existing, status: data.status as TestRun["status"], browserUseStatus: data.browserUseStatus });
+      const updated = { ...existing, status: data.status as TestRun["status"], browserUseStatus: data.browserUseStatus } as TestRun;
+      updateTestRunInList(updated);
+      if ((updated as { test?: string }).test) {
+        const tId = (updated as { test?: string }).test as string;
+        const testsStore = useTestsStore.getState();
+        const prevRuns = testsStore.getTestRunsForTest(tId) || [];
+        testsStore.setTestRunsForTest(tId, prevRuns.map(r=> r._id===updated._id? updated: r));
+      }
     }
     return data;
   };
@@ -276,7 +338,16 @@ export function useTestRuns() {
     if (!res.ok) throw new Error("Failed to pause test run");
     const data = (await res.json()) as { status: string; browserUseStatus: string };
     const existing = getState().testRuns?.find(r=>r._id===id);
-    if (existing) updateTestRunInList({ ...existing, status: data.status as TestRun["status"], browserUseStatus: data.browserUseStatus });
+    if (existing) {
+      const updated = { ...existing, status: data.status as TestRun["status"], browserUseStatus: data.browserUseStatus } as TestRun;
+      updateTestRunInList(updated);
+      if ((updated as { test?: string }).test) {
+        const tId = (updated as { test?: string }).test as string;
+        const testsStore = useTestsStore.getState();
+        const prevRuns = testsStore.getTestRunsForTest(tId) || [];
+        testsStore.setTestRunsForTest(tId, prevRuns.map(r=> r._id===updated._id? updated: r));
+      }
+    }
     return data;
   };
   const resumeTestRun = async (id: string) => {
@@ -289,7 +360,16 @@ export function useTestRuns() {
     if (!res.ok) throw new Error("Failed to resume test run");
     const data = (await res.json()) as { status: string; browserUseStatus: string };
     const existing = getState().testRuns?.find(r=>r._id===id);
-    if (existing) updateTestRunInList({ ...existing, status: data.status as TestRun["status"], browserUseStatus: data.browserUseStatus });
+    if (existing) {
+      const updated = { ...existing, status: data.status as TestRun["status"], browserUseStatus: data.browserUseStatus } as TestRun;
+      updateTestRunInList(updated);
+      if ((updated as { test?: string }).test) {
+        const tId = (updated as { test?: string }).test as string;
+        const testsStore = useTestsStore.getState();
+        const prevRuns = testsStore.getTestRunsForTest(tId) || [];
+        testsStore.setTestRunsForTest(tId, prevRuns.map(r=> r._id===updated._id? updated: r));
+      }
+    }
     return data;
   };
   const deleteTestRun = async (id: string) => {
@@ -416,7 +496,7 @@ export function useTestRuns() {
     if (!res.ok) throw new Error("Failed to restore test run");
     const { testRun } = await res.json();
     removeTrashedTestRun(id);
-    addTestRunToList(testRun);
+    addRunToStores(testRun);
     return testRun;
   };
 
@@ -480,6 +560,21 @@ export function useTestRuns() {
     })();
   }, [token]);
 
+  // Force reload of all runs
+  const refetchAllTestRuns = useCallback(async () => {
+    if (!token) return;
+    setTestRunsLoading(true);
+    setTestRunsError(null);
+    try {
+      const data = (await fetcher('/testruns', token)) as TestRun[];
+      setTestRuns(data);
+    } catch (err) {
+      setTestRunsError(err instanceof Error ? err.message : 'Failed to fetch test runs');
+    } finally {
+      setTestRunsLoading(false);
+    }
+  }, [token, setTestRuns, setTestRunsLoading, setTestRunsError]);
+
   return {
     testRuns: store.testRuns,
     testRunsLoading: store.testRunsLoading,
@@ -501,5 +596,6 @@ export function useTestRuns() {
     fetchFailedCount,
     restoreTestRunFromTrash,
     updateScheduledTestRun,
+    refetchAllTestRuns,
   };
 } 

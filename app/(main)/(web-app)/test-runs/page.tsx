@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { TestRunSummary } from "@/hooks/use-tests";
 import { useTestRuns } from "@/hooks/use-testruns";
 import { TestRunCard } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card";
@@ -9,9 +9,14 @@ import TestRunsFilter from "@/app/(main)/(web-app)/tests/[testId]/_components/te
 import { TestRunsListEmpty } from "./_components/test-runs-list-empty";
 
 export default function TestRunsListPage() {
-  const { testRuns: displayRuns, testRunsLoading: loading } = useTestRuns();
+  const { testRuns: displayRuns, testRunsLoading: loading, refetchAllTestRuns } = useTestRuns();
 
   const [filters, setFilters] = useState({ result: 'any', run: 'any', persona: 'any' });
+
+  // Ensure full list is loaded when this page mounts
+  useEffect(() => {
+    refetchAllTestRuns();
+  }, [refetchAllTestRuns]);
 
   const filtered = (displayRuns ?? []).filter(r => {
     if (filters.result !== 'any' && r.status !== filters.result) return false;
