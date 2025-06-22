@@ -24,6 +24,7 @@ export interface TestRun {
   browserUseTaskId?: string;
   scheduledFor?: string;
   stepsWithScreenshots?: { step: Record<string, unknown>; screenshot: string | null }[];
+  recordings?: Artifact[];
   // Add other fields as needed
 }
 
@@ -271,6 +272,10 @@ export function useTestRuns() {
             for (let i = sws.length - 1; i >= 0; i--) {
               if (!sws[i].screenshot) { sws[i] = { ...sws[i], screenshot: artifact.url ?? null }; break; }
             }
+          } else if (artifact.type === "recording") {
+            const recArr: Artifact[] = [...(updated.recordings ?? [])];
+            recArr.push(artifact);
+            updated.recordings = recArr;
           }
           if (sws.length) (updated as TestRun).stepsWithScreenshots = sws;
 

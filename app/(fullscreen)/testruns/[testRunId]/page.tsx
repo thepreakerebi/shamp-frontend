@@ -92,13 +92,19 @@ export default function TestRunCanvasPage() {
     return (testRuns ?? []).find(r => r._id === testRunId) as TestRunStatus | undefined;
   }, [testRuns, testRunId]);
 
-  // When liveRun.stepsWithScreenshots grows, rebuild nodes
+  // When liveRun updates with new steps or recordings, rebuild nodes
   useEffect(() => {
-    if (!liveRun || !liveRun.stepsWithScreenshots) return;
+    if (!liveRun) return;
     if (!run) return; // initial run not set yet
-    buildNodes(liveRun);
-    setRun(liveRun);
-  }, [liveRun?.stepsWithScreenshots?.length]);
+    const stepsLen = liveRun.stepsWithScreenshots?.length ?? 0;
+    const recLen = liveRun.recordings?.length ?? 0;
+    const prevStepsLen = run.stepsWithScreenshots?.length ?? 0;
+    const prevRecLen = run.recordings?.length ?? 0;
+    if (stepsLen !== prevStepsLen || recLen !== prevRecLen) {
+      buildNodes(liveRun);
+      setRun(liveRun);
+    }
+  }, [liveRun?.stepsWithScreenshots?.length, liveRun?.recordings?.length]);
 
   if (fetchError) {
     notFound();

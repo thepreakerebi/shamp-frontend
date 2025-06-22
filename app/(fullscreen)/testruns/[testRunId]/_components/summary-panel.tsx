@@ -141,7 +141,7 @@ export function SummaryPanel({ run, personaName }: Props) {
         )}
         {analysisSummary && (
           <section>
-            <h3 className="font-semibold mb-1">Summary</h3>
+            <h3 className="font-semibold mb-1">Analysis Summary</h3>
             <p className="whitespace-pre-line text-sm text-muted-foreground">{analysisSummary}</p>
           </section>
         )}
