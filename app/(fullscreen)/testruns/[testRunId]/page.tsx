@@ -1,6 +1,6 @@
 "use client";
 import { useParams, notFound } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useTestRuns, TestRunStatus } from "@/hooks/use-testruns";
 import dynamic from "next/dynamic";
 import StepNode from "./_components/step-node";
@@ -26,7 +26,7 @@ const nodeTypes = {
 
 export default function TestRunCanvasPage() {
   const { testRunId } = useParams<{ testRunId: string }>();
-  const { getTestRunStatus } = useTestRuns();
+  const { getTestRunStatus, testRuns } = useTestRuns();
   const [personaName, setPersonaName] = useState<string | undefined>();
   const [nodes, setNodes] = useState<Node[]>([]);
   const [run, setRun] = useState<TestRunStatus | null>(null);
@@ -83,9 +83,22 @@ export default function TestRunCanvasPage() {
         setFetchError(true);
       }
     })();
-    // Intentionally omit getTestRunStatus from deps to avoid effect re-running
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testRunId, run]);
+
+  // Memoised live run from store
+  const liveRun = useMemo(() => {
+    if (!testRunId) return null;
+    return (testRuns ?? []).find(r => r._id === testRunId) as TestRunStatus | undefined;
+  }, [testRuns, testRunId]);
+
+  // When liveRun.stepsWithScreenshots grows, rebuild nodes
+  useEffect(() => {
+    if (!liveRun || !liveRun.stepsWithScreenshots) return;
+    if (!run) return; // initial run not set yet
+    buildNodes(liveRun);
+    setRun(liveRun);
+  }, [liveRun?.stepsWithScreenshots?.length]);
 
   if (fetchError) {
     notFound();

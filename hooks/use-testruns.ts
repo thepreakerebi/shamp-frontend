@@ -23,6 +23,7 @@ export interface TestRun {
   browserUseOutput?: string;
   browserUseTaskId?: string;
   scheduledFor?: string;
+  stepsWithScreenshots?: { step: Record<string, unknown>; screenshot: string | null }[];
   // Add other fields as needed
 }
 
@@ -255,11 +256,25 @@ export function useTestRuns() {
       ({ testRunId, artifact }: { testRunId: string; artifact: Artifact }) => {
         const existing = getState().testRuns?.find(r => r._id === testRunId);
         if (existing && !(existing.artifacts || []).some(a => a._id === artifact._id)) {
-          updateTestRunInList({
+          const updated: TestRun = {
             ...existing,
             artifacts: [...(existing.artifacts ?? []), artifact],
-          });
-          syncRunToTestCache(existing);
+          } as TestRun;
+
+          // Maintain stepsWithScreenshots array so UI canvases can update
+          const sws = [...(existing.stepsWithScreenshots ?? [])];
+          if (artifact.type === "step") {
+            sws.push({ step: artifact.metadata as Record<string, unknown>, screenshot: artifact.url ?? null });
+          } else if (artifact.type === "screenshot") {
+            // attach to most recent step without screenshot
+            for (let i = sws.length - 1; i >= 0; i--) {
+              if (!sws[i].screenshot) { sws[i] = { ...sws[i], screenshot: artifact.url ?? null }; break; }
+            }
+          }
+          if (sws.length) (updated as TestRun).stepsWithScreenshots = sws;
+
+          updateTestRunInList(updated);
+          syncRunToTestCache(updated);
         }
       }
     );
