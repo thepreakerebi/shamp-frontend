@@ -29,13 +29,24 @@ export default function DetailsSection({ test }: { test: Test }) {
   const handleRun = async () => {
     if (running) return;
     setRunning(true);
+    const popup = typeof window !== 'undefined' ? window.open('', '_blank') : null;
+    if (popup) {
+      popup.document.write(`<!DOCTYPE html><html><head><title>Starting test run…</title><style>html,body{height:100%;margin:0;display:flex;align-items:center;justify-content:center;font-family:sans-serif;color:#555}</style></head><body><p>Preparing test run…</p></body></html>`);
+    }
     try {
       const { testRun } = await startTestRun(test._id);
       toast.success("Test run started");
       if (testRun && testRun._id) {
-        window.open(`/testruns/${testRun._id}`, '_blank');
+        if (popup) {
+          popup.location.href = `/testruns/${testRun._id}`;
+        } else {
+          window.open(`/testruns/${testRun._id}`, '_blank');
+        }
+      } else if (popup) {
+        popup.close();
       }
     } catch {
+      if (popup) popup.close();
       toast.error("Failed to start test run");
     }
     setRunning(false);

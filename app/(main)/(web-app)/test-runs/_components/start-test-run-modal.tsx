@@ -26,16 +26,28 @@ export function StartTestRunModal({ open, onOpenChange }: StartTestRunModalProps
 
   const handleStart = async () => {
     if (!selected) return;
+    // Try to open a blank tab immediately to keep the user-gesture context
+    const popup = typeof window !== 'undefined' ? window.open('', '_blank') : null;
+    if (popup) {
+      popup.document.write(`<!DOCTYPE html><html><head><title>Starting test run…</title><style>html,body{height:100%;margin:0;display:flex;align-items:center;justify-content:center;font-family:sans-serif;color:#555}</style></head><body><p>Preparing test run…</p></body></html>`);
+    }
     try {
       setSubmitting(true);
       const { testRun } = await startTestRun(selected);
       toast.success('Test run started');
       if (testRun && testRun._id) {
-        window.open(`/testruns/${testRun._id}`, '_blank');
+        if (popup) {
+          popup.location.href = `/testruns/${testRun._id}`;
+        } else {
+          window.open(`/testruns/${testRun._id}`, '_blank');
+        }
+      } else if (popup) {
+        popup.close();
       }
       onOpenChange(false);
       setSelected('');
     } catch (err) {
+      if (popup) popup.close();
       toast.error(err instanceof Error ? err.message : 'Failed to start test run');
     } finally {
       setSubmitting(false);
