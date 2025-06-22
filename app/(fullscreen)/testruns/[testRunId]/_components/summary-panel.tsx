@@ -67,8 +67,14 @@ export function SummaryPanel({ run, personaName }: Props) {
   // Extract narration and summary from browserUseOutput
   const narrationMatch = active.browserUseOutput?.match(/<narration>([\s\S]*?)<\/narration>/i);
   const summaryMatch = active.browserUseOutput?.match(/<summary>([\s\S]*?)<\/summary>/i);
-  const narration = narrationMatch ? narrationMatch[1].trim() : undefined;
-  const summary = summaryMatch ? summaryMatch[1].trim() : undefined;
+
+  let narration: string | undefined = narrationMatch ? narrationMatch[1].trim() : undefined;
+  const summary: string | undefined = summaryMatch ? summaryMatch[1].trim() : undefined;
+
+  // Fallback: if both tags are absent but we have plain text, treat it as narration
+  if (!narration && !summary && active.browserUseOutput) {
+    narration = active.browserUseOutput.trim();
+  }
 
   const handleActionComplete = () => {
     router.push('/test-runs');
