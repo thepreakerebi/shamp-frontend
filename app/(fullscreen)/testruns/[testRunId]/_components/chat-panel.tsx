@@ -25,6 +25,7 @@ export function ChatPanel({ run, personaName }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const canChat = ["finished", "stopped"].includes(run.browserUseStatus ?? "");
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch history on mount
@@ -44,7 +45,7 @@ export function ChatPanel({ run, personaName }: Props) {
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!input.trim()) return;
+    if (!canChat || !input.trim()) return;
     const userMsg: ChatMessage = {
       message: input.trim(),
       role: "user",
@@ -165,10 +166,11 @@ export function ChatPanel({ run, personaName }: Props) {
               onKeyDown={onKeyDown}
               placeholder="Type a message..."
               rows={1}
-              className="flex-1 resize-none border-0 bg-transparent p-0 focus-visible:ring-0 text-sm"
+              disabled={!canChat}
+              className="flex-1 resize-none border-0 bg-transparent p-0 focus-visible:ring-0 text-sm disabled:opacity-50"
             />
           </div>
-          <Button size="icon" type="submit" disabled={sending || !input.trim()} aria-label="Send message">
+          <Button size="icon" type="submit" disabled={!canChat || sending || !input.trim()} aria-label="Send message">
             ➤
           </Button>
         </form>
