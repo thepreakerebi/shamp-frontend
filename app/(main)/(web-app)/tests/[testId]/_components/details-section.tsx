@@ -30,8 +30,11 @@ export default function DetailsSection({ test }: { test: Test }) {
     if (running) return;
     setRunning(true);
     try {
-      await startTestRun(test._id);
+      const { testRun } = await startTestRun(test._id);
       toast.success("Test run started");
+      if (testRun && testRun._id) {
+        window.open(`/testruns/${testRun._id}`, '_blank');
+      }
     } catch {
       toast.error("Failed to start test run");
     }

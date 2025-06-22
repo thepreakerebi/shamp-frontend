@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from '@/components/ui/command';
-import { ChevronsUpDown, Check } from 'lucide-react';
+import { ChevronsUpDown, Check, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTests } from '@/hooks/use-tests';
 import { useTestRuns } from '@/hooks/use-testruns';
@@ -28,8 +28,11 @@ export function StartTestRunModal({ open, onOpenChange }: StartTestRunModalProps
     if (!selected) return;
     try {
       setSubmitting(true);
-      await startTestRun(selected);
+      const { testRun } = await startTestRun(selected);
       toast.success('Test run started');
+      if (testRun && testRun._id) {
+        window.open(`/testruns/${testRun._id}`, '_blank');
+      }
       onOpenChange(false);
       setSelected('');
     } catch (err) {
@@ -71,8 +74,9 @@ export function StartTestRunModal({ open, onOpenChange }: StartTestRunModalProps
         </section>
         <DialogFooter className="mt-6">
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
-          <Button onClick={handleStart} disabled={!selected || submitting || testsLoading}>
-            Start
+          <Button onClick={handleStart} disabled={!selected || submitting || testsLoading} className="flex items-center gap-2">
+            {submitting && <Loader2 className="size-4 animate-spin" />}
+            {submitting ? 'Starting…' : 'Start'}
           </Button>
         </DialogFooter>
       </DialogContent>
