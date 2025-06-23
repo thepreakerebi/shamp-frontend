@@ -52,10 +52,20 @@ export const useBatchTestsStore = create<BatchTestsState>((set) => ({
       trashedBatchTests: state.trashedBatchTests ? state.trashedBatchTests.filter((t) => t._id !== id) : null,
     })),
   addBatchTestToList: (test) =>
-    set((state) => ({
-      batchTests: test.trashed ? state.batchTests : (state.batchTests ? [test, ...state.batchTests] : [test]),
-      trashedBatchTests: test.trashed ? (state.trashedBatchTests ? [test, ...state.trashedBatchTests] : [test]) : state.trashedBatchTests,
-    })),
+    set((state) => {
+      const removeDup = (arr: BatchTest[] | null) => arr ? arr.filter(t=>t._id !== test._id) : [];
+      const activeList = removeDup(state.batchTests);
+      const trashList = removeDup(state.trashedBatchTests);
+
+      return {
+        batchTests: test.trashed
+          ? activeList
+          : [test, ...(activeList ?? [])],
+        trashedBatchTests: test.trashed
+          ? [test, ...(trashList ?? [])]
+          : trashList,
+      };
+    }),
   reset: () =>
     set({
       batchTests: null,
