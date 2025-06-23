@@ -53,7 +53,7 @@ export default function EditBatchTestPage() {
     try {
       await updateBatchTest(batchId, { batchPersona: form.batchPersonaId });
       toast.success("Batch test updated");
-      router.push("/tests?tab=batch");
+      router.push(`/tests/batch/${batchId}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update batch test");
     } finally {

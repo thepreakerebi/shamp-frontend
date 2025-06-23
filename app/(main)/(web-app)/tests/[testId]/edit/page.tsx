@@ -76,7 +76,7 @@ export default function EditTestPage() {
     try{
       await updateTest(testId, { name: form.name, description: form.description, project: form.projectId, persona: form.personaId });
       toast.success("Test updated");
-      router.push(`/tests`);
+      router.push(`/tests/${testId}`);
     }catch(err){
       toast.error(err instanceof Error? err.message : "Failed to update test");
     }finally{ setSaving(false);}  
