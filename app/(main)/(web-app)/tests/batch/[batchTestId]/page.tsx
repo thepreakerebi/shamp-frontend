@@ -27,11 +27,8 @@ export default function BatchTestPage() {
         setBatchTest(data);
         setLoading(false);
       })
-      .catch((err) => {
-        const msg = err instanceof Error ? err.message.toLowerCase() : "";
-        if (msg.includes("not found") || msg.includes("failed to fetch batch test")) {
-          setBatchTest(null);
-        }
+      .catch(() => {
+        setBatchTest(null);
         setLoading(false);
       });
   }, [batchTestId, batchTest]);
