@@ -9,10 +9,12 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000"
 export interface BatchTest {
   _id: string;
   project: string | { _id: string; name?: string };
-  test: string | { _id: string; name?: string };
+  test: string | { _id: string; name?: string; description?: string };
   batchPersona?: string | { _id: string; name?: string };
   testruns?: string[];
   testrunsCount?: number;
+  successfulRuns?: number;
+  failedRuns?: number;
   createdBy?: string;
   trashed?: boolean;
   createdAt?: string;
