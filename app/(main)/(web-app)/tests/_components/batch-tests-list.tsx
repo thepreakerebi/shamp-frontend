@@ -3,6 +3,7 @@ import React from "react";
 import { useBatchTests } from "@/hooks/use-batch-tests";
 import { BatchTestsCardSkeleton } from "./batch-tests-card-skeleton";
 import { BatchTestCard } from "./batch-test-card";
+import { BatchTestsListEmpty } from "./batch-tests-list-empty";
 
 export function BatchTestsList() {
   const { batchTests, batchTestsLoading } = useBatchTests();
@@ -12,11 +13,7 @@ export function BatchTestsList() {
   }
 
   if (!batchTests || batchTests.length === 0) {
-    return (
-      <section className="w-full p-4 text-center text-sm text-muted-foreground border border-dashed rounded-2xl">
-        No batch tests yet.
-      </section>
-    );
+    return <BatchTestsListEmpty />;
   }
 
   return (
