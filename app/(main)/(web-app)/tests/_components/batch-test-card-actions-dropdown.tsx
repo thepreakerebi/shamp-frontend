@@ -22,10 +22,12 @@ export function BatchTestCardActionsDropdown({
   batchTestId,
   actions,
   onOpen,
+  showOpen = true,
 }: {
   batchTestId: string;
   actions: ActionFns;
   onOpen?: () => void;
+  showOpen?: boolean;
 }) {
   const router = useRouter();
   const { moveToTrash, deleteBatchTest } = actions;
@@ -82,7 +84,9 @@ export function BatchTestCardActionsDropdown({
           </Button>
         </CustomDropdownMenuTrigger>
         <CustomDropdownMenuContent align="end">
-          <CustomDropdownMenuItem data-stop-row onSelect={handleOpen}>Open</CustomDropdownMenuItem>
+          {showOpen && (
+            <CustomDropdownMenuItem data-stop-row onSelect={handleOpen}>Open</CustomDropdownMenuItem>
+          )}
           <CustomDropdownMenuItem data-stop-row onSelect={handleEdit}>Edit</CustomDropdownMenuItem>
           <CustomDropdownMenuItem data-stop-row onSelect={handleTrash}>Move to trash</CustomDropdownMenuItem>
           <CustomDropdownMenuItem variant="destructive" data-stop-row onSelect={handleDelete}>Delete</CustomDropdownMenuItem>

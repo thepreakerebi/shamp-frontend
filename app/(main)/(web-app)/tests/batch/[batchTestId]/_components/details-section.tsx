@@ -3,11 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProjectBadge } from "@/components/ui/project-badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, EllipsisVerticalIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useBatchTestRuns } from "@/hooks/use-batch-test-runs";
 import { toast } from "sonner";
 import { BatchTest } from "@/hooks/use-batch-tests";
+import Link from "next/link";
+import { useBatchTests } from "@/hooks/use-batch-tests";
+import { BatchTestCardActionsDropdown } from "../../../_components/batch-test-card-actions-dropdown";
 
 export default function DetailsSection({ batch }: { batch: BatchTest }) {
   const { startBatchTestRuns } = useBatchTestRuns();
@@ -31,11 +34,16 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
   const testDescription = testObj?.description;
 
   const projectName = typeof batch.project === "object" && batch.project ? (batch.project as { name?: string }).name : undefined;
-  const batchPersonaName = typeof batch.batchPersona === "object" && batch.batchPersona ? (batch.batchPersona as { name?: string }).name : undefined;
+  const batchPersonaObj = typeof batch.batchPersona === "object" && batch.batchPersona ? (batch.batchPersona as { _id: string; name?: string }) : null;
+  const batchPersonaName = batchPersonaObj?.name;
+  const batchPersonaId = batchPersonaObj?._id ?? (typeof batch.batchPersona === "string" ? batch.batchPersona : undefined);
 
   const successfulRuns = (batch as { successfulRuns?: number }).successfulRuns ?? 0;
   const failedRuns = (batch as { failedRuns?: number }).failedRuns ?? 0;
   const totalRuns = successfulRuns + failedRuns;
+
+  // actions for dropdown
+  const { moveBatchTestToTrash, deleteBatchTest } = useBatchTests();
 
   return (
     <article className="p-4 space-y-6" aria-labelledby="batch-details-heading">
@@ -43,7 +51,7 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
         <section className="space-y-1 flex-1 min-w-0">
           <h2 id="batch-details-heading" className="text-xl font-semibold leading-tight truncate flex items-center gap-2">
             <span>{testName ?? "Batch Test"}</span>
-            <Badge variant="secondary" className="uppercase">batch</Badge>
+            <Badge variant="default" className="uppercase">batch</Badge>
           </h2>
           {testDescription && (
             <p className="text-sm text-muted-foreground max-w-prose line-clamp-2">
@@ -52,9 +60,11 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
           )}
         </section>
         <section className="flex items-center gap-4 shrink-0">
-          <Button variant="ghost" size="icon" aria-label="Batch test options" disabled>
-            <EllipsisVerticalIcon className="w-4 h-4" />
-          </Button>
+          <BatchTestCardActionsDropdown
+            batchTestId={batch._id}
+            actions={{ moveToTrash: moveBatchTestToTrash, deleteBatchTest }}
+            showOpen={false}
+          />
           <Button onClick={handleRun} variant="secondary" disabled={running} className="gap-1">
             {running && <Loader2 className="w-4 h-4 animate-spin" />}
             Run batch
@@ -74,7 +84,18 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
         <div className="space-y-2 flex-1">
           <h3 className="text-sm font-medium text-muted-foreground">Batch personas</h3>
           <div className="flex flex-wrap items-center gap-2">
-            {batchPersonaName ? <Badge variant="outline">{batchPersonaName}</Badge> : <span className="text-sm text-muted-foreground">–</span>}
+            {batchPersonaName && batchPersonaId ? (
+              <Link
+                href={`/personas/batch/${batchPersonaId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium border rounded-md hover:underline"
+              >
+                {batchPersonaName}
+              </Link>
+            ) : (
+              <span className="text-sm text-muted-foreground">–</span>
+            )}
           </div>
         </div>
       </section>
