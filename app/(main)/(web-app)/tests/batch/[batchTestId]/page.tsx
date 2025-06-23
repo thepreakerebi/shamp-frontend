@@ -3,6 +3,11 @@ import { useParams, notFound } from "next/navigation";
 import { useBatchTests } from "@/hooks/use-batch-tests";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DetailsSection from "./_components/details-section";
+import AnalysisSection from "./_components/analysis-section";
+import BatchTestRunsSection from "./_components/test-runs-section";
+import { AnalysisSectionSkeleton } from "./_components/analysis-section-skeleton";
 
 export default function BatchTestPage() {
   const { batchTestId } = useParams<{ batchTestId: string }>();
@@ -31,12 +36,13 @@ export default function BatchTestPage() {
       });
   }, [batchTestId, batchTest]);
 
+  const [tab, setTab] = useState<"details"|"analysis"|"runs">("details");
+
   if (loading) {
     return (
-      <main className="p-4 w-full max-w-md mx-auto space-y-4">
-        <Skeleton className="h-8 w-56" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-1/2" />
+      <main className="p-4 w-full flex flex-col gap-8">
+        <Skeleton className="h-32 w-full" />
+        <AnalysisSectionSkeleton />
       </main>
     );
   }
@@ -46,19 +52,28 @@ export default function BatchTestPage() {
     return null;
   }
 
-  const projectName = typeof batchTest.project === "object" && batchTest.project ? (batchTest.project as { name?: string }).name : undefined;
-  const testName = typeof batchTest.test === "object" && batchTest.test ? (batchTest.test as { name?: string }).name : undefined;
-  const batchPersonaName = typeof batchTest.batchPersona === "object" && batchTest.batchPersona ? (batchTest.batchPersona as { name?: string }).name : undefined;
-
   return (
-    <main className="p-4 w-full max-w-md mx-auto space-y-4">
-      {testName && <h1 className="text-2xl font-semibold truncate" title={testName}>{testName}</h1>}
-      {projectName && (
-        <p className="text-sm text-muted-foreground">Project: {projectName}</p>
-      )}
-      {batchPersonaName && (
-        <p className="text-sm text-muted-foreground">Batch personas: {batchPersonaName}</p>
-      )}
+    <main className="p-4 w-full flex flex-col gap-8">
+      <Tabs value={tab} onValueChange={(v)=>setTab(v as "details"|"analysis"|"runs")} className="flex-1 w-full">
+        <div className="flex flex-col md:flex-row gap-4 w-full">
+          <TabsList>
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="analysis">Analysis</TabsTrigger>
+            <TabsTrigger value="runs">Test runs</TabsTrigger>
+          </TabsList>
+          <section className="flex-1 min-w-0">
+            <TabsContent value="details">
+              <DetailsSection batch={batchTest} />
+            </TabsContent>
+            <TabsContent value="analysis">
+              <AnalysisSection batch={batchTest} />
+            </TabsContent>
+            <TabsContent value="runs">
+              <BatchTestRunsSection batch={batchTest} />
+            </TabsContent>
+          </section>
+        </div>
+      </Tabs>
     </main>
   );
 } 
