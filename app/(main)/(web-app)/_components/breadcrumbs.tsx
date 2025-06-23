@@ -11,6 +11,8 @@ import { useBatchPersonas } from "@/hooks/use-batch-personas";
 import { useBatchPersonasStore } from "@/lib/store/batchPersonas";
 import { useTests } from "@/hooks/use-tests";
 import { useTestsStore } from "@/lib/store/tests";
+import { useBatchTests } from "@/hooks/use-batch-tests";
+import { useBatchTestsStore } from "@/lib/store/batchTests";
 
 export function Breadcrumbs() {
   const pathname = usePathname();
@@ -31,6 +33,7 @@ export function Breadcrumbs() {
   let personaId: string | undefined = undefined;
   let batchPersonasId: string | undefined = undefined;
   let testId: string | undefined = undefined;
+  let batchTestId: string | undefined = undefined;
   if (personasIdx !== -1 && segments.length > personasIdx + 1) {
     if (segments[personasIdx + 1] === "batch" && segments.length > personasIdx + 2) {
       batchPersonasId = segments[personasIdx + 2];
@@ -38,8 +41,12 @@ export function Breadcrumbs() {
       personaId = segments[personasIdx + 1];
     }
   }
-  if (testsIdx !== -1 && segments.length > testsIdx + 1 && segments[testsIdx + 1] !== "batch") {
-    testId = segments[testsIdx + 1];
+  if (testsIdx !== -1 && segments.length > testsIdx + 1) {
+    if (segments[testsIdx + 1] === "batch" && segments.length > testsIdx + 2) {
+      batchTestId = segments[testsIdx + 2];
+    } else {
+      testId = segments[testsIdx + 1];
+    }
   }
   const { getProjectById } = useProjects();
   const projects = useProjectsStore((s) => s.projects);
@@ -56,6 +63,11 @@ export function Breadcrumbs() {
   const { getTestById } = useTests();
   const tests = useTestsStore((s) => s.tests);
   const [testName, setTestName] = useState<string | null>(null);
+
+  // Batch tests name
+  const { getBatchTestById } = useBatchTests();
+  const batchTests = useBatchTestsStore((s)=>s.batchTests);
+  const [batchTestName, setBatchTestName] = useState<string | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -150,6 +162,22 @@ export function Breadcrumbs() {
     return () => { ignore = true; };
   }, [testId, getTestById, tests]);
 
+  useEffect(()=>{
+    let ignore=false;
+    if(batchTestId){
+      const fromStore = batchTests?.find(b=>b._id===batchTestId);
+      if(fromStore){ setBatchTestName(()=> typeof fromStore.test==='object'&&fromStore.test && 'name' in fromStore.test ? (fromStore.test as {name?:string}).name || null : null); }
+      else{
+        getBatchTestById(batchTestId).then(bt=>{
+          if(ignore) return;
+          const nm = typeof bt.test==='object' && bt.test && 'name' in bt.test ? (bt.test as {name?:string}).name || null : null;
+          setBatchTestName(nm);
+        }).catch(()=>{ if(!ignore) setBatchTestName(null); });
+      }
+    }else{ setBatchTestName(null); }
+    return ()=>{ignore=true;};
+  },[batchTestId, batchTests, getBatchTestById]);
+
   return (
     <Breadcrumb>
       <BreadcrumbList>
@@ -201,6 +229,9 @@ export function Breadcrumbs() {
                 </BreadcrumbItem>
               </React.Fragment>
             );
+          }
+          if (segment === batchTestId && batchTestName) {
+            display = batchTestName;
           }
           return (
             <React.Fragment key={segment}>
