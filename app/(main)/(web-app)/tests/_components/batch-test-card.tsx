@@ -16,6 +16,8 @@ export function BatchTestCard({ batch }: { batch: BatchTest }) {
   };
 
   const runsCount = batch.testrunsCount ?? (batch.testruns ? batch.testruns.length : 0);
+  const successfulRuns = batch.successfulRuns ?? 0;
+  const failedRuns = batch.failedRuns ?? 0;
 
   return (
     <section
@@ -52,10 +54,15 @@ export function BatchTestCard({ batch }: { batch: BatchTest }) {
       <Separator />
 
       <footer className="flex items-center gap-2 pt-1">
+        <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+          ✓ {successfulRuns}
+        </Badge>
+        <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-red-500/10 text-red-700 dark:text-red-400">
+          ✗ {failedRuns}
+        </Badge>
         <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-primary/10 dark:bg-primary/20 text-primary-foreground dark:text-neutral-200">
           {runsCount} runs
         </Badge>
-        {/* Additional footer items can be added here */}
       </footer>
     </section>
   );
