@@ -15,7 +15,7 @@ export default function TestsPage() {
 
   const searchParams = useSearchParams();
   const initialParam = searchParams.get("tab");
-  const initialTab = initialParam === "groups" ? "groups" : initialParam === "schedules" ? "schedules" : "individuals";
+  const initialTab = initialParam === "batch" ? "batch" : initialParam === "schedules" ? "schedules" : "individuals";
   const [tab, setTab] = useState(initialTab);
 
   return (

@@ -40,6 +40,10 @@ export function BatchTestCardActionsDropdown({
     router.push(`/batch-tests/${batchTestId}`);
   };
 
+  const handleEdit = () => {
+    router.push(`/tests/edit-batch?id=${batchTestId}`);
+  };
+
   const handleTrash = () => setTrashOpen(true);
   const handleDelete = () => setDeleteOpen(true);
 
@@ -79,6 +83,7 @@ export function BatchTestCardActionsDropdown({
         </CustomDropdownMenuTrigger>
         <CustomDropdownMenuContent align="end">
           <CustomDropdownMenuItem data-stop-row onSelect={handleOpen}>Open</CustomDropdownMenuItem>
+          <CustomDropdownMenuItem data-stop-row onSelect={handleEdit}>Edit</CustomDropdownMenuItem>
           <CustomDropdownMenuItem data-stop-row onSelect={handleTrash}>Move to trash</CustomDropdownMenuItem>
           <CustomDropdownMenuItem variant="destructive" data-stop-row onSelect={handleDelete}>Delete</CustomDropdownMenuItem>
         </CustomDropdownMenuContent>
