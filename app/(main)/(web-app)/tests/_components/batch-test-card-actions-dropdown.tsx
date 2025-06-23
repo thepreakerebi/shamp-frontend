@@ -8,9 +8,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { EllipsisVerticalIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import React, { useState } from "react";
+import { MoveBatchTestToTrashModal } from "./move-batch-test-to-trash-modal";
+import { DeleteBatchTestModal } from "./delete-batch-test-modal";
 
 interface ActionFns {
   moveToTrash: (id: string) => Promise<unknown>;
@@ -29,33 +30,42 @@ export function BatchTestCardActionsDropdown({
   const router = useRouter();
   const { moveToTrash, deleteBatchTest } = actions;
 
-  const [confirmOpen, setConfirmOpen] = useState<"trash" | "delete" | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [trashOpen, setTrashOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [trashLoading, setTrashLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const handleOpen = () => {
     if (onOpen) onOpen();
     router.push(`/batch-tests/${batchTestId}`);
   };
 
-  const handleTrash = () => setConfirmOpen("trash");
-  const handleDelete = () => setConfirmOpen("delete");
+  const handleTrash = () => setTrashOpen(true);
+  const handleDelete = () => setDeleteOpen(true);
 
-  const confirmAction = async () => {
-    if (!confirmOpen) return;
-    setLoading(true);
+  const confirmTrash = async () => {
+    setTrashLoading(true);
     try {
-      if (confirmOpen === "trash") {
-        await moveToTrash(batchTestId);
-        toast.success("Batch test moved to trash");
-      } else if (confirmOpen === "delete") {
-        await deleteBatchTest(batchTestId, false);
-        toast.success("Batch test deleted");
-      }
+      await moveToTrash(batchTestId);
+      toast.success("Batch test moved to trash");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Action failed");
+      toast.error(err instanceof Error ? err.message : "Failed to move batch test to trash");
     } finally {
-      setLoading(false);
-      setConfirmOpen(null);
+      setTrashLoading(false);
+      setTrashOpen(false);
+    }
+  };
+
+  const confirmDelete = async (deleteRuns: boolean) => {
+    setDeleteLoading(true);
+    try {
+      await deleteBatchTest(batchTestId, deleteRuns);
+      toast.success("Batch test deleted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete batch test");
+    } finally {
+      setDeleteLoading(false);
+      setDeleteOpen(false);
     }
   };
 
@@ -74,15 +84,19 @@ export function BatchTestCardActionsDropdown({
         </CustomDropdownMenuContent>
       </CustomDropdownMenu>
 
-      <ConfirmDialog
-        open={confirmOpen !== null}
-        onOpenChange={(o)=>!o && setConfirmOpen(null)}
-        title={confirmOpen === "trash" ? "Move to trash" : "Delete batch test"}
-        description={confirmOpen === "trash" ? "Are you sure you want to move this batch test to trash?" : "This action cannot be undone. Delete batch test permanently?"}
-        confirmLabel={confirmOpen === "trash" ? "Move to trash" : "Delete"}
-        confirmVariant={confirmOpen === "trash" ? "default" : "destructive"}
-        loading={loading}
-        onConfirm={confirmAction}
+      <MoveBatchTestToTrashModal
+        open={trashOpen}
+        setOpen={setTrashOpen}
+        batchTestName={typeof batchTestId === "string" ? "this batch test" : null}
+        onConfirm={confirmTrash}
+        loading={trashLoading}
+      />
+      <DeleteBatchTestModal
+        open={deleteOpen}
+        setOpen={setDeleteOpen}
+        batchTestName={typeof batchTestId === "string" ? "this batch test" : null}
+        onConfirm={confirmDelete}
+        loading={deleteLoading}
       />
     </>
   );
