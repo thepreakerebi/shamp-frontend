@@ -28,7 +28,7 @@ export function CreateTestDropdownButton({ onSingleTest, onBatchTests }: CreateT
         <CustomDropdownMenuItem onSelect={onSingleTest ?? (()=>router.push("/tests/create"))}>
           <ListChecks className="size-4 mr-2" /> Single test
         </CustomDropdownMenuItem>
-        <CustomDropdownMenuItem onSelect={onBatchTests}>
+        <CustomDropdownMenuItem onSelect={onBatchTests ?? (()=>router.push("/tests/create-batch"))}>
           <ListPlus className="size-4 mr-2" /> Batch tests
         </CustomDropdownMenuItem>
       </CustomDropdownMenuContent>

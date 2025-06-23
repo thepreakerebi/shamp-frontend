@@ -30,7 +30,7 @@ export function Topbar() {
 
   // TODO: Replace with real modal handlers when implemented
   const handleSingleTest = () => router.push('/tests/create');
-  const handleBatchTests = () => console.log('Create batch tests');
+  const handleBatchTests = () => router.push('/tests/create-batch');
   const handleStartTest = () => setModalOpen(true);
 
   return (
