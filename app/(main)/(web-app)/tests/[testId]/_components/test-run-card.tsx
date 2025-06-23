@@ -12,11 +12,10 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 // import React from "react"; // video badge logic temporarily disabled
 
-interface ScheduledRunSummary extends TestRunSummary {
-  scheduledFor?: string;
-}
+type FullRunWithPersona = import("@/hooks/use-testruns").TestRun & { personaName?: string };
+export type MinimalRun = TestRunSummary | FullRunWithPersona;
 
-export function TestRunCard({ run }: { run: ScheduledRunSummary }) {
+export function TestRunCard({ run }: { run: MinimalRun }) {
   const router = useRouter();
   const {
     pauseTestRun,

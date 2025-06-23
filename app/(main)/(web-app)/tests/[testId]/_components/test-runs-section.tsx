@@ -26,10 +26,15 @@ export default function TestRunsSection({ test }: { test: Test }) {
     if (cached) {
       setRuns(cached as unknown as TestRunSummary[]);
     }
+
+    // Always fetch a fresh list so we don't miss runs added optimistically from
+    // other pages (e.g. the Schedule Run page).
     (async () => {
+      // Show a skeleton only if there was no cache to display.
       if (!cached) setLoading(true);
       try {
-        const data = await getTestRunsForTest(test._id);
+        // Force refresh to bypass any potentially stale cache.
+        const data = await getTestRunsForTest(test._id, true);
         if (mounted) {
           setRuns(data);
           setTestRuns(data as unknown as TestRun[]);
