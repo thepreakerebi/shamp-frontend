@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProjectBadge } from "@/components/ui/project-badge";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Pause, Play, Square } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useBatchTestRuns } from "@/hooks/use-batch-test-runs";
 import { toast } from "sonner";
 import { BatchTest } from "@/hooks/use-batch-tests";
@@ -15,7 +15,12 @@ import { BatchTestCardActionsDropdown } from "../../../_components/batch-test-ca
 export default function DetailsSection({ batch }: { batch: BatchTest }) {
   const { startBatchTestRuns, pauseBatchTestRuns, resumeBatchTestRuns, stopBatchTestRuns } = useBatchTestRuns();
   const [actionLoading, setActionLoading] = useState(false);
-  const [batchStatus, setBatchStatus] = useState<'idle' | 'running' | 'paused' | 'stopped'>('idle');
+  const [batchStatus, setBatchStatus] = useState<'idle' | 'running' | 'paused' | 'stopped' | 'completed'>(batch.status ?? 'idle');
+
+  // keep local state in sync with prop updates (socket-driven)
+  useEffect(() => {
+    setBatchStatus(batch.status ?? 'idle');
+  }, [batch.status]);
 
   const handleRun = async () => {
     if (actionLoading) return;
@@ -110,12 +115,12 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
             showOpen={false}
           />
           {/* Control buttons */}
-          {batchStatus === 'idle' || batchStatus === 'stopped' ? (
+          {(batchStatus === 'idle' || batchStatus === 'stopped' || batchStatus === 'completed') && (
             <Button onClick={handleRun} variant="secondary" disabled={actionLoading} className="gap-1">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               Run batch
             </Button>
-          ) : null}
+          )}
 
           {batchStatus === 'running' && (
             <>
@@ -144,6 +149,9 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
           )}
           {batchStatus === 'paused' && (
             <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">paused</Badge>
+          )}
+          {batchStatus === 'completed' && (
+            <Badge variant="secondary" className="bg-primary/10 text-primary-foreground dark:text-primary">completed</Badge>
           )}
         </section>
       </header>

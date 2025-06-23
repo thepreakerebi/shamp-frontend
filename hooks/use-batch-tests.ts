@@ -17,6 +17,7 @@ export interface BatchTest {
   testrunsCount?: number;
   successfulRuns?: number;
   failedRuns?: number;
+  status?: 'idle' | 'running' | 'paused' | 'stopped' | 'completed';
   createdBy?: string;
   trashed?: boolean;
   createdAt?: string;
@@ -95,11 +96,13 @@ export function useBatchTests() {
     socket.on("batchTest:deleted", handleUpdate);
     socket.on("batchTest:updated", handleUpdate);
     socket.on("batchTest:trashed", handleUpdate);
+    socket.on("batchTest:statusUpdated", handleUpdate);
     return () => {
       socket.off("batchTest:created", handleUpdate);
       socket.off("batchTest:deleted", handleUpdate);
       socket.off("batchTest:updated", handleUpdate);
       socket.off("batchTest:trashed", handleUpdate);
+      socket.off("batchTest:statusUpdated", handleUpdate);
       socket.disconnect();
     };
   }, [fetchBatchTests, token]);
