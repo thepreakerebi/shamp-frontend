@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProjectBadge } from "@/components/ui/project-badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2 } from "lucide-react";
+import { Loader2, Pause, Play, Square } from "lucide-react";
 import { useState } from "react";
 import { useBatchTestRuns } from "@/hooks/use-batch-test-runs";
 import { toast } from "sonner";
@@ -13,19 +13,63 @@ import { useBatchTests } from "@/hooks/use-batch-tests";
 import { BatchTestCardActionsDropdown } from "../../../_components/batch-test-card-actions-dropdown";
 
 export default function DetailsSection({ batch }: { batch: BatchTest }) {
-  const { startBatchTestRuns } = useBatchTestRuns();
-  const [running, setRunning] = useState(false);
+  const { startBatchTestRuns, pauseBatchTestRuns, resumeBatchTestRuns, stopBatchTestRuns } = useBatchTestRuns();
+  const [actionLoading, setActionLoading] = useState(false);
+  const [batchStatus, setBatchStatus] = useState<'idle' | 'running' | 'paused' | 'stopped'>('idle');
 
   const handleRun = async () => {
-    if (running) return;
-    setRunning(true);
+    if (actionLoading) return;
+    setActionLoading(true);
     try {
       await startBatchTestRuns(batch._id);
       toast.success("Batch test runs started");
+      setBatchStatus('running');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to start runs");
     } finally {
-      setRunning(false);
+      setActionLoading(false);
+    }
+  };
+
+  const handlePause = async () => {
+    if (actionLoading) return;
+    setActionLoading(true);
+    try {
+      await pauseBatchTestRuns(batch._id);
+      toast.success("Batch test runs paused");
+      setBatchStatus('paused');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to pause runs");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleResume = async () => {
+    if (actionLoading) return;
+    setActionLoading(true);
+    try {
+      await resumeBatchTestRuns(batch._id);
+      toast.success("Batch test runs resumed");
+      setBatchStatus('running');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to resume runs");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleStop = async () => {
+    if (actionLoading) return;
+    setActionLoading(true);
+    try {
+      await stopBatchTestRuns(batch._id);
+      toast.success("Batch test runs stopped");
+      setBatchStatus('stopped');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to stop runs");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -65,10 +109,42 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
             actions={{ moveToTrash: moveBatchTestToTrash, deleteBatchTest }}
             showOpen={false}
           />
-          <Button onClick={handleRun} variant="secondary" disabled={running} className="gap-1">
-            {running && <Loader2 className="w-4 h-4 animate-spin" />}
-            Run batch
-          </Button>
+          {/* Control buttons */}
+          {batchStatus === 'idle' || batchStatus === 'stopped' ? (
+            <Button onClick={handleRun} variant="secondary" disabled={actionLoading} className="gap-1">
+              {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+              Run batch
+            </Button>
+          ) : null}
+
+          {batchStatus === 'running' && (
+            <>
+              <Button onClick={handlePause} variant="outline" disabled={actionLoading} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pause className="w-4 h-4" />} Pause
+              </Button>
+              <Button onClick={handleStop} variant="destructive" disabled={actionLoading} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Square className="w-4 h-4" />} Stop
+              </Button>
+            </>
+          )}
+
+          {batchStatus === 'paused' && (
+            <>
+              <Button onClick={handleResume} variant="outline" disabled={actionLoading} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />} Resume
+              </Button>
+              <Button onClick={handleStop} variant="destructive" disabled={actionLoading} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Square className="w-4 h-4" />} Stop
+              </Button>
+            </>
+          )}
+          {/* Status badge */}
+          {batchStatus === 'running' && (
+            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">running</Badge>
+          )}
+          {batchStatus === 'paused' && (
+            <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">paused</Badge>
+          )}
         </section>
       </header>
       <Separator />
