@@ -8,6 +8,7 @@ import BatchPersonaCommand from "../create-batch/_components/batch-persona-comma
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function EditBatchTestPage() {
   const params = useSearchParams();
@@ -61,7 +62,16 @@ export default function EditBatchTestPage() {
 
   if (loading) {
     return (
-      <main className="p-6 flex justify-center items-center"><Loader2 className="animate-spin size-6" /></main>
+      <main className="p-4 w-full max-w-[500px] mx-auto space-y-6">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <div className="flex justify-end gap-2">
+          <Skeleton className="h-10 w-24" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+      </main>
     );
   }
 
