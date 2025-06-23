@@ -3,7 +3,7 @@ import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const TAB_LIST = [
   { key: "individuals", label: "Individuals" },
-  { key: "groups", label: "Groups" },
+  { key: "batch", label: "Batch" },
   { key: "schedules", label: "Schedules" },
 ];
 

@@ -17,10 +17,20 @@ export function BatchTestsList() {
   }
 
   return (
-    <section className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 py-1">
-      {batchTests.map(bt => (
-        <BatchTestCard key={bt._id} batch={bt} />
-      ))}
+    <section className="flex flex-col gap-4">
+      {/* Informational header */}
+      <section className="flex flex-col gap-2">
+        <h2 className="text-lg font-semibold">Batch tests</h2>
+        <p className="text-sm max-w-2xl text-muted-foreground">
+          Batch tests let you launch the same usability test across multiple personas simultaneously, helping you compare results side-by-side and speed up your research workflow.
+        </p>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 py-1">
+        {batchTests.map(bt => (
+          <BatchTestCard key={bt._id} batch={bt} />
+        ))}
+      </section>
     </section>
   );
 } 

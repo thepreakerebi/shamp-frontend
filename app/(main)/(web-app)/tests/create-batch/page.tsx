@@ -38,7 +38,7 @@ export default function CreateBatchTestPage() {
       } satisfies Parameters<typeof createBatchTest>[0];
       await createBatchTest(payload);
       toast.success("Batch test created");
-      router.push("/tests?tab=groups");
+      router.push("/tests?tab=batch");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to create batch test");
     } finally {

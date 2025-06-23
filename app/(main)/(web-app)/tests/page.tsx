@@ -27,7 +27,7 @@ export default function TestsPage() {
             <TabsContent value="individuals">
               <TestsList />
             </TabsContent>
-            <TabsContent value="groups">
+            <TabsContent value="batch">
               <BatchTestsList />
             </TabsContent>
             <TabsContent value="schedules">
