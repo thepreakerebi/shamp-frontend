@@ -2,6 +2,8 @@ import { useAuth } from "@/lib/auth";
 import { useEffect, useCallback } from "react";
 import io from "socket.io-client";
 import { useBatchTestsStore } from "@/lib/store/batchTests";
+import { useTestRunsStore } from "@/lib/store/testruns";
+import type { TestRun } from "@/hooks/use-testruns";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
@@ -51,6 +53,7 @@ export function useBatchTests() {
     updateBatchTestInList,
     removeBatchTestFromList,
   } = useBatchTestsStore();
+  const { setTestRuns, addTestRunToList } = useTestRunsStore();
 
   const fetchBatchTests = useCallback(async () => {
     if (!token) {
@@ -222,10 +225,32 @@ export function useBatchTests() {
     return res.json();
   };
 
+  const getTestRunsForBatchTest = async (batchTestId: string, forceRefresh = false) => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/batchtests/${batchTestId}/testruns`, {
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to fetch test runs for batch test");
+    const data = await res.json();
+
+    if (Array.isArray(data)) {
+      if (forceRefresh) {
+        setTestRuns(data);
+      } else {
+        data.forEach((run: unknown)=>{
+          addTestRunToList(run as TestRun);
+        });
+      }
+    }
+    return data;
+  };
+
   return {
     batchTests,
     batchTestsError,
     batchTestsLoading,
+    getTestRunsForBatchTest,
     getBatchTestById,
     createBatchTest,
     updateBatchTest,
