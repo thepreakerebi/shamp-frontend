@@ -11,16 +11,33 @@ import { BatchTest } from "@/hooks/use-batch-tests";
 import Link from "next/link";
 import { useBatchTests } from "@/hooks/use-batch-tests";
 import { BatchTestCardActionsDropdown } from "../../../_components/batch-test-card-actions-dropdown";
+import { useBatchTestsStore } from "@/lib/store/batchTests";
 
 export default function DetailsSection({ batch }: { batch: BatchTest }) {
   const { startBatchTestRuns, pauseBatchTestRuns, resumeBatchTestRuns, stopBatchTestRuns } = useBatchTestRuns();
   const [actionLoading, setActionLoading] = useState(false);
   const [batchStatus, setBatchStatus] = useState<'idle' | 'running' | 'paused' | 'stopped' | 'completed'>(batch.status ?? 'idle');
 
-  // keep local state in sync with prop updates (socket-driven)
+  // Subscribe to live status updates from the global BatchTests store so the
+  // badge flips instantly when Socket.IO events arrive elsewhere.
+  const liveStatus = useBatchTestsStore((state) => {
+    const match = state.batchTests?.find((t) => t._id === batch._id) || state.trashedBatchTests?.find((t) => t._id === batch._id);
+    return match?.status;
+  });
+
+  // Keep local state in sync with live store updates
   useEffect(() => {
-    setBatchStatus(batch.status ?? 'idle');
-  }, [batch.status]);
+    if (liveStatus && liveStatus !== batchStatus) {
+      setBatchStatus(liveStatus);
+    }
+  }, [liveStatus, batchStatus]);
+
+  // Also sync when parent prop changes (initial load or optimistic updates)
+  useEffect(() => {
+    if (batch.status && batch.status !== batchStatus) {
+      setBatchStatus(batch.status);
+    }
+  }, [batch.status, batchStatus]);
 
   const handleRun = async () => {
     if (actionLoading) return;
@@ -78,17 +95,23 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
     }
   };
 
-  const testObj = typeof batch.test === "object" && batch.test ? (batch.test as { name?: string; description?: string }) : null;
+  // Live batch from store (falls back to prop if not yet in store)
+  const liveBatch = useBatchTestsStore((state) =>
+    state.batchTests?.find((t) => t._id === batch._id) ||
+    state.trashedBatchTests?.find((t) => t._id === batch._id)
+  ) ?? batch;
+
+  const testObj = typeof liveBatch.test === "object" && liveBatch.test ? (liveBatch.test as { name?: string; description?: string }) : null;
   const testName = testObj?.name;
   const testDescription = testObj?.description;
 
-  const projectName = typeof batch.project === "object" && batch.project ? (batch.project as { name?: string }).name : undefined;
-  const batchPersonaObj = typeof batch.batchPersona === "object" && batch.batchPersona ? (batch.batchPersona as { _id: string; name?: string }) : null;
+  const projectName = typeof liveBatch.project === "object" && liveBatch.project ? (liveBatch.project as { name?: string }).name : undefined;
+  const batchPersonaObj = typeof liveBatch.batchPersona === "object" && liveBatch.batchPersona ? (liveBatch.batchPersona as { _id: string; name?: string }) : null;
   const batchPersonaName = batchPersonaObj?.name;
-  const batchPersonaId = batchPersonaObj?._id ?? (typeof batch.batchPersona === "string" ? batch.batchPersona : undefined);
+  const batchPersonaId = batchPersonaObj?._id ?? (typeof liveBatch.batchPersona === "string" ? liveBatch.batchPersona : undefined);
 
-  const successfulRuns = (batch as { successfulRuns?: number }).successfulRuns ?? 0;
-  const failedRuns = (batch as { failedRuns?: number }).failedRuns ?? 0;
+  const successfulRuns = (liveBatch as { successfulRuns?: number }).successfulRuns ?? 0;
+  const failedRuns = (liveBatch as { failedRuns?: number }).failedRuns ?? 0;
   const totalRuns = successfulRuns + failedRuns;
 
   // actions for dropdown
