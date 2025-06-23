@@ -37,7 +37,7 @@ export function BatchTestCardActionsDropdown({
 
   const handleOpen = () => {
     if (onOpen) onOpen();
-    router.push(`/batch-tests/${batchTestId}`);
+    router.push(`/tests/batch/${batchTestId}`);
   };
 
   const handleEdit = () => {

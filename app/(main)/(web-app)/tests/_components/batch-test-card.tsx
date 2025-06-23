@@ -12,7 +12,7 @@ export function BatchTestCard({ batch }: { batch: BatchTest }) {
   const { moveBatchTestToTrash, deleteBatchTest } = useBatchTests();
 
   const handleClick: React.MouseEventHandler<HTMLDivElement> = () => {
-    router.push(`/batch-tests/${batch._id}`);
+    router.push(`/tests/batch/${batch._id}`);
   };
 
   const runsCount = batch.testrunsCount ?? (batch.testruns ? batch.testruns.length : 0);
