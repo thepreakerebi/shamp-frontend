@@ -9,14 +9,14 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000"
 export interface BatchTest {
   _id: string;
   project: string | { _id: string; name?: string };
-  batchPersona: string | { _id: string; name?: string };
   test: string | { _id: string; name?: string };
-  testRuns?: string[];
+  batchPersona?: string | { _id: string; name?: string };
+  testruns?: string[];
+  testrunsCount?: number;
   createdBy?: string;
   trashed?: boolean;
   createdAt?: string;
   updatedAt?: string;
-  // Add other fields as needed
 }
 
 export interface BatchTestAnalysis {
@@ -111,7 +111,7 @@ export function useBatchTests() {
     return batch;
   };
 
-  const createBatchTest = async (payload: Omit<BatchTest, '_id' | 'testRuns' | 'createdBy' | 'trashed'>) => {
+  const createBatchTest = async (payload: Pick<BatchTest, 'project' | 'batchPersona' | 'test'>) => {
     if (!token) throw new Error("Not authenticated");
     const res = await fetch(`${API_BASE}/batchtests`, {
       method: "POST",
@@ -128,7 +128,7 @@ export function useBatchTests() {
     return batch;
   };
 
-  const updateBatchTest = async (id: string, payload: Partial<Omit<BatchTest, '_id' | 'testRuns' | 'createdBy' | 'trashed'>>) => {
+  const updateBatchTest = async (id: string, payload: Partial<Pick<BatchTest, 'batchPersona' | 'test'>>) => {
     if (!token) throw new Error("Not authenticated");
     const res = await fetch(`${API_BASE}/batchtests/${id}`, {
       method: "PATCH",
