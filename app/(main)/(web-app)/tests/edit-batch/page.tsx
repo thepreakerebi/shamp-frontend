@@ -23,6 +23,7 @@ export default function EditBatchTestPage() {
   const [errors, setErrors] = useState<{ batchPersonaId?: string }>({});
   const [form, setForm] = useState({ projectId: "", batchPersonaId: "", testName: "" });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!batchId) return;
     (async () => {
@@ -40,7 +41,7 @@ export default function EditBatchTestPage() {
         setLoading(false);
       }
     })();
-  }, [batchId, getBatchTestById, router]);
+  }, [batchId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +92,13 @@ export default function EditBatchTestPage() {
         </section>
         <section>
           <label className="block text-sm font-medium mb-1">Batch Personas</label>
-          <BatchPersonaCommand value={form.batchPersonaId} onChange={(id)=>{ setForm({ ...form, batchPersonaId: id }); setErrors({ ...errors, batchPersonaId: undefined }); }} />
+          <BatchPersonaCommand
+            value={form.batchPersonaId}
+            onChange={(id) => {
+              setForm(prev => ({ ...prev, batchPersonaId: id }));
+              setErrors(prev => ({ ...prev, batchPersonaId: undefined }));
+            }}
+          />
           {errors.batchPersonaId && <p className="text-destructive text-xs mt-1">{errors.batchPersonaId}</p>}
         </section>
         <section>
