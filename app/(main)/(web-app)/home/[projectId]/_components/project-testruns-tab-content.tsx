@@ -2,6 +2,7 @@
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useProjects } from "@/hooks/use-projects";
+import { useTestRuns } from "@/hooks/use-testruns";
 import { TestRunCard, MinimalRun } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card";
 import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-card-skeleton";
 import TestRunsFilter from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-filter";
@@ -10,17 +11,24 @@ import { TestRunsListEmpty } from "@/app/(main)/(web-app)/test-runs/_components/
 export function ProjectTestrunsTabContent() {
   const { projectId } = useParams<{ projectId: string }>();
   const { getProjectTestruns } = useProjects();
+  const { testRuns: globalRuns, refetchAllTestRuns } = useTestRuns();
 
-  const [runs, setRuns] = useState<import("@/hooks/use-testruns").TestRun[] | null>(() => {
-    return [];
-  });
+  // Prefill from global store for snappy UX
+  const initial = (globalRuns ?? []).filter(r => typeof r.test === "string" ? false : true); // we'll further filter later
+
+  const [runs, setRuns] = useState<import("@/hooks/use-testruns").TestRun[] | null>(initial);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any" });
 
   useEffect(() => {
     if (!projectId) return;
     let mounted = true;
-    setLoading(true);
+    // If we already have some runs, don't block UI
+    if (!runs || runs.length === 0) setLoading(true);
+
+    // Kick off a workspace-level fetch so other views benefit
+    refetchAllTestRuns();
+
     getProjectTestruns(projectId as string)
       .then((data: unknown[]) => {
         const enriched = data.map((r) => {
@@ -44,7 +52,7 @@ export function ProjectTestrunsTabContent() {
     return () => {
       mounted = false;
     };
-  }, [projectId, getProjectTestruns]);
+  }, [projectId]);
 
   if (loading && (runs === null || runs.length === 0)) {
     return <TestRunsCardSkeleton />;

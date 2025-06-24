@@ -88,7 +88,7 @@ export function Breadcrumbs() {
       setProjectName(null);
     }
     return () => { ignore = true; };
-  }, [projectId, getProjectById, projects]);
+  }, [projectId, projects]);
 
   useEffect(() => {
     let ignore = false;
@@ -109,7 +109,7 @@ export function Breadcrumbs() {
       setPersonaName(null);
     }
     return () => { ignore = true; };
-  }, [personaId, getPersonaById, personas]);
+  }, [personaId, personas]);
 
   useEffect(() => {
     let ignore = false;
@@ -132,14 +132,14 @@ export function Breadcrumbs() {
       setBatchPersonaName(null);
     }
     return () => { ignore = true; };
-  }, [batchPersonasId, getBatchPersonaById, batchPersonas]);
+  }, [batchPersonasId, batchPersonas]);
 
   useEffect(() => {
     if (!batchQueryId) { setBatchQueryName(null); return; }
     const fromStore = batchPersonas?.find((b) => b._id === batchQueryId);
     if (fromStore) { setBatchQueryName(fromStore.name); return; }
     getBatchPersonaById(batchQueryId).then(b=>setBatchQueryName(b?.name||null)).catch(()=>setBatchQueryName(null));
-  }, [batchQueryId, batchPersonas, getBatchPersonaById]);
+  }, [batchQueryId, batchPersonas]);
 
   useEffect(() => {
     let ignore = false;
@@ -160,7 +160,7 @@ export function Breadcrumbs() {
       setTestName(null);
     }
     return () => { ignore = true; };
-  }, [testId, getTestById, tests]);
+  }, [testId, tests]);
 
   useEffect(()=>{
     let ignore=false;
@@ -176,7 +176,7 @@ export function Breadcrumbs() {
       }
     }else{ setBatchTestName(null); }
     return ()=>{ignore=true;};
-  },[batchTestId, batchTests, getBatchTestById]);
+  },[batchTestId, batchTests]);
 
   return (
     <Breadcrumb>
