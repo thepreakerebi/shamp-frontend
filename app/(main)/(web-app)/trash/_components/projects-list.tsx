@@ -1,8 +1,136 @@
 "use client";
-export function TrashedProjectsList(){
+import { useProjects, type Project } from "@/hooks/use-projects";
+import Image from "next/image";
+import React, { useState } from "react";
+import { TrashCardActionsDropdown } from "@/components/ui/trash-card-actions-dropdown";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
+import { ProjectListSkeleton } from "../../home/_components/project-list-skeleton";
+
+export function TrashedProjectsList() {
+  const {
+    trashedProjects,
+    trashedProjectsLoading,
+    trashedProjectsError,
+    restoreProjectFromTrash,
+    deleteProject,
+    refetchTrashed,
+  } = useProjects();
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+
+  const handleRestore = async (project: Project) => {
+    try {
+      await restoreProjectFromTrash(project._id);
+      toast.success("Project restored");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to restore project");
+    }
+  };
+
+  const handleDeletePrompt = (project: Project) => {
+    setProjectToDelete(project);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!projectToDelete) return;
+    setConfirmLoading(true);
+    try {
+      await deleteProject(projectToDelete._id);
+      toast.success("Project permanently deleted");
+      setConfirmOpen(false);
+      setProjectToDelete(null);
+      // refresh list
+      refetchTrashed();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete project");
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
+  // Ensure unique keys by deduplicating any accidental duplicates from the store
+  const uniqueProjects = React.useMemo(() => {
+    if (!trashedProjects) return [] as Project[];
+    const map = new Map<string, Project>();
+    trashedProjects
+      .filter(p => p.trashed === true || p.trashed === undefined) // keep items meant for trash list
+      .forEach(p => {
+        if (!map.has(p._id)) map.set(p._id, p);
+      });
+    return Array.from(map.values());
+  }, [trashedProjects]);
+
+  if (trashedProjectsLoading && (!trashedProjects || trashedProjects.length === 0)) {
+    return <ProjectListSkeleton count={3} />;
+  }
+
+  if (trashedProjectsError) {
+    return <p className="text-destructive p-4">Error loading trashed projects: {trashedProjectsError}</p>;
+  }
+
+  if (!trashedProjects || trashedProjects.length === 0) {
+    return <p className="text-muted-foreground p-4">No projects in trash.</p>;
+  }
+
   return (
-    <section className="p-4">
-      <h2 className="text-xl font-semibold">Trashed projects</h2>
+    <section>
+      <header className="px-4 mb-4">
+        <h2 className="text-xl font-semibold">Trashed Projects</h2>
+      </header>
+      <section className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-4 p-4" aria-label="Trashed projects list">
+        {uniqueProjects.map(project => (
+          <article
+            key={project._id}
+            className="rounded-2xl overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 h-full group"
+          >
+            {/* URL Preview */}
+            <div className="relative h-32 w-full bg-muted flex items-center justify-center select-none" aria-hidden="true">
+              <Image
+                src={project.previewImageUrl ?? `/placeholder-image.svg`}
+                alt={`Preview of ${project.url ?? "no url"}`}
+                className="object-fill w-full h-full group-hover/image:brightness-90 transition"
+                fill
+                unoptimized
+                onError={e => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  target.src = "/placeholder-image.svg";
+                }}
+              />
+            </div>
+            {/* Card Content */}
+            <section className="flex flex-col gap-1 flex-1 justify-end p-4">
+              <header>
+                <h2 className="font-medium truncate text-md text-foreground leading-tight">{project.name}</h2>
+              </header>
+              <footer className="flex items-center gap-2">
+                <h3 className="text-muted-foreground w-full text-sm truncate">
+                  {project.url || "No URL"}
+                </h3>
+                <TrashCardActionsDropdown
+                  onRestore={() => handleRestore(project)}
+                  onDelete={() => handleDeletePrompt(project)}
+                />
+              </footer>
+            </section>
+          </article>
+        ))}
+      </section>
+
+      {/* Confirm permanent delete */}
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete Project Permanently"
+        description={`Are you sure you want to permanently delete "${projectToDelete?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        confirmVariant="destructive"
+        loading={confirmLoading}
+        onConfirm={handleConfirmDelete}
+      />
     </section>
   );
 }

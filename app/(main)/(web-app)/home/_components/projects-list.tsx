@@ -118,9 +118,20 @@ function ProjectsListInner() {
   const [editModalOpen, setEditModalOpen] = React.useState(false);
   const [editingProject, setEditingProject] = React.useState<Project | null>(null);
 
-  if (projectsLoading && (!projects || projects.length === 0)) return <ProjectListSkeleton count={3} />;
+  const uniqueProjects = React.useMemo(() => {
+    if (!projects) return [] as Project[];
+    const map = new Map<string, Project>();
+    projects
+      .filter(p => p.trashed !== true) // ensure no trashed items appear
+      .forEach(p => {
+        if (!map.has(p._id)) map.set(p._id, p);
+      });
+    return Array.from(map.values());
+  }, [projects]);
+
+  if (projectsLoading && uniqueProjects.length === 0) return <ProjectListSkeleton count={3} />;
   if (projectsError) return <div className="text-destructive">Error loading projects: {projectsError}</div>;
-  if (!projects || projects.length === 0) return <ProjectListEmpty onCreate={() => setCreateOpen(true)} />;
+  if (uniqueProjects.length === 0) return <ProjectListEmpty onCreate={() => setCreateOpen(true)} />;
 
   const handleMoveToTrash = async () => {
     if (!trashingProject) return;
@@ -143,7 +154,7 @@ function ProjectsListInner() {
         className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-4 w-full"
       aria-label="Projects list"
     >
-      {projects.map((project: Project) => (
+      {uniqueProjects.map((project: Project) => (
           <ProjectCard
             key={project._id}
             project={project}
