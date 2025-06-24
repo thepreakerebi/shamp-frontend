@@ -67,6 +67,7 @@ export function useTests() {
     countLoading,
     setTests,
     trashedTests,
+    setTrashedTests,
     addTrashedTest,
     removeTrashedTest,
     setTestsLoading,
@@ -126,6 +127,18 @@ export function useTests() {
     }
   }, [token, setCount, setCountLoading, setCountError]);
 
+  const fetchTrashedTests = useCallback(async () => {
+    if (!token) return;
+    try {
+      const data = await fetcher('/tests/trashed', token);
+      if (Array.isArray(data)) {
+        setTrashedTests(data);
+      }
+    } catch {
+      // silent
+    }
+  }, [token, setTrashedTests]);
+
   // Remote search/filter
   const searchTests = useCallback(
     async (params: Record<string, string | number | undefined>) => {
@@ -168,7 +181,9 @@ export function useTests() {
     if (!token) return;
     fetchTests();
     fetchCount();
-  }, [token, fetchTests, fetchCount]);
+    fetchTrashedTests();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
@@ -351,6 +366,7 @@ export function useTests() {
 
   return {
     tests,
+    trashedTests,
     testsError,
     testsLoading,
     count,
@@ -364,10 +380,10 @@ export function useTests() {
     duplicateTest,
     getTestById,
     refetch,
+    refetchTrashed: fetchTrashedTests,
     analyzeTestOutputs,
     getTestAnalysisHistory,
     searchTests,
     getTestRunsForTest,
-    trashedTests,
   };
 } 
