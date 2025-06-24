@@ -25,23 +25,61 @@ export const useBatchTestsStore = create<BatchTestsState>((set) => ({
   setTrashedBatchTests: (trashedBatchTests) => set({ trashedBatchTests }),
   setBatchTestsLoading: (batchTestsLoading) => set({ batchTestsLoading }),
   setBatchTestsError: (batchTestsError) => set({ batchTestsError }),
-  updateBatchTestInList: (test) =>
+  updateBatchTestInList: (incoming) =>
     set((state) => {
-      const isTrashed = !!test.trashed;
-      const inActive = state.batchTests?.some(t => t._id === test._id);
-      const inTrash = state.trashedBatchTests?.some(t => t._id === test._id);
+      const isTrashed = !!incoming.trashed;
+
+      // Helper to merge with existing version (preserve stats that might be omitted by backend)
+      const merge = (prev: BatchTest | undefined, next: BatchTest): BatchTest => {
+        if (!prev) return next;
+        const merged: BatchTest = { ...prev, ...next }; // start with existing, then apply newer fields
+
+        // Prefer richer "test" object if incoming only has id string
+        if (typeof next.test === "string" && typeof prev.test === "object") {
+          merged.test = prev.test;
+        }
+
+        // Preserve run statistics when backend omits them (undefined)
+        if (next.testrunsCount === undefined && prev.testrunsCount !== undefined) {
+          merged.testrunsCount = prev.testrunsCount;
+        }
+        if (next.successfulRuns === undefined && prev.successfulRuns !== undefined) {
+          merged.successfulRuns = prev.successfulRuns;
+        }
+        if (next.failedRuns === undefined && prev.failedRuns !== undefined) {
+          merged.failedRuns = prev.failedRuns;
+        }
+
+        // Same for testruns array
+        if ((next.testruns === undefined || (Array.isArray(next.testruns) && next.testruns.length === 0)) && prev.testruns?.length) {
+          merged.testruns = prev.testruns;
+        }
+
+        return merged;
+      };
 
       let batchTests = state.batchTests ?? [];
       let trashedBatchTests = state.trashedBatchTests ?? [];
 
       if (isTrashed) {
-        // Remove from active
-        batchTests = batchTests.filter(t => t._id !== test._id);
-        // Add/replace in trash
-        trashedBatchTests = inTrash ? trashedBatchTests.map(t=> t._id===test._id?test:t) : [test, ...trashedBatchTests];
+        // Remove from active list, but keep reference for merging purposes
+        const prevActive = batchTests.find(t => t._id === incoming._id);
+        batchTests = batchTests.filter(t => t._id !== incoming._id);
+
+        const merged = merge(prevActive, incoming);
+
+        // If already in trash, replace, else prepend
+        const inTrash = trashedBatchTests.some(t => t._id === merged._id);
+        trashedBatchTests = inTrash ? trashedBatchTests.map(t => t._id === merged._id ? merged : t) : [merged, ...trashedBatchTests];
       } else {
-        trashedBatchTests = trashedBatchTests.filter(t => t._id !== test._id);
-        batchTests = inActive ? batchTests.map(t=> t._id===test._id?test:t) : [test, ...batchTests];
+        // Remove from trash list similarly
+        const prevTrash = trashedBatchTests.find(t => t._id === incoming._id);
+        trashedBatchTests = trashedBatchTests.filter(t => t._id !== incoming._id);
+
+        const merged = merge(prevTrash, incoming);
+
+        const inActive = batchTests.some(t => t._id === merged._id);
+        batchTests = inActive ? batchTests.map(t => t._id === merged._id ? merged : t) : [merged, ...batchTests];
       }
 
       return { batchTests, trashedBatchTests };

@@ -66,7 +66,11 @@ export function useBatchTests() {
     setBatchTestsError(null);
     try {
       const data = await fetcher("/batchtests", token);
-      setBatchTests(Array.isArray(data) ? data : []);
+      if (Array.isArray(data)) {
+        setBatchTests(data.filter((b: BatchTest) => !b.trashed));
+      } else {
+        setBatchTests([]);
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setBatchTestsError(err.message);
@@ -92,17 +96,26 @@ export function useBatchTests() {
     const handleUpdate = () => {
       fetchBatchTests();
     };
+
+    // For created / deleted / generic updates just refetch active list.
     socket.on("batchTest:created", handleUpdate);
     socket.on("batchTest:deleted", handleUpdate);
-    socket.on("batchTest:updated", handleUpdate);
-    socket.on("batchTest:trashed", handleUpdate);
     socket.on("batchTest:statusUpdated", handleUpdate);
+
+    // Generic handler - merge and rely on updateBatchTestInList logic
+    const mergeHandler = (bt: BatchTest) => {
+      updateBatchTestInList(bt);
+    };
+
+    socket.on("batchTest:updated", mergeHandler);
+    socket.on("batchTest:trashed", mergeHandler);
+
     return () => {
       socket.off("batchTest:created", handleUpdate);
       socket.off("batchTest:deleted", handleUpdate);
-      socket.off("batchTest:updated", handleUpdate);
-      socket.off("batchTest:trashed", handleUpdate);
       socket.off("batchTest:statusUpdated", handleUpdate);
+      socket.off("batchTest:updated", mergeHandler);
+      socket.off("batchTest:trashed", mergeHandler);
       socket.disconnect();
     };
   }, [fetchBatchTests, token]);
