@@ -18,6 +18,7 @@ interface TestRunsState {
   addTestRunToList: (run: TestRun) => void;
   addTrashedTestRun: (run: TestRun) => void;
   removeTrashedTestRun: (id: string) => void;
+  setTrashedTestRuns: (runs: TestRun[] | null) => void;
   reset: () => void;
 }
 
@@ -95,6 +96,7 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
     set((state) => ({
       trashedTestRuns: state.trashedTestRuns ? state.trashedTestRuns.filter((r) => r._id !== id) : null,
     })),
+  setTrashedTestRuns: (trashedTestRuns) => set({ trashedTestRuns }),
   reset: () =>
     set({
       testRuns: null,

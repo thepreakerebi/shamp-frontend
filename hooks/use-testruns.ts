@@ -9,6 +9,7 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000"
 
 // --- Singleton guards so side-effects run only once per browser session ---
 let runsFetchedOnce = false;
+let trashedRunsFetchedOnce = false;
 
 export interface TestRun {
   _id: string;
@@ -85,6 +86,7 @@ export function useTestRuns() {
     setTestRuns,
     setTestRunsLoading,
     setTestRunsError,
+    setTrashedTestRuns,
   } = store;
 
   // Helper to always get the latest store snapshot inside socket listeners
@@ -579,6 +581,19 @@ export function useTestRuns() {
     })();
   }, [token]);
 
+  // Initial fetch for trashed runs (only once)
+  useEffect(() => {
+    if (!token || trashedRunsFetchedOnce) return;
+    trashedRunsFetchedOnce = true;
+    fetcher('/testruns/trashed', token)
+      .then(data => {
+        if (Array.isArray(data)) {
+          setTrashedTestRuns(data as unknown as TestRun[]);
+        }
+      })
+      .catch(()=>{/* ignore */});
+  }, [token, setTrashedTestRuns]);
+
   // Force reload of all runs
   const refetchAllTestRuns = useCallback(async () => {
     if (!token) return;
@@ -593,6 +608,16 @@ export function useTestRuns() {
       setTestRunsLoading(false);
     }
   }, [token, setTestRuns, setTestRunsLoading, setTestRunsError]);
+
+  const fetchTrashedTestRuns = useCallback(async () => {
+    if (!token) return;
+    try {
+      const data = (await fetcher('/testruns/trashed', token)) as TestRun[];
+      setTrashedTestRuns(data || []);
+    } catch {
+      /* silent */
+    }
+  }, [token, setTrashedTestRuns]);
 
   return {
     testRuns: store.testRuns,
@@ -616,5 +641,6 @@ export function useTestRuns() {
     restoreTestRunFromTrash,
     updateScheduledTestRun,
     refetchAllTestRuns,
+    fetchTrashedTestRuns,
   };
 } 
