@@ -1,13 +1,13 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useTests } from "@/hooks/use-tests";
+import { useTests, type Test } from "@/hooks/use-tests";
 import { TestCard } from "./test-card";
 import { TestsCardSkeleton } from "./tests-card-skeleton";
 import { TestsCardToolbar } from "./tests-card-toolbar";
 import { TestsListEmpty } from "./tests-list-empty";
 
 export function TestsList() {
-  const { tests, testsLoading } = useTests();
+  const { tests, trashedTests, testsLoading } = useTests();
 
   // Scroll-to-top button visibility (mobile only)
   const [showTop, setShowTop] = useState(false);
@@ -19,11 +19,17 @@ export function TestsList() {
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
-  if (testsLoading && (!tests || tests.length === 0)) {
+  const filteredTests: Test[] = React.useMemo(() => {
+    if (!tests) return [] as Test[];
+    const trashedIds = new Set((trashedTests ?? []).map(t=>t._id));
+    return tests.filter(t => !trashedIds.has(t._id) && t.trashed !== true);
+  }, [tests, trashedTests]);
+
+  if (testsLoading && filteredTests.length === 0) {
     return <TestsCardSkeleton count={6} />;
   }
 
-  if (!tests || tests.length === 0) {
+  if (filteredTests.length === 0) {
     return <TestsListEmpty />;
   }
 
@@ -32,7 +38,7 @@ export function TestsList() {
       <section className="flex flex-col">
         <TestsCardToolbar />
         <section className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 py-1">
-          {tests.map(test => (
+          {filteredTests.map(test => (
             <TestCard key={test._id} test={test} />
           ))}
         </section>

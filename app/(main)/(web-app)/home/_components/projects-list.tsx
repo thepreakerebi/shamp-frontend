@@ -108,7 +108,7 @@ function ProjectCard({ project, onEdit, onTrash }: { project: Project, onEdit?: 
 }
 
 function ProjectsListInner() {
-  const { projects, projectsLoading, projectsError, moveProjectToTrash } = useProjects();
+  const { projects, trashedProjects, projectsLoading, projectsError, moveProjectToTrash } = useProjects();
   const { setOpen: setCreateOpen } = useCreateProjectModal();
   const [trashModalOpen, setTrashModalOpen] = React.useState(false);
   const [trashingProject, setTrashingProject] = React.useState<Project | null>(null);
@@ -121,13 +121,14 @@ function ProjectsListInner() {
   const uniqueProjects = React.useMemo(() => {
     if (!projects) return [] as Project[];
     const map = new Map<string, Project>();
+    const trashedIds = new Set((trashedProjects ?? []).map(t=>t._id));
     projects
-      .filter(p => p.trashed !== true) // ensure no trashed items appear
+      .filter(p => p.trashed !== true && !trashedIds.has(p._id)) // exclude any pending trash
       .forEach(p => {
         if (!map.has(p._id)) map.set(p._id, p);
       });
     return Array.from(map.values());
-  }, [projects]);
+  }, [projects, trashedProjects]);
 
   if (projectsLoading && uniqueProjects.length === 0) return <ProjectListSkeleton count={3} />;
   if (projectsError) return <div className="text-destructive">Error loading projects: {projectsError}</div>;
@@ -154,9 +155,9 @@ function ProjectsListInner() {
         className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-4 w-full"
       aria-label="Projects list"
     >
-      {uniqueProjects.map((project: Project) => (
+      {uniqueProjects.map((project: Project, idx:number) => (
           <ProjectCard
-            key={project._id}
+            key={`${project._id}-${idx}`}
             project={project}
             onEdit={() => {
               setEditingProject(project);

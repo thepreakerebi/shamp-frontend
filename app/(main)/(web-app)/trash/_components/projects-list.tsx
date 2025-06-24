@@ -57,7 +57,7 @@ export function TrashedProjectsList() {
     if (!trashedProjects) return [] as Project[];
     const map = new Map<string, Project>();
     trashedProjects
-      .filter(p => p.trashed === true || p.trashed === undefined) // keep items meant for trash list
+      .filter(p => p.trashed === true) // only items still trashed
       .forEach(p => {
         if (!map.has(p._id)) map.set(p._id, p);
       });
@@ -82,9 +82,9 @@ export function TrashedProjectsList() {
         <h2 className="text-xl font-semibold">Trashed Projects</h2>
       </header>
       <section className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-4 p-4" aria-label="Trashed projects list">
-        {uniqueProjects.map(project => (
+        {uniqueProjects.map((project, idx) => (
           <article
-            key={project._id}
+            key={`${project._id}-${idx}`}
             className="rounded-2xl overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 h-full group"
           >
             {/* URL Preview */}
