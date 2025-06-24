@@ -12,7 +12,7 @@ import { RowActionsDropdown } from "./row-actions-dropdown";
 import { useAuth } from "@/lib/auth";
 import { Separator } from "@/components/ui/separator";
 
-export function TestCard({ test }: { test: Test }) {
+export function TestCard({ test, projectId }: { test: Test; projectId?: string }) {
   const router = useRouter();
   const { moveTestToTrash, deleteTest, duplicateTest } = useTests();
   const { user } = useAuth();
@@ -45,7 +45,11 @@ export function TestCard({ test }: { test: Test }) {
   );
 
   const handleClick: React.MouseEventHandler<HTMLDivElement> = () => {
-    router.push(`/tests/${test._id}`);
+    if (projectId) {
+      router.push(`/tests/${test._id}?project=${projectId}`);
+    } else {
+      router.push(`/tests/${test._id}`);
+    }
   };
 
   return (

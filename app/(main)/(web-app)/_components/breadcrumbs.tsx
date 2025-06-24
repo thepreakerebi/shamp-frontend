@@ -18,11 +18,15 @@ export function Breadcrumbs() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const batchQueryId = searchParams.get("batch");
+  const projectIdQuery = searchParams.get("project");
   const segments = pathname.split("/").filter(Boolean);
   let path = "";
   // Find the projectId if present (first segment after 'home')
   const homeIdx = segments.indexOf("home");
-  const projectId = homeIdx !== -1 && segments.length > homeIdx + 1 ? segments[homeIdx + 1] : undefined;
+  let projectId = homeIdx !== -1 && segments.length > homeIdx + 1 ? segments[homeIdx + 1] : undefined;
+  if (!projectId && projectIdQuery) {
+    projectId = projectIdQuery;
+  }
   const personasIdx = segments.indexOf("personas");
   const testsIdx = segments.indexOf("tests");
   const scheduleRunIdx = segments.indexOf("schedule-run");
@@ -177,6 +181,38 @@ export function Breadcrumbs() {
     }else{ setBatchTestName(null); }
     return ()=>{ignore=true;};
   },[batchTestId, batchTests]);
+
+  // Special-cased breadcrumb for tests detail with project context via query param
+  const isTestDetailWithProject = segments[0] === "tests" && !!projectIdQuery;
+
+  if (isTestDetailWithProject) {
+    // Build manually: Home > Project > Test
+    return (
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/home">Home</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            {projectName ? (
+              <BreadcrumbLink asChild>
+                <Link href={`/home/${projectIdQuery}`}>{projectName}</Link>
+              </BreadcrumbLink>
+            ) : (
+              <BreadcrumbPage>Project</BreadcrumbPage>
+            )}
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{testName ?? "Test"}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+    );
+  }
 
   return (
     <Breadcrumb>
