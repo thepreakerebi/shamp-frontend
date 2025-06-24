@@ -45,7 +45,7 @@ export function Breadcrumbs() {
     if (segments[testsIdx + 1] === "batch" && segments.length > testsIdx + 2) {
       batchTestId = segments[testsIdx + 2];
     } else {
-      testId = segments[testsIdx + 1];
+    testId = segments[testsIdx + 1];
     }
   }
   const { getProjectById } = useProjects();

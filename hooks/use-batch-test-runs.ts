@@ -34,16 +34,16 @@ export function useBatchTestRuns() {
   }
 
   const startBatchTestRuns = async (batchTestId: string) => {
-    const res = await fetch(`${API_BASE}/batchtestruns/start`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ batchTestId }),
-    });
-    if (!res.ok) throw new Error("Failed to start batch test runs");
+      const res = await fetch(`${API_BASE}/batchtestruns/start`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ batchTestId }),
+      });
+      if (!res.ok) throw new Error("Failed to start batch test runs");
     const data = await res.json();
     const runs: unknown[] = Array.isArray(data.testRuns) ? data.testRuns : [];
     runs.forEach(r => addTestRunToList(r as TestRun));
@@ -52,10 +52,10 @@ export function useBatchTestRuns() {
 
   const postAction = async (id: string, action: "pause" | "resume" | "stop") => {
     const res = await fetch(`${API_BASE}/batchtestruns/${id}/${action}`, {
-      method: "POST",
-      credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+        method: "POST",
+        credentials: "include",
+        headers: { Authorization: `Bearer ${token}` },
+      });
     if (!res.ok) throw new Error(`Failed to ${action} batch test runs`);
     const data = await res.json();
     const runs: unknown[] = Array.isArray(data.testRuns) ? data.testRuns : [];
