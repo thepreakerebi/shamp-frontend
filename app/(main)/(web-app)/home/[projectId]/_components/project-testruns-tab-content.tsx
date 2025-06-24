@@ -11,7 +11,9 @@ export function ProjectTestrunsTabContent() {
   const { projectId } = useParams<{ projectId: string }>();
   const { getProjectTestruns } = useProjects();
 
-  const [runs, setRuns] = useState<import("@/hooks/use-testruns").TestRun[] | null>(null);
+  const [runs, setRuns] = useState<import("@/hooks/use-testruns").TestRun[] | null>(() => {
+    return [];
+  });
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any" });
 
@@ -20,8 +22,18 @@ export function ProjectTestrunsTabContent() {
     let mounted = true;
     setLoading(true);
     getProjectTestruns(projectId as string)
-      .then((data) => {
-        if (mounted) setRuns(data);
+      .then((data: unknown[]) => {
+        const enriched = data.map((r) => {
+          // r is unknown, cast to record
+          const run = r as Record<string, unknown>;
+          if (!run.personaName) {
+            const personaObj = run.persona as Record<string, unknown> | undefined;
+            const n = personaObj && typeof personaObj === 'object' ? (personaObj.name as string|undefined) : undefined;
+            return { ...run, personaName: n } as unknown;
+          }
+          return r;
+        });
+        if (mounted) setRuns(enriched as import("@/hooks/use-testruns").TestRun[]);
       })
       .catch(() => {
         if (mounted) setRuns([]);
@@ -73,7 +85,7 @@ export function ProjectTestrunsTabContent() {
       {filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground">No runs match the selected filters.</p>
       ) : (
-        <section className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <section className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
           {filtered.map(run => (
             <TestRunCard key={run._id} run={run as unknown as MinimalRun} />
           ))}
