@@ -52,6 +52,21 @@ export function useTestSchedules() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  // Fetch trashed schedules (defined early so it can be referenced below)
+  const fetchTrashedSchedules = useCallback(async () => {
+    if (!token) return;
+    setTrashedSchedulesLoading(true);
+    setTrashedSchedulesError(null);
+    try {
+      const data = await fetcher("/testschedules/trashed", token);
+      setTrashedSchedules(Array.isArray(data) ? (data as TestSchedule[]) : []);
+    } catch (err: unknown) {
+      setTrashedSchedulesError(err instanceof Error ? err.message : "Failed to load trashed schedules");
+    } finally {
+      setTrashedSchedulesLoading(false);
+    }
+  }, [token, setTrashedSchedulesLoading, setTrashedSchedulesError, setTrashedSchedules]);
+
   // Real-time updates with Socket.IO (only once)
   useEffect(() => {
     if (!token || socketInitialized) return;
@@ -74,6 +89,9 @@ export function useTestSchedules() {
       } else if (payload._id) {
         removeScheduleFromList(payload._id);
       }
+      // Ensure we have fully populated schedule objects
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      fetchTrashedSchedules();
     });
     socket.on("schedule:deleted", ({ _id }: { _id: string }) => {
       removeScheduleFromList(_id);
@@ -87,7 +105,7 @@ export function useTestSchedules() {
     return () => {
       socket.disconnect();
     };
-  }, [token, updateScheduleInList, removeScheduleFromList, addTrashedSchedule, removeTrashedSchedule, addScheduleToList]);
+  }, [token, updateScheduleInList, removeScheduleFromList, addTrashedSchedule, removeTrashedSchedule, addScheduleToList, fetchTrashedSchedules]);
 
   // Fetch all schedules for the admin group
   const fetchSchedules = useCallback(async () => {
@@ -103,21 +121,6 @@ export function useTestSchedules() {
       setSchedulesLoading(false);
     }
   }, [token, setSchedulesLoading, setSchedulesError, setSchedules]);
-
-  // Fetch trashed schedules
-  const fetchTrashedSchedules = useCallback(async () => {
-    if (!token) return;
-    setTrashedSchedulesLoading(true);
-    setTrashedSchedulesError(null);
-    try {
-      const data = await fetcher("/testschedules/trashed", token);
-      setTrashedSchedules(Array.isArray(data) ? (data as TestSchedule[]) : []);
-    } catch (err: unknown) {
-      setTrashedSchedulesError(err instanceof Error ? err.message : "Failed to load trashed schedules");
-    } finally {
-      setTrashedSchedulesLoading(false);
-    }
-  }, [token, setTrashedSchedulesLoading, setTrashedSchedulesError, setTrashedSchedules]);
 
   // Move schedule to trash
   const moveScheduleToTrash = useCallback(
@@ -136,12 +139,15 @@ export function useTestSchedules() {
         } else {
           removeScheduleFromList(id);
         }
+        // Refresh to get populated fields
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        fetchTrashedSchedules();
         toast.success("Schedule moved to trash");
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Failed to trash schedule");
       }
     },
-    [token, removeScheduleFromList, addTrashedSchedule]
+    [token, removeScheduleFromList, addTrashedSchedule, fetchTrashedSchedules]
   );
 
   // Restore schedule from trash
