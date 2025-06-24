@@ -21,7 +21,7 @@ interface DeleteTestModalProps {
 }
 
 export function DeleteTestModal({ open, setOpen, testName, onConfirm, loading }: DeleteTestModalProps) {
-  const [deleteRuns, setDeleteRuns] = React.useState(false);
+  const [deleteRuns, setDeleteRuns] = React.useState(true);
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="rounded-3xl" data-stop-row>

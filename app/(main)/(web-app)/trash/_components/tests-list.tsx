@@ -1,8 +1,117 @@
 "use client";
-export function TrashedTestsList(){
+import { useTests, type Test } from "@/hooks/use-tests";
+import { useProjects } from "@/hooks/use-projects";
+import React, { useState } from "react";
+import { TrashCardActionsDropdown } from "@/components/ui/trash-card-actions-dropdown";
+import { DeleteTestModal } from "../../tests/_components/delete-test-modal";
+import { toast } from "sonner";
+import { TestsCardSkeleton } from "../../tests/_components/tests-card-skeleton";
+
+export function TrashedTestsList() {
+  const {
+    trashedTests,
+    restoreTestFromTrash,
+    deleteTest,
+    testsLoading,
+  } = useTests();
+  const { projects } = useProjects(); // for badge name lookup
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [testToDelete, setTestToDelete] = useState<Test | null>(null);
+
+  const uniqueTests = React.useMemo(() => {
+    if (!trashedTests) return [] as Test[];
+    const map = new Map<string, Test>();
+    trashedTests.forEach(t => {
+      if (!map.has(t._id)) map.set(t._id, t);
+    });
+    return Array.from(map.values());
+  }, [trashedTests]);
+
+  const handleRestore = async (test: Test) => {
+    try {
+      await restoreTestFromTrash(test._id);
+      toast.success("Test restored");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to restore test");
+    }
+  };
+
+  const promptDelete = (test: Test) => {
+    setTestToDelete(test);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async (deleteRuns: boolean) => {
+    if (!testToDelete) return;
+    setDeleteLoading(true);
+    try {
+      await deleteTest(testToDelete._id, deleteRuns);
+      toast.success("Test permanently deleted");
+      setDeleteModalOpen(false);
+      setTestToDelete(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete test");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  if (testsLoading && uniqueTests.length === 0) {
+    return <TestsCardSkeleton count={6} />;
+  }
+
+  if (uniqueTests.length === 0) {
+    return <p className="text-muted-foreground p-4">No tests in trash.</p>;
+  }
+
+  const getProjectName = (projectId?: string): string | undefined => {
+    if (!projectId || !projects) return undefined;
+    const p = projects.find(pr => pr._id === projectId);
+    return p?.name;
+  };
+
   return (
-    <section className="p-4">
-      <h2 className="text-xl font-semibold">Trashed tests</h2>
+    <section>
+      <header className="px-4 mb-4">
+        <h2 className="text-xl font-semibold">Trashed Tests</h2>
+      </header>
+      <section className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 p-4" aria-label="Trashed tests list">
+        {uniqueTests.map(test => (
+          <article key={test._id} className="rounded-3xl border dark:border-0 bg-card/80 p-4 flex flex-col gap-3">
+            <header className="flex items-start gap-3">
+              <figure className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl font-bold shrink-0" aria-hidden="true">
+                {test.name?.[0]?.toUpperCase() || "T"}
+              </figure>
+              <section className="flex-1 min-w-0">
+                <h3 className="font-semibold leading-tight truncate" title={test.name}>{test.name}</h3>
+                {test.description && <p className="text-sm text-muted-foreground line-clamp-2" title={test.description}>{test.description}</p>}
+              </section>
+              <nav onClick={(e)=>e.stopPropagation()} data-stop-row>
+                <TrashCardActionsDropdown onRestore={() => handleRestore(test)} onDelete={() => promptDelete(test)} />
+              </nav>
+            </header>
+
+            <section className="flex flex-wrap items-center gap-2 mt-auto">
+              {getProjectName(typeof test.project === "string" ? test.project : undefined) && (
+                <span className="text-xs bg-muted px-2 py-0.5 rounded-md">{getProjectName(test.project as string)}</span>
+              )}
+              {Array.isArray(test.personaNames) && test.personaNames[0] && (
+                <span className="text-xs bg-muted px-2 py-0.5 rounded-md">{test.personaNames[0]}</span>
+              )}
+            </section>
+          </article>
+        ))}
+      </section>
+
+      <DeleteTestModal
+        open={deleteModalOpen}
+        setOpen={setDeleteModalOpen}
+        testName={testToDelete?.name ?? null}
+        onConfirm={confirmDelete}
+        loading={deleteLoading}
+      />
     </section>
   );
 } 
