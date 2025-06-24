@@ -53,7 +53,6 @@ export function TrashedSchedulesList() {
     setConfirmLoading(true);
     try {
       await deleteSchedule(scheduleToDelete._id);
-      toast.success("Schedule permanently deleted");
       setConfirmOpen(false);
       setScheduleToDelete(null);
     } catch (err) {
