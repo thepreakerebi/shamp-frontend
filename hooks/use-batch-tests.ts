@@ -53,6 +53,8 @@ export function useBatchTests() {
     addBatchTestToList,
     updateBatchTestInList,
     removeBatchTestFromList,
+    trashedBatchTests,
+    setTrashedBatchTests,
   } = useBatchTestsStore();
   const { setTestRuns, addTestRunToList } = useTestRunsStore();
 
@@ -82,10 +84,24 @@ export function useBatchTests() {
     }
   }, [token, setBatchTests, setBatchTestsLoading, setBatchTestsError]);
 
+  const fetchTrashedBatchTests = useCallback(async () => {
+    if (!token) return;
+    setBatchTestsLoading(true);
+    try {
+      const data = await fetcher('/batchtests/trashed', token);
+      if (Array.isArray(data)) {
+        setTrashedBatchTests(data);
+      }
+    } finally {
+      setBatchTestsLoading(false);
+    }
+  }, [token, setTrashedBatchTests, setBatchTestsLoading]);
+
   useEffect(() => {
     if (!token) return;
     fetchBatchTests();
-  }, [token, fetchBatchTests]);
+    fetchTrashedBatchTests();
+  }, [token, fetchBatchTests, fetchTrashedBatchTests]);
 
   useEffect(() => {
     if (!token) return;
@@ -264,6 +280,7 @@ export function useBatchTests() {
 
   return {
     batchTests,
+    trashedBatchTests,
     batchTestsError,
     batchTestsLoading,
     getTestRunsForBatchTest,
@@ -277,5 +294,6 @@ export function useBatchTests() {
     analyzeBatchTestOutputs,
     getBatchTestAnalysisHistory,
     refetch: fetchBatchTests,
+    refetchTrashed: fetchTrashedBatchTests,
   };
 } 
