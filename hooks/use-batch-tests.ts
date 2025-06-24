@@ -234,6 +234,8 @@ export function useBatchTests() {
     if (!res.ok) throw new Error("Failed to delete batch test");
     const batch = await res.json();
     removeBatchTestFromList(batch._id);
+    // Refresh trashed list to ensure UI sync
+    try { await fetchTrashedBatchTests(); } catch {}
     return batch;
   };
 
