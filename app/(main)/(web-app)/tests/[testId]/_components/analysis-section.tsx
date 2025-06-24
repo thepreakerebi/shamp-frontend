@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface AnalysisResult {
   overallSuccessRate?: {
@@ -49,6 +49,13 @@ export default function AnalysisSection({ test }: { test: Test }) {
   });
 
   const [selectedId, setSelectedId] = useState<string | null>(analysisArr.length ? analysisArr[0]._id : null);
+
+  // When analysis array changes (e.g., after test refetch), ensure a default is selected.
+  useEffect(() => {
+    if (!selectedId && analysisArr.length) {
+      setSelectedId(analysisArr[0]._id);
+    }
+  }, [analysisArr.length, analysisArr, selectedId]);
 
   const selected = analysisArr.find(a => a._id === selectedId) ?? null;
 

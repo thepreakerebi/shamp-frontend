@@ -18,15 +18,21 @@ export default function TestDetailPage() {
   const [loading, setLoading] = useState(!test);
 
   useEffect(() => {
-    if (!test && testId) {
+    if (!testId) return;
+    let needsFetch = false;
+    if (!test) {
+      needsFetch = true;
+    } else {
+      const analysisArr = (test as unknown as { analysis?: unknown[] }).analysis;
+      needsFetch = !(Array.isArray(analysisArr) && analysisArr.length > 0);
+    }
+    if (needsFetch) {
       (async () => {
         setLoading(true);
         try {
           const fetched = await getTestById(testId);
           setTest(fetched);
-          try {
-            useTestsStore.getState().updateTestInList(fetched as TestType);
-          } catch {}
+          try { useTestsStore.getState().updateTestInList(fetched as TestType); } catch {}
         } catch {
           notFound();
         } finally {
@@ -34,7 +40,7 @@ export default function TestDetailPage() {
         }
       })();
     }
-  }, [test, testId, getTestById]);
+  }, [testId, test, getTestById]);
 
   // Determine initial tab from query param if provided
   const searchParams = useSearchParams();
