@@ -1,21 +1,84 @@
+"use client";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useProjects } from "@/hooks/use-projects";
+import { TestRunCard, MinimalRun } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card";
+import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-card-skeleton";
+import TestRunsFilter from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-filter";
+import { TestRunsListEmpty } from "@/app/(main)/(web-app)/test-runs/_components/test-runs-list-empty";
+
 export function ProjectTestrunsTabContent() {
+  const { projectId } = useParams<{ projectId: string }>();
+  const { getProjectTestruns } = useProjects();
+
+  const [runs, setRuns] = useState<import("@/hooks/use-testruns").TestRun[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any" });
+
+  useEffect(() => {
+    if (!projectId) return;
+    let mounted = true;
+    setLoading(true);
+    getProjectTestruns(projectId as string)
+      .then((data) => {
+        if (mounted) setRuns(data);
+      })
+      .catch(() => {
+        if (mounted) setRuns([]);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [projectId, getProjectTestruns]);
+
+  if (loading && (runs === null || runs.length === 0)) {
+    return <TestRunsCardSkeleton />;
+  }
+
+  if (!loading && (runs === null || runs.length === 0)) {
+    return <TestRunsListEmpty />;
+  }
+
+  const personaOptions = Array.from(
+    new Set(
+      (runs ?? []).map(r => {
+        const pName = (r as { personaName?: string }).personaName;
+        if (pName) return pName;
+        if (r.persona && typeof r.persona === "object") {
+          return (r.persona as { name?: string }).name;
+        }
+        return undefined;
+      }).filter(Boolean)
+    )
+  ) as string[];
+
+  const filtered = (runs ?? []).filter(r => {
+    if (filters.result !== "any" && r.status !== filters.result) return false;
+    if (filters.run !== "any" && r.browserUseStatus !== filters.run) return false;
+    const pName = (r as { personaName?: string }).personaName || (r.persona && typeof r.persona === "object" ? (r.persona as { name?: string }).name : undefined);
+    if (filters.persona !== "any" && pName !== filters.persona) return false;
+    return true;
+  });
+
   return (
-    <section>
-      Project testruns content here. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam nunc, eget aliquam massa nisl quis neque. Mauris euismod, nisl eget aliquam ultricies, nunc nisl aliquam nunc, eget aliquam massa nisl quis neque. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam nunc, eget aliquam massa nisl quis neque. Mauris euismod, nisl eget aliquam ultricies, nunc nisl aliquam nunc, eget aliquam massa nisl quis neque.
-      <br /><br />
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam nunc, eget aliquam massa nisl quis neque. Mauris euismod, nisl eget aliquam ultricies, nunc nisl aliquam nunc, eget aliquam massa nisl quis neque. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam nunc, eget aliquam massa nisl quis neque. Mauris euismod, nisl eget aliquam ultricies, nunc nisl aliquam nunc, eget aliquam massa nisl quis neque.
-      <br /><br />
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam nunc, eget aliquam massa nisl quis neque. Mauris euismod, nisl eget aliquam ultricies, nunc nisl aliquam nunc, eget aliquam massa nisl quis neque. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam nunc, eget aliquam massa nisl quis neque. Mauris euismod, nisl eget aliquam ultricies, nunc nisl aliquam nunc, eget aliquam massa nisl quis neque.
-      <br /><br />
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam nunc, eget aliquam massa nisl quis neque. Mauris euismod, nisl eget aliquam ultricies, nunc nisl aliquam nunc, eget aliquam massa nisl quis neque. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam nunc, eget aliquam massa nisl quis neque. Mauris euismod, nisl eget aliquam ultricies, nunc nisl aliquam nunc, eget aliquam massa nisl quis neque.
-      <br /><br />
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam nunc, eget aliquam massa nisl quis neque. Mauris euismod, nisl eget aliquam ultricies, nunc nisl aliquam nunc, eget aliquam massa nisl quis neque. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam nunc, eget aliquam massa nisl quis neque. Mauris euismod, nisl eget aliquam ultricies, nunc nisl aliquam nunc, eget aliquam massa nisl quis neque.
-      <br /><br />
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam nunc, eget aliquam massa nisl quis neque. Mauris euismod, nisl eget aliquam ultricies, nunc nisl aliquam nunc, eget aliquam massa nisl quis neque. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam nunc, eget aliquam massa nisl quis neque. Mauris euismod, nisl eget aliquam ultricies, nunc nisl aliquam nunc, eget aliquam massa nisl quis neque.
-      <br /><br />
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam nunc, eget aliquam massa nisl quis neque. Mauris euismod, nisl eget aliquam ultricies, nunc nisl aliquam nunc, eget aliquam massa nisl quis neque. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam nunc, eget aliquam massa nisl quis neque. Mauris euismod, nisl eget aliquam ultricies, nunc nisl aliquam nunc, eget aliquam massa nisl quis neque.
-      <br /><br />
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam nunc, eget aliquam massa nisl quis neque. Mauris euismod, nisl eget aliquam ultricies, nunc nisl aliquam nunc, eget aliquam massa nisl quis neque. Pellentesque euismod, urna eu tincidunt consectetur, nisi nisl aliquam nunc, eget aliquam massa nisl quis neque. Mauris euismod, nisl eget aliquam ultricies, nunc nisl aliquam nunc, eget aliquam massa nisl quis neque.
+    <section className="p-4 space-y-4">
+      <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">
+        <h2 className="text-xl font-semibold">Project test runs</h2>
+        <TestRunsFilter personaOptions={personaOptions} filters={filters} onChange={setFilters} />
+      </section>
+
+      {filtered.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No runs match the selected filters.</p>
+      ) : (
+        <section className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {filtered.map(run => (
+            <TestRunCard key={run._id} run={run as unknown as MinimalRun} />
+          ))}
+        </section>
+      )}
     </section>
   );
 } 
