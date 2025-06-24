@@ -3,6 +3,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useProjects } from "@/hooks/use-projects";
 import { useTestRuns } from "@/hooks/use-testruns";
+import { useTestRunsStore } from "@/lib/store/testruns";
 import { TestRunCard, MinimalRun } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card";
 import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-card-skeleton";
 import TestRunsFilter from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-filter";
@@ -12,6 +13,7 @@ export function ProjectTestrunsTabContent() {
   const { projectId } = useParams<{ projectId: string }>();
   const { getProjectTestruns } = useProjects();
   const { testRuns: globalRuns, refetchAllTestRuns } = useTestRuns();
+  const storeRuns = useTestRunsStore(s => s.testRuns);
 
   // Prefill from global store for snappy UX
   const initial = (globalRuns ?? []).filter(r => typeof r.test === "string" ? false : true); // we'll further filter later
@@ -53,6 +55,19 @@ export function ProjectTestrunsTabContent() {
       mounted = false;
     };
   }, [projectId]);
+
+  // When the global TestRuns store updates (e.g. a run is deleted or moved to
+  // trash), remove or update the matching items in our local state so the UI
+  // reflects the change instantly without a manual refresh.
+  useEffect(() => {
+    if (!storeRuns) return;
+    setRuns(prev => {
+      if (!prev) return prev;
+      const ids = new Set(storeRuns.map(r => r._id));
+      const updated = prev.filter(r => ids.has(r._id));
+      return updated.length === prev.length ? prev : updated;
+    });
+  }, [storeRuns]);
 
   if (loading && (runs === null || runs.length === 0)) {
     return <TestRunsCardSkeleton />;
