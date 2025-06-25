@@ -29,7 +29,8 @@ export default function EditTestPage() {
     return "";
   };
 
-  const [initialLoaded, setInitialLoaded] = useState(!!existing);
+  const hasViewport = existing && (existing as any).browserViewportWidth !== undefined && (existing as any).browserViewportHeight !== undefined;
+  const [initialLoaded, setInitialLoaded] = useState(!!existing && hasViewport);
   const [form, setForm] = useState<{ name: string; description: string; projectId: string; personaId: string; device: string }>(() => {
     const firstPersonaId = (() => {
       if (!existing) return "";
@@ -62,9 +63,10 @@ export default function EditTestPage() {
   const [errors, setErrors] = useState<{ name?: string; description?: string; projectId?: string; personaId?: string; device?: string }>({});
   const [saving, setSaving] = useState(false);
 
-  // fetch if not present
+  // Fetch if missing or incomplete data (e.g., viewport sizes absent)
   useEffect(() => {
-    if (!existing && testId) {
+    const needsFetch = !existing || !hasViewport;
+    if (needsFetch && testId) {
       (async () => {
         const t = await getTestById(testId);
         const firstPersonaId = (()=>{
@@ -92,7 +94,7 @@ export default function EditTestPage() {
         setInitialLoaded(true);
       })();
     }
-  }, [existing, testId, getTestById]);
+  }, [existing, hasViewport, testId, getTestById]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
