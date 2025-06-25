@@ -23,6 +23,8 @@ interface AuthContextType {
   refresh: () => Promise<void>;
   getUser: () => Promise<User | null>;
   updateProfile: (changes: { firstName?: string; lastName?: string }) => Promise<void>;
+  workspaceSettings: WorkspaceSettings | null;
+  updateMaxAgentSteps: (value: number) => Promise<void>;
 }
 
 interface SignupData {
@@ -31,6 +33,10 @@ interface SignupData {
   email: string;
   password: string;
   profilePicture?: string;
+}
+
+interface WorkspaceSettings {
+  maxAgentStepsDefault: number;
 }
 
 // Custom error for unverified email
@@ -69,7 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
   );
   const [loading, setLoading] = useState(true);
-
+  const [workspaceSettings, setWorkspaceSettings] = useState<WorkspaceSettings | null>(null);
 
   // On mount, try to fetch user if token exists
   useEffect(() => {
@@ -79,6 +85,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (res.ok) {
             const data = await res.json();
             setUser(data);
+            // fetch workspace settings in parallel
+            try {
+              const wsRes = await fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, token);
+              if (wsRes.ok) {
+                const wsData = await wsRes.json();
+                setWorkspaceSettings(wsData);
+              }
+            } catch {}
           } else {
             setUser(null);
             setToken(null);
@@ -124,7 +138,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       throw new Error('Failed to fetch user info');
     }
-    setUser(await userRes.json());
+    const userData = await userRes.json();
+    setUser(userData);
+    try {
+      const wsRes = await fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken);
+      if (wsRes.ok) {
+        const wsData = await wsRes.json();
+        setWorkspaceSettings(wsData);
+      }
+    } catch {}
     setLoading(false);
   };
 
@@ -188,8 +210,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return res.json();
   };
 
+  // Update workspace max agent steps (admin only)
+  const updateMaxAgentSteps = async (value: number) => {
+    if (!token) throw new Error("Not authenticated");
+    if (value < 50 || value > 150) throw new Error("Value must be between 50 and 150");
+    const res = await fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, token, {
+      method: 'PUT',
+      body: JSON.stringify({ maxAgentStepsDefault: value }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'Failed to update setting');
+    const data = await res.json();
+    setWorkspaceSettings(data);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, signup, refresh, getUser, updateProfile }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, signup, refresh, getUser, updateProfile, workspaceSettings, updateMaxAgentSteps }}>
       {children}
     </AuthContext.Provider>
   );

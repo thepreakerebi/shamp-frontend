@@ -17,6 +17,9 @@ export interface Test {
   createdBy?: string;
   trashed?: boolean;
   totalRuns?: number;
+  browserViewportWidth?: number;
+  browserViewportHeight?: number;
+  maxAgentSteps?: number;
   // Add other fields as needed
 }
 
@@ -25,6 +28,8 @@ type TestPayload = {
   description: string;
   project: string;
   persona: string;
+  browserViewportWidth?: number;
+  browserViewportHeight?: number;
 };
 
 export interface TestAnalysis {
