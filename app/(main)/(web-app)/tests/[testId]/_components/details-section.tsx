@@ -123,9 +123,14 @@ export default function DetailsSection({ test }: { test: Test }) {
           <h3 className="text-sm font-medium text-muted-foreground">Personas</h3>
           <div className="flex flex-wrap items-center gap-2">
             {personaNames && personaNames.length > 0 ? (
-              personaNames.map(name => <PersonaBadge key={name} name={name} />)
+              // Ensure unique keys even if names repeat
+              Array.from(new Set(personaNames)).map((name, idx) => (
+                <PersonaBadge key={`${name}-${idx}`} name={name} />
+              ))
             ) : personasWithIds && personasWithIds.length > 0 ? (
-              personasWithIds.map(p => <PersonaBadge key={p._id} name={p.name} />)
+              personasWithIds.map((p, idx) => (
+                <PersonaBadge key={`${p._id}-${idx}`} name={p.name} />
+              ))
             ) : test.persona && typeof test.persona === "object" && "name" in test.persona ? (
               <PersonaBadge name={(test.persona as { _id: string; name: string }).name} />
             ) : (
