@@ -6,6 +6,7 @@ export interface AppUser {
   email: string;
   role: string;
   joinedAt: string;
+  profilePicture?: string;
 }
 
 interface UsersState {
@@ -22,7 +23,7 @@ interface UsersState {
 
 export const useUsersStore = create<UsersState>((set) => ({
   users: null,
-  loading: true,
+  loading: false,
   error: null,
   setUsers: (users) => set({ users }),
   addUser: (u) => set((s) => ({ users: s.users ? [u, ...s.users] : [u] })),

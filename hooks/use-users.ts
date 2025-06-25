@@ -28,7 +28,7 @@ export function useUsers() {
     }
   }, [token, setLoading, setError, setUsers]);
 
-  useEffect(() => { if (users === null && !loading) fetchUsers(); }, [users, loading, fetchUsers]);
+  useEffect(() => { if (users === null) fetchUsers(); }, [users, fetchUsers]);
 
   const inviteMember = useCallback(async (payload: { firstName: string; lastName: string; email: string; }) => {
     if (!token) throw new Error('Not authenticated');
