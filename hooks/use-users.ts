@@ -30,7 +30,7 @@ export function useUsers() {
 
   useEffect(() => { if (users === null) fetchUsers(); }, [users, fetchUsers]);
 
-  const inviteMember = useCallback(async (payload: { firstName: string; lastName: string; email: string; }) => {
+  const inviteMember = useCallback(async (payload: { email: string; }) => {
     if (!token) throw new Error('Not authenticated');
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/users/invite`, {
       method: 'POST',
