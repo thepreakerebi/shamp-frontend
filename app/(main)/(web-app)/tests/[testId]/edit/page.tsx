@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -5,10 +6,11 @@ import { useTests } from "@/hooks/use-tests";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, Laptop, Tablet, Smartphone } from "lucide-react";
 import ProjectCommand from "../../create/_components/project-command";
 import PersonaCommand from "../../create/_components/persona-command";
 import { toast } from "sonner";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function EditTestPage() {
   const { testId } = useParams<{ testId: string }>();
@@ -28,23 +30,36 @@ export default function EditTestPage() {
   };
 
   const [initialLoaded, setInitialLoaded] = useState(!!existing);
-  const [form, setForm] = useState<{ name: string; description: string; projectId: string; personaId: string }>(() => {
+  const [form, setForm] = useState<{ name: string; description: string; projectId: string; personaId: string; device: string }>(() => {
     const firstPersonaId = (() => {
       if (!existing) return "";
-      const e = existing as { personaNames?: string[]; persona?: unknown };
-      if (Array.isArray(e.personaNames) && e.personaNames.length) {
-        return ""; // cannot resolve id from name list
+      const ex = existing as any;
+      // prefer personas array
+      if (Array.isArray(ex.personas) && ex.personas.length) {
+        return getId(ex.personas[0]);
       }
-      return getId(e.persona);
+      if (ex.persona) return getId(ex.persona);
+      return "";
+    })();
+    const deviceInitial = (()=>{
+      if (!existing) return "";
+      const vpMap: Record<string,string> = {
+        "1280x960":"desktop",
+        "834x1112":"tablet",
+        "390x844":"mobile",
+      };
+      const key = `${(existing as any).browserViewportWidth ?? ""}x${(existing as any).browserViewportHeight ?? ""}`;
+      return vpMap[key] || "";
     })();
     return {
-    name: existing?.name || "",
-    description: existing?.description || "",
-    projectId: getId(existing?.project),
+      name: existing?.name || "",
+      description: existing?.description || "",
+      projectId: getId(existing?.project),
       personaId: firstPersonaId,
+      device: deviceInitial,
     };
   });
-  const [errors, setErrors] = useState<{ name?: string; description?: string; projectId?: string; personaId?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; description?: string; projectId?: string; personaId?: string; device?: string }>({});
   const [saving, setSaving] = useState(false);
 
   // fetch if not present
@@ -52,12 +67,27 @@ export default function EditTestPage() {
     if (!existing && testId) {
       (async () => {
         const t = await getTestById(testId);
-        const firstPersonaId = (t as { persona?: unknown }).persona ? getId((t as { persona?: unknown }).persona) : "";
+        const firstPersonaId = (()=>{
+          const anyT:any = t;
+          if (Array.isArray(anyT.personas) && anyT.personas.length) return getId(anyT.personas[0]);
+          if (anyT.persona) return getId(anyT.persona);
+          return "";
+        })();
+        const deviceInitial = (()=>{
+          const vpMap: Record<string,string> = {
+            "1280x960":"desktop",
+            "834x1112":"tablet",
+            "390x844":"mobile",
+          };
+          const key = `${(t as any).browserViewportWidth ?? ""}x${(t as any).browserViewportHeight ?? ""}`;
+          return vpMap[key] || "";
+        })();
         setForm({
           name: t.name,
           description: t.description || "",
           projectId: getId(t.project),
           personaId: firstPersonaId,
+          device: deviceInitial,
         });
         setInitialLoaded(true);
       })();
@@ -71,10 +101,13 @@ export default function EditTestPage() {
     if (!form.description) errs.description = "Description is required";
     if (!form.projectId) errs.projectId = "Project is required";
     if (!form.personaId) errs.personaId = "Persona is required";
+    if (!form.device) errs.device = "Device type is required";
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setSaving(true);
     try{
-      await updateTest(testId, { name: form.name, description: form.description, project: form.projectId, persona: form.personaId });
+      const viewportMap: Record<string,{w:number;h:number}> = {desktop:{w:1280,h:960}, tablet:{w:834,h:1112}, mobile:{w:390,h:844}};
+      const vp = viewportMap[form.device as keyof typeof viewportMap];
+      await updateTest(testId, { name: form.name, description: form.description, project: form.projectId, persona: form.personaId, browserViewportWidth: vp.w, browserViewportHeight: vp.h });
       toast.success("Test updated");
       router.push(`/tests/${testId}`);
     }catch(err){
@@ -109,6 +142,27 @@ export default function EditTestPage() {
           <label className="block text-sm font-medium mb-1">Persona</label>
           <PersonaCommand value={form.personaId} onChange={(id: string)=>{ setForm({...form, personaId:id}); setErrors({...errors, personaId: undefined}); }} />
           {errors.personaId && <p className="text-destructive text-xs mt-1">{errors.personaId}</p>}
+        </section>
+        <section>
+          <label className="block text-sm font-medium mb-1">Device type</label>
+          <RadioGroup value={form.device} onValueChange={(v)=>{setForm({...form, device:v}); setErrors({...errors, device:undefined});}} className="grid grid-cols-3 gap-2 md:max-w-xs">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <RadioGroupItem value="desktop" id="device-desktop" />
+              <Laptop className="size-5" />
+              <span className="text-xs">Desktop</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <RadioGroupItem value="tablet" id="device-tablet" />
+              <Tablet className="size-5" />
+              <span className="text-xs">Tablet</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <RadioGroupItem value="mobile" id="device-mobile" />
+              <Smartphone className="size-5" />
+              <span className="text-xs">Mobile</span>
+            </label>
+          </RadioGroup>
+          {errors.device && <p className="text-destructive text-xs mt-1">{errors.device}</p>}
         </section>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={()=>router.back()}>Cancel</Button>

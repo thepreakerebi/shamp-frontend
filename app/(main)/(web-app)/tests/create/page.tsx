@@ -72,6 +72,22 @@ export default function CreateTestPage() {
           {errors.description && <p className="text-destructive text-xs mt-1">{errors.description}</p>}
         </section>
         <section>
+          <label className="block text-sm font-medium mb-1">Persona</label>
+          <PersonaCommand value={form.personaId} onChange={(id) => {
+            setForm({ ...form, personaId: id });
+            setErrors({ ...errors, personaId: undefined });
+          }} />
+          {errors.personaId && <p className="text-destructive text-xs mt-1">{errors.personaId}</p>}
+        </section>
+        <section>
+          <label className="block text-sm font-medium mb-1">Project</label>
+          <ProjectCommand value={form.projectId} onChange={(id) => {
+            setForm({ ...form, projectId: id });
+            setErrors({ ...errors, projectId: undefined });
+          }} />
+          {errors.projectId && <p className="text-destructive text-xs mt-1">{errors.projectId}</p>}
+        </section>
+        <section>
           <label className="block text-sm font-medium mb-1">Device type</label>
           <RadioGroup value={form.device} onValueChange={(v)=>{setForm({...form, device:v}); setErrors({...errors, device:undefined});}} className="grid grid-cols-3 gap-2 md:max-w-xs">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -91,22 +107,6 @@ export default function CreateTestPage() {
             </label>
           </RadioGroup>
           {errors.device && <p className="text-destructive text-xs mt-1">{errors.device}</p>}
-        </section>
-        <section>
-          <label className="block text-sm font-medium mb-1">Project</label>
-          <ProjectCommand value={form.projectId} onChange={(id) => {
-            setForm({ ...form, projectId: id });
-            setErrors({ ...errors, projectId: undefined });
-          }} />
-          {errors.projectId && <p className="text-destructive text-xs mt-1">{errors.projectId}</p>}
-        </section>
-        <section>
-          <label className="block text-sm font-medium mb-1">Persona</label>
-          <PersonaCommand value={form.personaId} onChange={(id) => {
-            setForm({ ...form, personaId: id });
-            setErrors({ ...errors, personaId: undefined });
-          }} />
-          {errors.personaId && <p className="text-destructive text-xs mt-1">{errors.personaId}</p>}
         </section>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={()=>router.back()}>Cancel</Button>
