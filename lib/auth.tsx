@@ -9,6 +9,7 @@ export interface User {
   lastName?: string;
   email?: string;
   profilePicture?: string;
+  provider?: string;
   extraFields?: Record<string, unknown>;
 }
 
