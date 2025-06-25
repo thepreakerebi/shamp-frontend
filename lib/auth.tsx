@@ -21,6 +21,7 @@ interface AuthContextType {
   signup: (data: SignupData) => Promise<void>;
   refresh: () => Promise<void>;
   getUser: () => Promise<User | null>;
+  updateProfile: (changes: { firstName?: string; lastName?: string }) => Promise<void>;
 }
 
 interface SignupData {
@@ -142,6 +143,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   };
 
+  // Update profile (first & last name)
+  const updateProfile = async (changes: { firstName?: string; lastName?: string }) => {
+    if (!token || !user) throw new Error("Not authenticated");
+    const res = await fetchWithToken(`${API_BASE}/users/${user._id}`, token, {
+      method: 'PUT',
+      body: JSON.stringify(changes),
+    });
+    if (!res.ok) {
+      throw new Error((await res.json()).error || 'Failed to update profile');
+    }
+    const updated = await res.json();
+    setUser(updated);
+  };
+
   // Logout method
   const logout = () => {
     setUser(null);
@@ -173,7 +188,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, signup, refresh, getUser }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, signup, refresh, getUser, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
