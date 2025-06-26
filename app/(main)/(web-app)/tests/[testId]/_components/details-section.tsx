@@ -7,7 +7,7 @@ import { PersonaBadge } from "@/components/ui/persona-badge";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useTestRuns } from "@/hooks/use-testruns";
-import { Loader2, CalendarClock } from "lucide-react";
+import { Loader2, CalendarClock, Laptop, Tablet as TabletIcon, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { RowActionsDropdown } from "../../_components/row-actions-dropdown";
 import { useTests } from "@/hooks/use-tests";
@@ -67,6 +67,16 @@ export default function DetailsSection({ test }: { test: Test }) {
   const personaNames: string[] | undefined = (test as unknown as { personaNames?: string[] }).personaNames;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const personasWithIds: Array<{ _id: string; name: string }> | undefined = (test as unknown as { personas?: Array<{ _id: string; name: string }> }).personas;
+
+  // Determine device type from viewport
+  const deviceType = (() => {
+    const w = (test as unknown as { browserViewportWidth?: number }).browserViewportWidth;
+    const h = (test as unknown as { browserViewportHeight?: number }).browserViewportHeight;
+    if (w === 1280 && h === 960) return "Desktop" as const;
+    if (w === 834 && h === 1112) return "Tablet" as const;
+    if (w === 390 && h === 844) return "Mobile" as const;
+    return null;
+  })();
 
   return (
     <article className="p-4 space-y-6" aria-labelledby="test-details-heading">
@@ -138,6 +148,19 @@ export default function DetailsSection({ test }: { test: Test }) {
             )}
           </div>
         </div>
+
+        {/* Device type */}
+        {deviceType && (
+          <div className="space-y-2 w-full md:w-1/3">
+            <h3 className="text-sm font-medium text-muted-foreground">Device</h3>
+            <Badge variant="secondary" className="flex items-center gap-1 px-2 py-1 text-sm bg-primary/10 text-primary-foreground dark:text-primary" aria-label={`Device type: ${deviceType}`}>
+              {deviceType === "Desktop" && <Laptop className="w-4 h-4" />}
+              {deviceType === "Tablet" && <TabletIcon className="w-4 h-4" />}
+              {deviceType === "Mobile" && <Smartphone className="w-4 h-4" />}
+              {deviceType}
+            </Badge>
+          </div>
+        )}
       </section>
 
       <Separator />
