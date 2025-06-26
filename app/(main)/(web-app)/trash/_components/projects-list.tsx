@@ -61,7 +61,14 @@ export function TrashedProjectsList() {
       .forEach(p => {
         if (!map.has(p._id)) map.set(p._id, p);
       });
-    return Array.from(map.values());
+    const arr = Array.from(map.values());
+    const getTs = (p: Project): number => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const anyP = p as any;
+      if (anyP.updatedAt) return new Date(anyP.updatedAt).getTime();
+      return parseInt(p._id.substring(0,8),16)*1000;
+    };
+    return arr.sort((a,b)=> getTs(b) - getTs(a));
   }, [trashedProjects]);
 
   if (trashedProjectsLoading && (!trashedProjects || trashedProjects.length === 0)) {

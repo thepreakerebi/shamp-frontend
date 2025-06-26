@@ -31,7 +31,14 @@ export function TrashedSchedulesList() {
     trashedSchedules.forEach(s => {
       if (!map.has(s._id)) map.set(s._id, s);
     });
-    return Array.from(map.values());
+    const arr = Array.from(map.values());
+    const getTs = (s: TestSchedule): number => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const anyS = s as any;
+      if (anyS.updatedAt) return new Date(anyS.updatedAt).getTime();
+      return parseInt(s._id.substring(0,8),16)*1000;
+    };
+    return arr.sort((a,b)=> getTs(b) - getTs(a));
   }, [trashedSchedules]);
 
   const handleRestore = async (schedule: TestSchedule) => {

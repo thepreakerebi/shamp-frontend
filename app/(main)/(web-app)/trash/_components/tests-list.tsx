@@ -26,7 +26,15 @@ export function TrashedTestsList() {
     trashedTests.forEach(t => {
       if (!map.has(t._id)) map.set(t._id, t);
     });
-    return Array.from(map.values());
+    const arr = Array.from(map.values());
+    // Sort newest first by updatedAt (fallback to ObjectId timestamp)
+    const getTs = (test: Test): number => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const anyT = test as any;
+      if (anyT.updatedAt) return new Date(anyT.updatedAt).getTime();
+      return parseInt(test._id.substring(0, 8), 16) * 1000;
+    };
+    return arr.sort((a, b) => getTs(b) - getTs(a));
   }, [trashedTests]);
 
   const handleRestore = async (test: Test) => {

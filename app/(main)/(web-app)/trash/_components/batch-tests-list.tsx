@@ -28,7 +28,14 @@ export function TrashedBatchTestsList() {
     trashedBatchTests.forEach(b => {
       if (!map.has(b._id)) map.set(b._id, b);
     });
-    return Array.from(map.values());
+    const arr = Array.from(map.values());
+    const getTs = (b: BatchTest): number => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const anyB = b as any;
+      if (anyB.updatedAt) return new Date(anyB.updatedAt).getTime();
+      return parseInt(b._id.substring(0,8),16)*1000;
+    };
+    return arr.sort((a,b)=> getTs(b) - getTs(a));
   }, [trashedBatchTests]);
 
   const handleRestore = async (batch: BatchTest) => {
