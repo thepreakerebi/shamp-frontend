@@ -21,11 +21,17 @@ export function TestCard({ test, projectId }: { test: Test; projectId?: string }
   // successfulRuns and failedRuns may be undefined on type Test, fallback to 0
   const successfulRuns = 'successfulRuns' in test ? (test as unknown as { successfulRuns?: number }).successfulRuns ?? 0 : 0;
   const failedRuns = 'failedRuns' in test ? (test as unknown as { failedRuns?: number }).failedRuns ?? 0 : 0;
-  const totalRuns = 'totalRuns' in test
-    ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns
-    : successfulRuns + failedRuns;
 
+  // Prefer actual count from the global TestRuns store so deletions are reflected
   const testRunsStore = useTestRunsStore(state => state.testRuns);
+  const storeCount = React.useMemo(() => {
+    return testRunsStore?.filter(r => r.test === test._id).length ?? undefined;
+  }, [testRunsStore, test._id]);
+
+  const totalRuns = storeCount !== undefined && storeCount !== 0
+    ? storeCount
+    : ('totalRuns' in test ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns : successfulRuns + failedRuns);
+
   const isRunning = React.useMemo(() => {
     return (
       testRunsStore?.some(

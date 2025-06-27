@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { RowActionsDropdown } from "../../_components/row-actions-dropdown";
 import { useTests } from "@/hooks/use-tests";
 import { useRouter } from "next/navigation";
+import { useTestRunsStore } from "@/lib/store/testruns";
 
 /**
  * DetailsSection
@@ -56,12 +57,15 @@ export default function DetailsSection({ test }: { test: Test }) {
     router.push(`/tests/${test._id}/schedule-run`);
   };
 
-  // successfulRuns and failedRuns may be undefined on type Test, fallback to 0
   const successfulRuns = "successfulRuns" in test ? (test as unknown as { successfulRuns?: number }).successfulRuns ?? 0 : 0;
   const failedRuns = "failedRuns" in test ? (test as unknown as { failedRuns?: number }).failedRuns ?? 0 : 0;
-  const totalRuns = "totalRuns" in test
-    ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns
-    : successfulRuns + failedRuns;
+
+  const testRunsStore = useTestRunsStore(state => state.testRuns);
+  const totalRunsStore = testRunsStore?.filter(r => r.test === test._id).length;
+
+  const totalRuns = totalRunsStore && totalRunsStore !== 0
+    ? totalRunsStore
+    : ("totalRuns" in test ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns : successfulRuns + failedRuns);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const personaNames: string[] | undefined = (test as unknown as { personaNames?: string[] }).personaNames;
