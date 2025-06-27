@@ -2,12 +2,14 @@
 import { BatchTest } from "@/hooks/use-batch-tests";
 import { useEffect, useState } from "react";
 import { useTestRuns } from "@/hooks/use-testruns";
+import { useBatchTests } from "@/hooks/use-batch-tests";
 import { TestRunCard, MinimalRun } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card";
 import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-card-skeleton";
 import TestRunsFilter from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-filter";
 
 export default function BatchTestRunsSection({ batch }: { batch: BatchTest }) {
   const { getTestRunStatus } = useTestRuns();
+  const { getTestRunsForBatchTest } = useBatchTests();
   const [runs, setRuns] = useState<import("@/hooks/use-testruns").TestRun[] | null>(null);
   const [filters, setFilters] = useState({ result: 'any', run: 'any', persona: 'any' });
 
@@ -23,25 +25,24 @@ export default function BatchTestRunsSection({ batch }: { batch: BatchTest }) {
     .filter((id): id is string => Boolean(id));
   const idsKey = JSON.stringify(runIds);
 
-  // Fetch runs once per distinct ids list
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Prefer aggregated endpoint to avoid race: fetch all runs for batch at once
   useEffect(() => {
-    const ids = runIds;
-    if (ids.length === 0) { setRuns([]); return; }
     let mounted = true;
     (async () => {
       try {
-        const settled = await Promise.allSettled(ids.map((id: string) => getTestRunStatus(id)));
-        const successful = settled
-          .filter((r): r is PromiseFulfilledResult<import("@/hooks/use-testruns").TestRunStatus> => r.status === 'fulfilled')
-          .map(r => r.value as import("@/hooks/use-testruns").TestRun);
-        if (mounted) setRuns(successful);
+        const data = await getTestRunsForBatchTest(batch._id, true);
+        if (mounted) setRuns(data as unknown as import("@/hooks/use-testruns").TestRun[]);
       } catch {
-        if (mounted) setRuns([]);
+        // Fallback: if aggregated fetch fails, attempt per-ID logic
+        try {
+          const settled = await Promise.allSettled(runIds.map((id: string) => getTestRunStatus(id)));
+          const successful = settled.filter((r): r is PromiseFulfilledResult<import("@/hooks/use-testruns").TestRunStatus> => r.status === 'fulfilled').map(r=>r.value as import("@/hooks/use-testruns").TestRun);
+          if (mounted) setRuns(successful);
+        } catch { if (mounted) setRuns([]); }
       }
     })();
     return () => { mounted = false; };
-  }, [idsKey]);
+  }, [batch._id, idsKey]);
 
   if (runs === null) {
     return <TestRunsCardSkeleton />;
