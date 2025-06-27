@@ -105,7 +105,7 @@ export function ProjectTestrunsTabContent() {
   return (
     <section className="p-4 space-y-4">
       <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">
-        <h2 className="text-xl font-semibold">Project test runs</h2>
+        <h2 className="text-xl font-semibold">Project test runs · {(runs ?? []).length}</h2>
         <TestRunsFilter personaOptions={personaOptions} filters={filters} onChange={setFilters} />
       </section>
 
