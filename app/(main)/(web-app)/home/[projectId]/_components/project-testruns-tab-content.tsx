@@ -8,12 +8,15 @@ import { TestRunCard, MinimalRun } from "@/app/(main)/(web-app)/tests/[testId]/_
 import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-card-skeleton";
 import TestRunsFilter from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-filter";
 import { TestRunsListEmpty } from "@/app/(main)/(web-app)/test-runs/_components/test-runs-list-empty";
+import { useAuth } from "@/lib/auth";
 
 export function ProjectTestrunsTabContent() {
   const { projectId } = useParams<{ projectId: string }>();
   const { getProjectTestruns } = useProjects();
   const projectsStore = useProjectsStore();
   const storeRuns = useTestRunsStore(s => s.testRuns);
+  const projectStoreRuns = useProjectsStore(state => (projectId ? state.projectTestRuns[projectId as string] : undefined));
+  const { token } = useAuth();
 
   const cached = projectId ? projectsStore.getTestRunsForProject(projectId as string) : undefined;
 
@@ -22,7 +25,7 @@ export function ProjectTestrunsTabContent() {
   const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any" });
 
   useEffect(() => {
-    if (!projectId) return;
+    if (!projectId || !token) return;
     let mounted = true;
     if (!cached) setLoading(true);
 
@@ -49,13 +52,11 @@ export function ProjectTestrunsTabContent() {
     return () => {
       mounted = false;
     };
-  }, [projectId, cached, getProjectTestruns]);
+  }, [projectId, token, cached, getProjectTestruns]);
 
-  // When the global TestRuns store updates (e.g. a run is deleted or moved to
-  // trash), remove or update the matching items in our local state so the UI
-  // reflects the change instantly without a manual refresh.
+  // Sync with global testRuns store (e.g., deletions) once we have initial data
   useEffect(() => {
-    if (!storeRuns) return;
+    if (!storeRuns || !runs || runs.length === 0) return;
     setRuns(prev => {
       if (!prev) return prev;
       const ids = new Set(storeRuns.map(r => r._id));
@@ -63,6 +64,14 @@ export function ProjectTestrunsTabContent() {
       return updated.length === prev.length ? prev : updated;
     });
   }, [storeRuns]);
+
+  // If the project-specific cache becomes available later (e.g., after fetch completed in background), adopt it
+  useEffect(() => {
+    if (projectStoreRuns && (runs === null || runs.length === 0)) {
+      setRuns(projectStoreRuns as unknown as import("@/hooks/use-testruns").TestRun[]);
+      setLoading(false);
+    }
+  }, [projectStoreRuns, runs]);
 
   if (loading && (runs === null || runs.length === 0)) {
     return <TestRunsCardSkeleton />;
