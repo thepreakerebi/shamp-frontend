@@ -11,18 +11,31 @@ export default function BatchTestRunsSection({ batch }: { batch: BatchTest }) {
   const [runs, setRuns] = useState<import("@/hooks/use-testruns").TestRun[] | null>(null);
   const [filters, setFilters] = useState({ result: 'any', run: 'any', persona: 'any' });
 
-  const idsKey = JSON.stringify(batch.testruns ?? []);
+  // Accept both string IDs and populated objects
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawRuns = (batch as unknown as { testruns?: unknown; testRuns?: unknown }).testruns
+    ?? (batch as unknown as { testRuns?: unknown }).testRuns
+    ?? [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const runIds: string[] = (Array.isArray(rawRuns) ? rawRuns : [])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((v: any) => (typeof v === 'string' ? v : (v && typeof v === 'object' && '_id' in v ? (v as { _id: string })._id : undefined)))
+    .filter((id): id is string => Boolean(id));
+  const idsKey = JSON.stringify(runIds);
 
   // Fetch runs once per distinct ids list
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const ids = batch.testruns ?? [];
+    const ids = runIds;
     if (ids.length === 0) { setRuns([]); return; }
     let mounted = true;
     (async () => {
       try {
-        const fetched = await Promise.all(ids.map(id => getTestRunStatus(id)));
-        if (mounted) setRuns(fetched);
+        const settled = await Promise.allSettled(ids.map((id: string) => getTestRunStatus(id)));
+        const successful = settled
+          .filter((r): r is PromiseFulfilledResult<import("@/hooks/use-testruns").TestRunStatus> => r.status === 'fulfilled')
+          .map(r => r.value as import("@/hooks/use-testruns").TestRun);
+        if (mounted) setRuns(successful);
       } catch {
         if (mounted) setRuns([]);
       }
@@ -41,12 +54,27 @@ export default function BatchTestRunsSection({ batch }: { batch: BatchTest }) {
   // Filtering logic mirrors the single-test view.
   const personaOptions = Array.from(new Set(runs.map(r => (r as { personaName?: string }).personaName).filter(Boolean))) as string[];
 
-  const filtered = runs.filter(r => {
+  const filteredUnsorted = runs.filter(r => {
     if (filters.result !== 'any' && r.status !== filters.result) return false;
     if (filters.run !== 'any' && r.browserUseStatus !== filters.run) return false;
     const pName = (r as { personaName?: string }).personaName;
     if (filters.persona !== 'any' && pName !== filters.persona) return false;
     return true;
+  });
+
+  // Newest-first sorting (finishedAt, startedAt, createdAt fallbacks)
+  const filtered = [...filteredUnsorted].sort((a, b) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const getTs = (x: any) => {
+      const dt = x.finishedAt || x.startedAt || x.createdAt;
+      if (dt) return new Date(dt).getTime();
+      // Fallback: derive timestamp from MongoDB ObjectId (first 8 chars -> hex seconds)
+      if (typeof x._id === 'string' && x._id.length >= 8) {
+        return parseInt(x._id.substring(0, 8), 16) * 1000;
+      }
+      return 0;
+    };
+    return getTs(b) - getTs(a);
   });
 
   return (

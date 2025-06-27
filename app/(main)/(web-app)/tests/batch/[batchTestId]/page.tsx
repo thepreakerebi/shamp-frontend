@@ -2,6 +2,7 @@
 import { useParams, notFound } from "next/navigation";
 import { useBatchTests } from "@/hooks/use-batch-tests";
 import { useEffect, useState } from "react";
+import { useBatchTestsStore } from "@/lib/store/batchTests";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DetailsSection from "./_components/details-section";
@@ -12,6 +13,7 @@ import { AnalysisSectionSkeleton } from "./_components/analysis-section-skeleton
 export default function BatchTestPage() {
   const { batchTestId } = useParams<{ batchTestId: string }>();
   const { getBatchTestById } = useBatchTests();
+  const { batchTests } = useBatchTestsStore();
   const [batchTest, setBatchTest] = useState<import("@/hooks/use-batch-tests").BatchTest | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -32,6 +34,14 @@ export default function BatchTestPage() {
         setLoading(false);
       });
   }, [batchTestId, batchTest]);
+
+  // Keep local state in sync with store updates (realtime socket events)
+  useEffect(() => {
+    const updated = batchTests?.find((b) => b._id === batchTestId);
+    if (updated && updated !== batchTest) {
+      setBatchTest(updated);
+    }
+  }, [batchTests, batchTestId]);
 
   const [tab, setTab] = useState<"details"|"analysis"|"runs">("details");
 
