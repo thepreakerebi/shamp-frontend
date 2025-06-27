@@ -286,9 +286,9 @@ export function useBatchTests() {
     // Cache in both the per-batch store and the global test-run list
     useBatchTestsStore.getState().setTestRunsForBatchTest(batchTestId, sorted);
 
-    if (forceRefresh) {
+      if (forceRefresh) {
       setTestRuns(sorted);
-    } else {
+      } else {
       sorted.forEach((run) => addTestRunToList(run));
     }
 
