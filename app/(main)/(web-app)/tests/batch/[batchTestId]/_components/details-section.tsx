@@ -30,14 +30,14 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
     if (liveStatus && liveStatus !== batchStatus) {
       setBatchStatus(liveStatus);
     }
-  }, [liveStatus, batchStatus]);
+  }, [liveStatus]);
 
   // Also sync when parent prop changes (initial load or optimistic updates)
   useEffect(() => {
     if (batch.status && batch.status !== batchStatus) {
       setBatchStatus(batch.status);
     }
-  }, [batch.status, batchStatus]);
+  }, [batch.status]);
 
   const handleRun = async () => {
     if (actionLoading) return;
