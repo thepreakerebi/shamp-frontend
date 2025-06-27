@@ -12,7 +12,7 @@ import TestRunsFilter from "./test-runs-filter";
 export default function TestRunsSection({ test }: { test: Test }) {
   const { getTestRunsForTest } = useTests();
   const { testRuns: storeRuns } = useTestRuns();
-  const { setTestRuns } = useTestRunsStore();
+  const { addTestRunToList } = useTestRunsStore();
   const testsStore = useTestsStore();
   const [runs, setRuns] = useState<TestRunSummary[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -37,7 +37,7 @@ export default function TestRunsSection({ test }: { test: Test }) {
         const data = await getTestRunsForTest(test._id, true);
         if (mounted) {
           setRuns(data);
-          setTestRuns(data as unknown as TestRun[]);
+          data.forEach(r => addTestRunToList(r as unknown as TestRun));
         }
       } catch {
         if (mounted) setRuns([]);
@@ -50,14 +50,17 @@ export default function TestRunsSection({ test }: { test: Test }) {
     };
   }, [test?._id]);
 
-  // keep local state in sync when store updates (for delete/real-time)
+  // Sync statuses/deletions: update only runs that already belong to this test
   useEffect(() => {
-    if (storeRuns !== null) {
-      setRuns(storeRuns as unknown as TestRunSummary[]);
-    }
+    if (!storeRuns || !runs) return;
+    setRuns(prev => {
+      if (!prev) return prev;
+      const map = new Map(storeRuns.map(r => [r._id, r]));
+      return prev.map(r => (map.has(r._id) ? (map.get(r._id) as TestRunSummary) : r));
+    });
   }, [storeRuns]);
 
-  const displayRuns = storeRuns !== null ? storeRuns : runs;
+  const displayRuns = runs;
 
   const filtered = (displayRuns ?? []).filter(r => {
     if (filters.result !== 'any' && r.status !== filters.result) return false;

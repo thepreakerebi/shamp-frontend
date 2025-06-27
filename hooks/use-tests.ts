@@ -3,6 +3,7 @@ import type { TestRun } from "@/hooks/use-testruns";
 import { useEffect, useCallback } from "react";
 import io from "socket.io-client";
 import { useTestsStore } from "@/lib/store/tests";
+import { useTestRunsStore } from "@/lib/store/testruns";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
@@ -366,6 +367,9 @@ export function useTests() {
     const getTimestamp = (id: string) => parseInt(id.substring(0, 8), 16) * 1000;
     const sorted = [...runs].sort((a, b) => getTimestamp(b._id) - getTimestamp(a._id));
     useTestsStore.getState().setTestRunsForTest(id, sorted as unknown as TestRun[]);
+    // Merge into global TestRuns store without overwriting existing list
+    const { addTestRunToList } = useTestRunsStore.getState();
+    sorted.forEach(r => addTestRunToList(r as unknown as import("@/hooks/use-testruns").TestRun));
     return sorted;
   };
 
