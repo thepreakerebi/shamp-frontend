@@ -14,6 +14,7 @@ export default function TestRunsListPage() {
   // Local state mirrors store so we can control skeleton visibility
   const [runs, setRuns] = useState<typeof storeRuns>(storeRuns ?? null);
   const [loading, setLoading] = useState(storeRuns ? false : true);
+  const [initialDone, setInitialDone] = useState(false);
 
   // Keep local state in sync with global store
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function TestRunsListPage() {
       try {
         setLoading(runs === null || runs.length === 0);
         await refetchAllTestRuns();
+        setInitialDone(true);
       } finally {
         setLoading(false);
       }
@@ -36,11 +38,11 @@ export default function TestRunsListPage() {
 
   const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any" });
 
-  if (loading && (runs === null || runs.length === 0)) {
+  if ((!initialDone && loading) || (loading && (runs === null || runs.length === 0))) {
     return <TestRunsCardSkeleton />;
   }
 
-  if (!loading && (runs === null || runs.length === 0)) {
+  if (initialDone && !loading && (runs === null || runs.length === 0)) {
     return <TestRunsListEmpty />;
   }
 

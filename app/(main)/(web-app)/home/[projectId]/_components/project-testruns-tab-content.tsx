@@ -56,7 +56,7 @@ export function ProjectTestrunsTabContent() {
 
   // Sync with global testRuns store (e.g., deletions) once we have initial data
   useEffect(() => {
-    if (!storeRuns || !runs || runs.length === 0) return;
+    if (!storeRuns || storeRuns.length === 0 || !runs) return;
     setRuns(prev => {
       if (!prev) return prev;
       const ids = new Set(storeRuns.map(r => r._id));

@@ -288,12 +288,9 @@ export function useProjects() {
 
     setTestRunsForProject(projectId, sorted);
 
-    // Also push to global testRuns store so other views benefit
-    if (forceRefresh) {
-      useTestRunsStore.getState().setTestRuns(sorted);
-    } else {
-      sorted.forEach((run) => useTestRunsStore.getState().addTestRunToList(run));
-    }
+    // Merge into global TestRuns store so other views benefit, without wiping existing list
+    const { addTestRunToList } = useTestRunsStore.getState();
+    sorted.forEach(run => addTestRunToList(run));
 
     return sorted;
   };
