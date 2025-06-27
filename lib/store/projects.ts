@@ -28,9 +28,12 @@ interface ProjectsState {
   reset: () => void;
   addTrashedProject: (project: Project) => void;
   removeTrashedProject: (id: string) => void;
+  projectTestRuns: Record<string, import("@/hooks/use-testruns").TestRun[]>;
+  getTestRunsForProject: (projectId: string) => import("@/hooks/use-testruns").TestRun[] | undefined;
+  setTestRunsForProject: (projectId: string, runs: import("@/hooks/use-testruns").TestRun[]) => void;
 }
 
-export const useProjectsStore = create<ProjectsState>((set) => ({
+export const useProjectsStore = create<ProjectsState>((set, get) => ({
   projects: null,
   projectsLoading: true,
   projectsError: null,
@@ -121,6 +124,7 @@ export const useProjectsStore = create<ProjectsState>((set) => ({
       count: 0,
       countLoading: true,
       countError: null,
+      projectTestRuns: {},
     }),
   addTrashedProject: (project) =>
     set((state) => ({
@@ -130,4 +134,8 @@ export const useProjectsStore = create<ProjectsState>((set) => ({
     set((state) => ({
       trashedProjects: state.trashedProjects ? state.trashedProjects.filter((p) => p._id !== id) : null,
     })),
+  projectTestRuns: {},
+  getTestRunsForProject: (projectId: string) => get().projectTestRuns[projectId],
+  setTestRunsForProject: (projectId: string, runs: import("@/hooks/use-testruns").TestRun[]) =>
+    set((state) => ({ projectTestRuns: { ...state.projectTestRuns, [projectId]: runs } })),
 })); 

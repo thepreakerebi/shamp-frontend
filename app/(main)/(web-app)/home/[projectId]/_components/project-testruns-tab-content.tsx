@@ -2,7 +2,7 @@
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useProjects } from "@/hooks/use-projects";
-import { useTestRuns } from "@/hooks/use-testruns";
+import { useProjectsStore } from "@/lib/store/projects";
 import { useTestRunsStore } from "@/lib/store/testruns";
 import { TestRunCard, MinimalRun } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card";
 import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-card-skeleton";
@@ -12,26 +12,21 @@ import { TestRunsListEmpty } from "@/app/(main)/(web-app)/test-runs/_components/
 export function ProjectTestrunsTabContent() {
   const { projectId } = useParams<{ projectId: string }>();
   const { getProjectTestruns } = useProjects();
-  const { testRuns: globalRuns, refetchAllTestRuns } = useTestRuns();
+  const projectsStore = useProjectsStore();
   const storeRuns = useTestRunsStore(s => s.testRuns);
 
-  // Prefill from global store for snappy UX
-  const initial = (globalRuns ?? []).filter(r => typeof r.test === "string" ? false : true); // we'll further filter later
+  const cached = projectId ? projectsStore.getTestRunsForProject(projectId as string) : undefined;
 
-  const [runs, setRuns] = useState<import("@/hooks/use-testruns").TestRun[] | null>(initial);
-  const [loading, setLoading] = useState(true);
+  const [runs, setRuns] = useState<import("@/hooks/use-testruns").TestRun[] | null>(cached ?? null);
+  const [loading, setLoading] = useState(cached ? false : true);
   const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any" });
 
   useEffect(() => {
     if (!projectId) return;
     let mounted = true;
-    // If we already have some runs, don't block UI
-    if (!runs || runs.length === 0) setLoading(true);
+    if (!cached) setLoading(true);
 
-    // Kick off a workspace-level fetch so other views benefit
-    refetchAllTestRuns();
-
-    getProjectTestruns(projectId as string)
+    getProjectTestruns(projectId as string, true)
       .then((data: unknown[]) => {
         const enriched = data.map((r) => {
           // r is unknown, cast to record
@@ -54,7 +49,7 @@ export function ProjectTestrunsTabContent() {
     return () => {
       mounted = false;
     };
-  }, [projectId]);
+  }, [projectId, cached, getProjectTestruns]);
 
   // When the global TestRuns store updates (e.g. a run is deleted or moved to
   // trash), remove or update the matching items in our local state so the UI

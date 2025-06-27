@@ -2,6 +2,8 @@ import { useAuth } from "@/lib/auth";
 import { useEffect, useCallback } from "react";
 import io from "socket.io-client";
 import { useProjectsStore } from "@/lib/store/projects";
+import { useTestRunsStore } from "@/lib/store/testruns";
+import type { TestRun } from "@/hooks/use-testruns";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
@@ -260,15 +262,40 @@ export function useProjects() {
     return res.json();
   };
 
-  // Get all testruns for a project
-  const getProjectTestruns = async (projectId: string) => {
+  // Get all testruns for a project (with caching)
+  const getProjectTestruns = async (
+    projectId: string,
+    forceRefresh = false
+  ): Promise<TestRun[]> => {
     if (!token) throw new Error("Not authenticated");
+
+    const { getTestRunsForProject, setTestRunsForProject } = useProjectsStore.getState();
+    const cached = getTestRunsForProject(projectId);
+    if (cached && !forceRefresh) {
+      return cached as unknown as TestRun[];
+    }
+
     const res = await fetch(`${API_BASE}/projects/${projectId}/testruns`, {
       credentials: "include",
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to fetch project testruns");
-    return res.json();
+    const runs = (await res.json()) as TestRun[];
+
+    // Sort newest-first using ObjectId timestamp
+    const getTs = (id: string) => parseInt(id.substring(0, 8), 16) * 1000;
+    const sorted = [...runs].sort((a, b) => getTs(b._id) - getTs(a._id));
+
+    setTestRunsForProject(projectId, sorted);
+
+    // Also push to global testRuns store so other views benefit
+    if (forceRefresh) {
+      useTestRunsStore.getState().setTestRuns(sorted);
+    } else {
+      sorted.forEach((run) => useTestRunsStore.getState().addTestRunToList(run));
+    }
+
+    return sorted;
   };
 
   return {
