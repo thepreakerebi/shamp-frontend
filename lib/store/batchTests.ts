@@ -14,13 +14,17 @@ interface BatchTestsState {
   removeBatchTestFromList: (id: string) => void;
   addBatchTestToList: (test: BatchTest) => void;
   reset: () => void;
+  batchTestRuns: Record<string, import("@/hooks/use-testruns").TestRun[]>;
+  getTestRunsForBatchTest: (batchId: string) => import("@/hooks/use-testruns").TestRun[] | undefined;
+  setTestRunsForBatchTest: (batchId: string, runs: import("@/hooks/use-testruns").TestRun[]) => void;
 }
 
-export const useBatchTestsStore = create<BatchTestsState>((set) => ({
+export const useBatchTestsStore = create<BatchTestsState>((set, get) => ({
   batchTests: null,
   trashedBatchTests: null,
   batchTestsLoading: true,
   batchTestsError: null,
+  batchTestRuns: {},
   setBatchTests: (batchTests) => set({ batchTests }),
   setTrashedBatchTests: (trashedBatchTests) => set({ trashedBatchTests }),
   setBatchTestsLoading: (batchTestsLoading) => set({ batchTestsLoading }),
@@ -110,5 +114,9 @@ export const useBatchTestsStore = create<BatchTestsState>((set) => ({
       trashedBatchTests: null,
       batchTestsLoading: true,
       batchTestsError: null,
+      batchTestRuns: {},
     }),
+  getTestRunsForBatchTest: (batchId: string) => get().batchTestRuns[batchId],
+  setTestRunsForBatchTest: (batchId: string, runs: import("@/hooks/use-testruns").TestRun[]) =>
+    set((state) => ({ batchTestRuns: { ...state.batchTestRuns, [batchId]: runs } })),
 })); 

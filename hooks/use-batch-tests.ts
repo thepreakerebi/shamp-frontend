@@ -259,25 +259,40 @@ export function useBatchTests() {
     return res.json();
   };
 
-  const getTestRunsForBatchTest = async (batchTestId: string, forceRefresh = false) => {
+  const getTestRunsForBatchTest = async (
+    batchTestId: string,
+    forceRefresh = false
+  ): Promise<TestRun[]> => {
     if (!token) throw new Error("Not authenticated");
+
+    // Check client cache first (unless caller explicitly wants fresh data)
+    const cached = useBatchTestsStore.getState().getTestRunsForBatchTest(batchTestId);
+    if (cached && !forceRefresh) {
+      return cached as unknown as TestRun[];
+    }
+
+    // Fetch from API
     const res = await fetch(`${API_BASE}/batchtests/${batchTestId}/testruns`, {
       credentials: "include",
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to fetch test runs for batch test");
-    const data = await res.json();
+    const runs = (await res.json()) as TestRun[];
 
-    if (Array.isArray(data)) {
-      if (forceRefresh) {
-        setTestRuns(data);
-      } else {
-        data.forEach((run: unknown)=>{
-          addTestRunToList(run as TestRun);
-        });
-      }
+    // Sort newest-first (ObjectId timestamp)
+    const getTimestamp = (id: string) => parseInt(id.substring(0, 8), 16) * 1000;
+    const sorted = [...runs].sort((a, b) => getTimestamp(b._id) - getTimestamp(a._id));
+
+    // Cache in both the per-batch store and the global test-run list
+    useBatchTestsStore.getState().setTestRunsForBatchTest(batchTestId, sorted);
+
+    if (forceRefresh) {
+      setTestRuns(sorted);
+    } else {
+      sorted.forEach((run) => addTestRunToList(run));
     }
-    return data;
+
+    return sorted;
   };
 
   return {

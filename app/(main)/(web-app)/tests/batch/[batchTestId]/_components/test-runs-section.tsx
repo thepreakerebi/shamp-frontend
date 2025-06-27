@@ -1,61 +1,67 @@
 "use client";
 import { BatchTest } from "@/hooks/use-batch-tests";
 import { useEffect, useState } from "react";
-import { useTestRuns } from "@/hooks/use-testruns";
 import { useBatchTests } from "@/hooks/use-batch-tests";
+import { useBatchTestsStore } from "@/lib/store/batchTests";
 import { TestRunCard, MinimalRun } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card";
 import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-card-skeleton";
 import TestRunsFilter from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-filter";
 
 export default function BatchTestRunsSection({ batch }: { batch: BatchTest }) {
-  const { getTestRunStatus } = useTestRuns();
   const { getTestRunsForBatchTest } = useBatchTests();
+  const batchStore = useBatchTestsStore();
   const [runs, setRuns] = useState<import("@/hooks/use-testruns").TestRun[] | null>(null);
   const [filters, setFilters] = useState({ result: 'any', run: 'any', persona: 'any' });
+  const [loading, setLoading] = useState(false);
 
-  // Accept both string IDs and populated objects
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rawRuns = (batch as unknown as { testruns?: unknown; testRuns?: unknown }).testruns
-    ?? (batch as unknown as { testRuns?: unknown }).testRuns
-    ?? [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const runIds: string[] = (Array.isArray(rawRuns) ? rawRuns : [])
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .map((v: any) => (typeof v === 'string' ? v : (v && typeof v === 'object' && '_id' in v ? (v as { _id: string })._id : undefined)))
-    .filter((id): id is string => Boolean(id));
-  const idsKey = JSON.stringify(runIds);
-
-  // Prefer aggregated endpoint to avoid race: fetch all runs for batch at once
+  // Load from cache first, then refresh
   useEffect(() => {
+    if (!batch?._id) return;
     let mounted = true;
+    const cached = batchStore.getTestRunsForBatchTest(batch._id);
+    if (cached) {
+      setRuns(cached as unknown as import("@/hooks/use-testruns").TestRun[]);
+    }
+
     (async () => {
+      if (!cached) setLoading(true);
       try {
-        const data = await getTestRunsForBatchTest(batch._id, true);
-        if (mounted) setRuns(data as unknown as import("@/hooks/use-testruns").TestRun[]);
+        const fresh = await getTestRunsForBatchTest(batch._id, true);
+        if (mounted) {
+          setRuns(fresh as unknown as import("@/hooks/use-testruns").TestRun[]);
+          // The hook already cached them in store.
+        }
       } catch {
-        // Fallback: if aggregated fetch fails, attempt per-ID logic
-        try {
-          const settled = await Promise.allSettled(runIds.map((id: string) => getTestRunStatus(id)));
-          const successful = settled.filter((r): r is PromiseFulfilledResult<import("@/hooks/use-testruns").TestRunStatus> => r.status === 'fulfilled').map(r=>r.value as import("@/hooks/use-testruns").TestRun);
-          if (mounted) setRuns(successful);
-        } catch { if (mounted) setRuns([]); }
+        if (mounted && !cached) setRuns([]);
+      } finally {
+        if (mounted) setLoading(false);
       }
     })();
-    return () => { mounted = false; };
-  }, [batch._id, idsKey]);
 
-  if (runs === null) {
+    return () => { mounted = false; };
+  }, [batch._id, getTestRunsForBatchTest]);
+
+  // keep local state in sync when store updates (e.g., deletes or real-time additions)
+  const storeRuns = useBatchTestsStore(state => state.batchTestRuns[batch._id]);
+  useEffect(() => {
+    if (storeRuns !== undefined && storeRuns !== null) {
+      setRuns(storeRuns as unknown as import("@/hooks/use-testruns").TestRun[]);
+    }
+  }, [storeRuns]);
+
+  if (loading && runs === null) {
     return <TestRunsCardSkeleton />;
   }
 
-  if (runs.length === 0) {
+  if (!loading && (!runs || runs.length === 0)) {
     return <p className="text-sm text-muted-foreground px-4">No runs yet.</p>;
   }
 
   // Filtering logic mirrors the single-test view.
-  const personaOptions = Array.from(new Set(runs.map(r => (r as { personaName?: string }).personaName).filter(Boolean))) as string[];
+  const activeRuns = runs ?? [];
+  const personaOptions = Array.from(new Set(activeRuns.map(r => (r as { personaName?: string }).personaName).filter(Boolean))) as string[];
 
-  const filteredUnsorted = runs.filter(r => {
+  const filteredUnsorted = activeRuns.filter(r => {
     if (filters.result !== 'any' && r.status !== filters.result) return false;
     if (filters.run !== 'any' && r.browserUseStatus !== filters.run) return false;
     const pName = (r as { personaName?: string }).personaName;
