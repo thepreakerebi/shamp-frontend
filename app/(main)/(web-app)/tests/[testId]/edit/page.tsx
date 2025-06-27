@@ -47,7 +47,7 @@ export default function EditTestPage() {
       const vpMap: Record<string,string> = {
         "1280x960":"desktop",
         "834x1112":"tablet",
-        "828x1792":"mobile",
+        "800x1792":"mobile",
       };
       const key = `${(existing as any).browserViewportWidth ?? ""}x${(existing as any).browserViewportHeight ?? ""}`;
       return vpMap[key] || "";
