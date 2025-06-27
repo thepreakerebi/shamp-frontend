@@ -9,24 +9,52 @@ import TestRunsFilter from "@/app/(main)/(web-app)/tests/[testId]/_components/te
 import { TestRunsListEmpty } from "./_components/test-runs-list-empty";
 
 export default function TestRunsListPage() {
-  const { testRuns: displayRuns, testRunsLoading: loading, refetchAllTestRuns } = useTestRuns();
+  const { testRuns: storeRuns, refetchAllTestRuns } = useTestRuns();
 
-  const [filters, setFilters] = useState({ result: 'any', run: 'any', persona: 'any' });
+  // Local state mirrors store so we can control skeleton visibility
+  const [runs, setRuns] = useState<typeof storeRuns>(storeRuns ?? null);
+  const [loading, setLoading] = useState(storeRuns ? false : true);
 
-  // Ensure full list is loaded when this page mounts
+  // Keep local state in sync with global store
   useEffect(() => {
-    refetchAllTestRuns();
-  }, [refetchAllTestRuns]);
+    setRuns(storeRuns ?? null);
+  }, [storeRuns]);
 
-  const filtered = (displayRuns ?? []).filter(r => {
-    if (filters.result !== 'any' && r.status !== filters.result) return false;
-    if (filters.run !== 'any' && r.browserUseStatus !== filters.run) return false;
+  // Trigger a background refresh on mount
+  useEffect(() => {
+    if (!refetchAllTestRuns) return;
+    (async () => {
+      try {
+        setLoading(runs === null || runs.length === 0);
+        await refetchAllTestRuns();
+      } finally {
+        setLoading(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any" });
+
+  if (loading && (runs === null || runs.length === 0)) {
+    return <TestRunsCardSkeleton />;
+  }
+
+  if (!loading && (runs === null || runs.length === 0)) {
+    return <TestRunsListEmpty />;
+  }
+
+  const filtered = (runs ?? []).filter((r) => {
+    if (filters.result !== "any" && r.status !== filters.result) return false;
+    if (filters.run !== "any" && r.browserUseStatus !== filters.run) return false;
     const pName = (r as { personaName?: string }).personaName;
-    if (filters.persona !== 'any' && pName !== filters.persona) return false;
+    if (filters.persona !== "any" && pName !== filters.persona) return false;
     return true;
   });
 
-  const personaOptions = Array.from(new Set((displayRuns ?? []).map(r => (r as { personaName?: string }).personaName).filter(Boolean))) as string[];
+  const personaOptions = Array.from(
+    new Set((runs ?? []).map((r) => (r as { personaName?: string }).personaName).filter(Boolean))
+  ) as string[];
 
   return (
     <section className="p-4 space-y-4">
@@ -34,13 +62,12 @@ export default function TestRunsListPage() {
         <h1 className="text-2xl font-semibold">Test runs</h1>
         <TestRunsFilter personaOptions={personaOptions} filters={filters} onChange={setFilters} />
       </section>
-      {loading && <TestRunsCardSkeleton />}
-      {!loading && filtered.length === 0 && (
+
+      {filtered.length === 0 ? (
         <TestRunsListEmpty />
-      )}
-      {!loading && filtered.length > 0 && (
+      ) : (
         <section className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filtered.map(run => (
+          {filtered.map((run) => (
             <TestRunCard key={run._id} run={run as TestRunSummary} />
           ))}
         </section>
