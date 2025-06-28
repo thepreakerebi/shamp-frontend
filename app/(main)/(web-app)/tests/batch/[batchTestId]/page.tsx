@@ -28,7 +28,7 @@ export default function BatchTestPage() {
     }
     if (needsFetch) {
       (async () => {
-        setLoading(true);
+    setLoading(true);
         try {
           const fetched = await getBatchTestById(batchTestId);
           setBatchTest(fetched);
@@ -36,7 +36,7 @@ export default function BatchTestPage() {
         } catch {
           notFound();
         } finally {
-          setLoading(false);
+        setLoading(false);
         }
       })();
     }
