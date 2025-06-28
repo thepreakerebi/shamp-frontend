@@ -110,9 +110,11 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
   const batchPersonaName = batchPersonaObj?.name;
   const batchPersonaId = batchPersonaObj?._id ?? (typeof liveBatch.batchPersona === "string" ? liveBatch.batchPersona : undefined);
 
-  const successfulRuns = (liveBatch as { successfulRuns?: number }).successfulRuns ?? 0;
-  const failedRuns = (liveBatch as { failedRuns?: number }).failedRuns ?? 0;
-  const totalRuns = successfulRuns + failedRuns;
+  const batchRunsStore = useBatchTestsStore(state => state.batchTestRuns[batch._id]);
+
+  const successfulRuns = batchRunsStore ? batchRunsStore.filter(r => r.status === 'succeeded').length : ((liveBatch as { successfulRuns?: number }).successfulRuns ?? 0);
+  const failedRuns = batchRunsStore ? batchRunsStore.filter(r => r.status === 'failed').length : ((liveBatch as { failedRuns?: number }).failedRuns ?? 0);
+  const totalRuns = batchRunsStore ? batchRunsStore.length : successfulRuns + failedRuns;
 
   // actions for dropdown
   const { moveBatchTestToTrash, deleteBatchTest } = useBatchTests();
@@ -212,14 +214,14 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
       {/* Run statistics */}
       <footer className="flex items-center gap-2 flex-wrap">
         <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
-          ✓ {successfulRuns}
+          ✓ {successfulRuns} successful runs
         </Badge>
         <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-red-500/10 text-red-700 dark:text-red-400">
-          ✗ {failedRuns}
+          ✗ {failedRuns} failed runs
         </Badge>
         {totalRuns > 0 && (
           <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-primary/10 text-primary-foreground dark:text-primary">
-            {totalRuns} runs
+            {totalRuns} total runs
           </Badge>
         )}
       </footer>

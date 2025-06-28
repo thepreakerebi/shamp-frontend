@@ -4,20 +4,22 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import React from "react";
 import { useBatchTests, BatchTest } from "@/hooks/use-batch-tests";
+import { useBatchTestsStore } from "@/lib/store/batchTests";
 import { BatchTestCardActionsDropdown } from "./batch-test-card-actions-dropdown";
 import { Separator } from "@/components/ui/separator";
 
 export function BatchTestCard({ batch }: { batch: BatchTest }) {
   const router = useRouter();
   const { moveBatchTestToTrash, deleteBatchTest } = useBatchTests();
+  const batchRunsStore = useBatchTestsStore((s)=> s.batchTestRuns[batch._id]);
 
   const handleClick: React.MouseEventHandler<HTMLDivElement> = () => {
     router.push(`/tests/batch/${batch._id}`);
   };
 
-  const runsCount = batch.testrunsCount ?? (batch.testruns ? batch.testruns.length : 0);
-  const successfulRuns = batch.successfulRuns ?? 0;
-  const failedRuns = batch.failedRuns ?? 0;
+  const runsCount = batchRunsStore ? batchRunsStore.length : (batch.testrunsCount ?? (batch.testruns ? batch.testruns.length : 0));
+  const successfulRuns = batchRunsStore ? batchRunsStore.filter(r=>r.status === 'succeeded').length : (batch.successfulRuns ?? 0);
+  const failedRuns = batchRunsStore ? batchRunsStore.filter(r=>r.status === 'failed').length : (batch.failedRuns ?? 0);
 
   return (
     <section
