@@ -67,8 +67,8 @@ export default function DetailsSection({ test }: { test: Test }) {
     ? totalRunsStore
     : ("currentRuns" in test ? (test as unknown as { currentRuns?: number }).currentRuns ?? successfulRuns + failedRuns : successfulRuns + failedRuns);
 
-  // Overall runs ever (includes deleted) – rely on backend counters
-  const overallRuns = ("totalRuns" in test ? (test as unknown as { totalRuns?: number }).totalRuns : undefined) ?? (successfulRuns + failedRuns);
+  // Overall runs badge temporarily disabled
+  // const overallRuns = ("totalRuns" in test ? (test as unknown as { totalRuns?: number }).totalRuns : undefined) ?? (successfulRuns + failedRuns);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const personaNames: string[] | undefined = (test as unknown as { personaNames?: string[] }).personaNames;
@@ -198,15 +198,7 @@ export default function DetailsSection({ test }: { test: Test }) {
             {currentRuns} {currentRuns === 1 ? "run" : "runs"}
           </Badge>
         )}
-        {overallRuns > currentRuns && (
-          <Badge
-            variant="secondary"
-            className="px-2 py-1 text-sm bg-muted text-muted-foreground"
-            aria-label={`Overall runs: ${overallRuns}`}
-          >
-            {overallRuns} overall
-          </Badge>
-        )}
+        {/* Overall runs badge hidden for now */}
       </footer>
     </article>
   );
