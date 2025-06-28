@@ -1,8 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 
-export function TokenGate({ children }: { children: React.ReactNode }) {
+// Force dynamic rendering to prevent static generation issues with useSearchParams
+export const dynamic = 'force-dynamic';
+
+function TokenGateContent({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -30,4 +33,12 @@ export function TokenGate({ children }: { children: React.ReactNode }) {
 
   if (!ready) return null;
   return <>{children}</>;
+}
+
+export function TokenGate({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<>{children}</>}>
+      <TokenGateContent>{children}</TokenGateContent>
+    </Suspense>
+  );
 } 

@@ -14,6 +14,9 @@ import { useTestsStore } from "@/lib/store/tests";
 import { useBatchTests } from "@/hooks/use-batch-tests";
 import { useBatchTestsStore } from "@/lib/store/batchTests";
 
+// Force dynamic rendering to prevent static generation issues with useSearchParams
+export const dynamic = 'force-dynamic';
+
 export function Breadcrumbs() {
   const pathname = usePathname();
   const searchParams = useSearchParams();

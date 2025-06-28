@@ -8,6 +8,9 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { PersonaDetailsTab } from "./_components/persona-details-tab";
 import { BatchPersonasList } from "./_components/batch-personas-list";
 
+// Force dynamic rendering to prevent static generation issues with useSearchParams
+export const dynamic = 'force-dynamic';
+
 export default function PersonasPage() {
   // Ensure personas are fetched and store is hydrated
   usePersonas();

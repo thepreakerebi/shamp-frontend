@@ -17,6 +17,9 @@ const TAB_OPTIONS = [
   { key: "runs", label: "Test runs" },
 ];
 
+// Force dynamic rendering to prevent static generation issues with useSearchParams
+export const dynamic = 'force-dynamic';
+
 export default function TrashPage() {
   const searchParams = useSearchParams();
   const initialParam = searchParams.get("tab");

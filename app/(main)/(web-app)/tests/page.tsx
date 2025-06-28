@@ -8,6 +8,8 @@ import { TestsList } from "./_components/tests-list";
 import { BatchTestsList } from "./_components/batch-tests-list";
 import { SchedulesList } from "./_components/schedules-list";
 import { useTests } from "@/hooks/use-tests";
+// Force dynamic rendering to prevent static generation issues with useSearchParams
+export const dynamic = 'force-dynamic';
 
 export default function TestsPage() {
   // Ensure tests are fetched and store is hydrated

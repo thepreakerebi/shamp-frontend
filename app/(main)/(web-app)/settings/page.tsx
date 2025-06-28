@@ -16,6 +16,8 @@ const TAB_OPTIONS = [
   { key: "subscription", label: "Subscription & Usage" },
 ];
 
+export const dynamic = 'force-dynamic';
+
 export default function SettingsPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";

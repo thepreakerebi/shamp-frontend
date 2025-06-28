@@ -10,6 +10,9 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Force dynamic rendering to prevent static generation issues with useSearchParams
+export const dynamic = 'force-dynamic';
+
 export default function EditBatchTestPage() {
   const params = useSearchParams();
   const batchId = params.get("id");

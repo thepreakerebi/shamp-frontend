@@ -11,6 +11,9 @@ import { useAuth, EmailNotVerifiedError } from '@/lib/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CreateAccountWithGoogleButton } from '../create-account/_components/google-button';
 
+// Force dynamic rendering to prevent static generation issues with useSearchParams
+export const dynamic = 'force-dynamic';
+
 interface FieldErrors {
   email?: string;
   password?: string;

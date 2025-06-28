@@ -11,6 +11,9 @@ import TestRunsSection from "./_components/test-runs-section";
 import { DetailsSectionSkeleton } from "./_components/details-section-skeleton";
 import { AnalysisSectionSkeleton } from "./_components/analysis-section-skeleton";
 
+// Force dynamic rendering to prevent static generation issues with useSearchParams
+export const dynamic = 'force-dynamic';
+
 export default function TestDetailPage() {
   const { testId } = useParams<{ testId: string }>();
   const { tests, getTestById } = useTests();
