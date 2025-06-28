@@ -27,9 +27,10 @@ export function SummaryPanel({ run, personaName }: Props) {
   // Persist dismissal once run id changes
   React.useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!showRefresh) return;
-    // Ensure flag exists for new runs only when previously dismissed
-  }, [run._id]);
+    if (!showRefresh) {
+      sessionStorage.setItem(`run_refresh_${run._id}`, "done");
+    }
+  }, [run._id, showRefresh]);
 
   // Pick latest run data from store if available
   const liveRun = (testRuns ?? []).find(r => r._id === run._id) as TestRunStatus | undefined;
@@ -133,7 +134,7 @@ export function SummaryPanel({ run, personaName }: Props) {
         </section>
         <section className="flex items-center gap-2">
           {( ["finished", "stopped"].includes(active.browserUseStatus ?? "") ) && statusBadge(active.status)}
-          {active.status !== "cancelled" && browserStatusBadge(active.browserUseStatus)}
+          {browserStatusBadge(active.browserUseStatus)}
           {active.browserUseStatus === "stopped" && showRefresh && (
             <Button
               variant="ghost"
