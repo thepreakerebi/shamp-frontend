@@ -12,14 +12,30 @@ export function BatchTestCard({ batch }: { batch: BatchTest }) {
   const router = useRouter();
   const { moveBatchTestToTrash, deleteBatchTest } = useBatchTests();
   const batchRunsStore = useBatchTestsStore((s)=> s.batchTestRuns[batch._id]);
+  const { getTestRunsForBatchTest } = useBatchTests();
+  const [loadingRuns, setLoadingRuns] = React.useState(false);
+
+  // Fetch runs if not in store so counts are correct
+  React.useEffect(() => {
+    if (batchRunsStore === undefined && !loadingRuns) {
+      (async () => {
+        setLoadingRuns(true);
+        try {
+          await getTestRunsForBatchTest(batch._id, true);
+        } catch { /* ignore */ }
+        setLoadingRuns(false);
+      })();
+    }
+  }, [batchRunsStore, getTestRunsForBatchTest, batch._id, loadingRuns]);
 
   const handleClick: React.MouseEventHandler<HTMLDivElement> = () => {
     router.push(`/tests/batch/${batch._id}`);
   };
 
-  const runsCount = batchRunsStore ? batchRunsStore.length : (batch.testrunsCount ?? (batch.testruns ? batch.testruns.length : 0));
-  const successfulRuns = batchRunsStore ? batchRunsStore.filter(r=>r.status === 'succeeded').length : (batch.successfulRuns ?? 0);
-  const failedRuns = batchRunsStore ? batchRunsStore.filter(r=>r.status === 'failed').length : (batch.failedRuns ?? 0);
+  const dedupRuns = batchRunsStore ? Array.from(new Map(batchRunsStore.map(r=>[r._id,r])).values()) : undefined;
+  const runsCount = dedupRuns ? dedupRuns.length : (loadingRuns ? 0 : (batch.testrunsCount ?? (batch.testruns ? batch.testruns.length : 0)));
+  const successfulRuns = dedupRuns ? dedupRuns.filter(r=>r.status==='succeeded').length : (batch.successfulRuns ?? 0);
+  const failedRuns = dedupRuns ? dedupRuns.filter(r=>r.status==='failed').length : (batch.failedRuns ?? 0);
 
   return (
     <section
@@ -63,7 +79,7 @@ export function BatchTestCard({ batch }: { batch: BatchTest }) {
           ✗ {failedRuns}
         </Badge>
         <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-primary/10 dark:bg-primary/20 text-primary-foreground dark:text-neutral-200">
-          {runsCount} runs
+          {loadingRuns && runsCount===0 ? '–' : runsCount} runs
         </Badge>
       </footer>
     </section>

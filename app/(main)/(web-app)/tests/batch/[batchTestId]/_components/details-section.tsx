@@ -112,9 +112,24 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
 
   const batchRunsStore = useBatchTestsStore(state => state.batchTestRuns[batch._id]);
 
-  const successfulRuns = batchRunsStore ? batchRunsStore.filter(r => r.status === 'succeeded').length : ((liveBatch as { successfulRuns?: number }).successfulRuns ?? 0);
-  const failedRuns = batchRunsStore ? batchRunsStore.filter(r => r.status === 'failed').length : ((liveBatch as { failedRuns?: number }).failedRuns ?? 0);
-  const currentRuns = batchRunsStore ? batchRunsStore.length : successfulRuns + failedRuns;
+  const dedupRuns = batchRunsStore ? Array.from(new Map(batchRunsStore.map(r=>[r._id,r])).values()) : undefined;
+  const successfulRuns = dedupRuns ? dedupRuns.filter(r=>r.status==='succeeded').length : ((liveBatch as { successfulRuns?: number }).successfulRuns ?? 0);
+  const failedRuns = dedupRuns ? dedupRuns.filter(r=>r.status==='failed').length : ((liveBatch as { failedRuns?: number }).failedRuns ?? 0);
+
+  // Ensure runs slice is populated for accurate counts
+  const { getTestRunsForBatchTest } = useBatchTests();
+  const [loadingRuns, setLoadingRuns] = useState(false);
+  useEffect(() => {
+    if (batchRunsStore === undefined && !loadingRuns) {
+      (async () => {
+        setLoadingRuns(true);
+        try { await getTestRunsForBatchTest(batch._id, true); } catch {}
+        setLoadingRuns(false);
+      })();
+    }
+  }, [batchRunsStore, getTestRunsForBatchTest, batch._id, loadingRuns]);
+
+  const currentRuns = dedupRuns ? dedupRuns.length : (loadingRuns ? 0 : (successfulRuns + failedRuns));
 
   // actions for dropdown
   const { moveBatchTestToTrash, deleteBatchTest } = useBatchTests();
@@ -219,7 +234,7 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
         <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-red-500/10 text-red-700 dark:text-red-400">
           ✗ {failedRuns} failed runs
         </Badge>
-        {currentRuns > 0 && (
+        {(!loadingRuns || currentRuns>0) && (
           <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-primary/10 text-primary-foreground dark:text-primary">
             {currentRuns} runs
           </Badge>

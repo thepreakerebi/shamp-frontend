@@ -63,12 +63,9 @@ export default function DetailsSection({ test }: { test: Test }) {
   const testRunsStore = useTestRunsStore(state => state.testRuns);
   const totalRunsStore = testRunsStore?.filter(r => r.test === test._id).length;
 
-  const currentRuns = totalRunsStore && totalRunsStore !== 0
+  const totalRuns = totalRunsStore && totalRunsStore !== 0
     ? totalRunsStore
-    : ("currentRuns" in test ? (test as unknown as { currentRuns?: number }).currentRuns ?? successfulRuns + failedRuns : successfulRuns + failedRuns);
-
-  // Overall runs badge temporarily disabled
-  // const overallRuns = ("totalRuns" in test ? (test as unknown as { totalRuns?: number }).totalRuns : undefined) ?? (successfulRuns + failedRuns);
+    : ("totalRuns" in test ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns : successfulRuns + failedRuns);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const personaNames: string[] | undefined = (test as unknown as { personaNames?: string[] }).personaNames;
@@ -189,16 +186,15 @@ export default function DetailsSection({ test }: { test: Test }) {
         >
           ✗ {failedRuns} {failedRuns === 1 ? "failed run" : "failed runs"}
         </Badge>
-        {currentRuns > 0 && (
+        {totalRuns > 0 && (
           <Badge
             variant="secondary"
             className="px-2 py-1 text-sm bg-primary/10 text-primary-foreground dark:text-primary"
-            aria-label={`Current runs: ${currentRuns}`}
+            aria-label={`Total runs: ${totalRuns}`}
           >
-            {currentRuns} {currentRuns === 1 ? "run" : "runs"}
+            {totalRuns} {totalRuns === 1 ? "total run" : "total runs"}
           </Badge>
         )}
-        {/* Overall runs badge hidden for now */}
       </footer>
     </article>
   );
