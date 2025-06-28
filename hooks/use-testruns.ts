@@ -5,7 +5,7 @@ import { useTestRunsStore } from "@/lib/store/testruns";
 import { useTestsStore } from "@/lib/store/tests";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "https://backend.shamp.io";
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
 // --- Singleton guards so side-effects run only once per browser session ---
 let runsFetchedOnce = false;
