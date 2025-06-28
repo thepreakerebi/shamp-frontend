@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useBatchTests } from "@/hooks/use-batch-tests";
 import { useProjects } from "@/hooks/use-projects";
 import { useBatchPersonas } from "@/hooks/use-batch-personas";
@@ -14,17 +14,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 export const dynamic = 'force-dynamic';
 
 export default function EditBatchTestPage() {
-  const params = useSearchParams();
-  const batchId = params.get("id");
   const router = useRouter();
   const { getBatchTestById, updateBatchTest } = useBatchTests();
   const { projects } = useProjects();
   useBatchPersonas();
 
+  const [mounted, setMounted] = useState(false);
+  const [batchId, setBatchId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<{ batchPersonaId?: string }>({});
   const [form, setForm] = useState({ projectId: "", batchPersonaId: "", testName: "" });
+
+  useEffect(() => {
+    setMounted(true);
+    // Get batch ID from URL once component mounts on client
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get("id");
+    setBatchId(id);
+  }, []);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -63,6 +71,11 @@ export default function EditBatchTestPage() {
       setSaving(false);
     }
   };
+
+  // Prevent rendering until client-side mount to avoid hydration issues
+  if (!mounted) {
+    return null;
+  }
 
   if (loading) {
     return (

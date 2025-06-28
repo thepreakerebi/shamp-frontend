@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { TestsTab } from "./_components/tests-tab";
 import { TestsList } from "./_components/tests-list";
@@ -15,10 +14,22 @@ export default function TestsPage() {
   // Ensure tests are fetched and store is hydrated
   useTests();
 
-  const searchParams = useSearchParams();
-  const initialParam = searchParams.get("tab");
-  const initialTab = initialParam === "batch" ? "batch" : initialParam === "schedules" ? "schedules" : "individuals";
-  const [tab, setTab] = useState(initialTab);
+  const [mounted, setMounted] = useState(false);
+  const [tab, setTab] = useState("individuals");
+
+  useEffect(() => {
+    setMounted(true);
+    // Get tab from URL once component mounts on client
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialParam = urlParams.get("tab");
+    const initialTab = initialParam === "batch" ? "batch" : initialParam === "schedules" ? "schedules" : "individuals";
+    setTab(initialTab);
+  }, []);
+
+  // Prevent rendering until client-side mount to avoid hydration issues
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <main className="p-4 w-full flex flex-col gap-8">

@@ -1,12 +1,12 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
@@ -19,9 +19,16 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+
+  useEffect(() => {
+    setMounted(true);
+    // Get token from URL once component mounts on client
+    const urlParams = new URLSearchParams(window.location.search);
+    setToken(urlParams.get("token"));
+  }, []);
 
   const validatePassword = (pw: string) => {
     // At least 8 chars, lowercase, uppercase, number, special char
@@ -64,6 +71,11 @@ export default function ResetPasswordPage() {
       setLoading(false);
     }
   };
+
+  // Prevent rendering until client-side mount to avoid hydration issues
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <main className="bg-background w-full flex items-center justify-center px-4">

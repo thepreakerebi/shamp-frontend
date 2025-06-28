@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import { PersonasList } from "./_components/personas-list";
 import { usePersonas } from "@/hooks/use-personas";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -14,9 +13,22 @@ export const dynamic = 'force-dynamic';
 export default function PersonasPage() {
   // Ensure personas are fetched and store is hydrated
   usePersonas();
-  const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") === "groups" ? "groups" : "individuals";
-  const [tab, setTab] = useState(initialTab);
+  const [mounted, setMounted] = useState(false);
+  const [tab, setTab] = useState("individuals");
+
+  useEffect(() => {
+    setMounted(true);
+    // Get tab from URL once component mounts on client
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialTab = urlParams.get("tab") === "groups" ? "groups" : "individuals";
+    setTab(initialTab);
+  }, []);
+
+  // Prevent rendering until client-side mount to avoid hydration issues
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <main className="p-4 w-full flex flex-col gap-8">
       <Tabs value={tab} onValueChange={setTab} className="flex-1 w-full">
