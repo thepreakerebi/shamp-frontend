@@ -5,13 +5,12 @@ export const dynamic = 'force-dynamic';
 
 import { Mail } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 
 export default function AccountCreatedPage() {
   const [mounted, setMounted] = useState(false);
-  const searchParams = useSearchParams();
   const router = useRouter();
 
   useEffect(() => {
@@ -19,14 +18,18 @@ export default function AccountCreatedPage() {
   }, []);
 
   useEffect(() => {
-    if (mounted && searchParams.get('created') === '1') {
-      toast.success('Your account is created');
-      // Remove the query param for a clean URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete('created');
-      router.replace(url.pathname, { scroll: false });
+    if (mounted) {
+      // Only access URLSearchParams after mounting on client side
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('created') === '1') {
+        toast.success('Your account is created');
+        // Remove the query param for a clean URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('created');
+        router.replace(url.pathname, { scroll: false });
+      }
     }
-  }, [mounted, searchParams, router]);
+  }, [mounted, router]);
 
   return (
     <main className="flex items-center justify-center bg-background px-4">
