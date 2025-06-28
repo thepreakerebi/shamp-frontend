@@ -63,9 +63,12 @@ export default function DetailsSection({ test }: { test: Test }) {
   const testRunsStore = useTestRunsStore(state => state.testRuns);
   const totalRunsStore = testRunsStore?.filter(r => r.test === test._id).length;
 
-  const totalRuns = totalRunsStore && totalRunsStore !== 0
+  const currentRuns = totalRunsStore && totalRunsStore !== 0
     ? totalRunsStore
-    : ("totalRuns" in test ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns : successfulRuns + failedRuns);
+    : ("currentRuns" in test ? (test as unknown as { currentRuns?: number }).currentRuns ?? successfulRuns + failedRuns : successfulRuns + failedRuns);
+
+  // Overall runs ever (includes deleted) – rely on backend counters
+  const overallRuns = ("totalRuns" in test ? (test as unknown as { totalRuns?: number }).totalRuns : undefined) ?? (successfulRuns + failedRuns);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const personaNames: string[] | undefined = (test as unknown as { personaNames?: string[] }).personaNames;
@@ -186,13 +189,22 @@ export default function DetailsSection({ test }: { test: Test }) {
         >
           ✗ {failedRuns} {failedRuns === 1 ? "failed run" : "failed runs"}
         </Badge>
-        {totalRuns > 0 && (
+        {currentRuns > 0 && (
           <Badge
             variant="secondary"
             className="px-2 py-1 text-sm bg-primary/10 text-primary-foreground dark:text-primary"
-            aria-label={`Total runs: ${totalRuns}`}
+            aria-label={`Current runs: ${currentRuns}`}
           >
-            {totalRuns} {totalRuns === 1 ? "total run" : "total runs"}
+            {currentRuns} {currentRuns === 1 ? "run" : "runs"}
+          </Badge>
+        )}
+        {overallRuns > currentRuns && (
+          <Badge
+            variant="secondary"
+            className="px-2 py-1 text-sm bg-muted text-muted-foreground"
+            aria-label={`Overall runs: ${overallRuns}`}
+          >
+            {overallRuns} overall
           </Badge>
         )}
       </footer>

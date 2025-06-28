@@ -114,7 +114,9 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
 
   const successfulRuns = batchRunsStore ? batchRunsStore.filter(r => r.status === 'succeeded').length : ((liveBatch as { successfulRuns?: number }).successfulRuns ?? 0);
   const failedRuns = batchRunsStore ? batchRunsStore.filter(r => r.status === 'failed').length : ((liveBatch as { failedRuns?: number }).failedRuns ?? 0);
-  const totalRuns = batchRunsStore ? batchRunsStore.length : successfulRuns + failedRuns;
+  const currentRuns = batchRunsStore ? batchRunsStore.length : successfulRuns + failedRuns;
+
+  const overallRuns = ('testrunsCount' in liveBatch ? (liveBatch as unknown as { testrunsCount?: number }).testrunsCount : undefined) ?? (successfulRuns + failedRuns);
 
   // actions for dropdown
   const { moveBatchTestToTrash, deleteBatchTest } = useBatchTests();
@@ -219,9 +221,14 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
         <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-red-500/10 text-red-700 dark:text-red-400">
           ✗ {failedRuns} failed runs
         </Badge>
-        {totalRuns > 0 && (
+        {currentRuns > 0 && (
           <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-primary/10 text-primary-foreground dark:text-primary">
-            {totalRuns} total runs
+            {currentRuns} runs
+          </Badge>
+        )}
+        {overallRuns > currentRuns && (
+          <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-muted text-muted-foreground">
+            {overallRuns} overall
           </Badge>
         )}
       </footer>
