@@ -4,6 +4,7 @@ import type { TestRun } from "@/hooks/use-testruns";
 import React, { useState } from "react";
 import { TrashCardActionsDropdown } from "@/components/ui/trash-card-actions-dropdown";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-card-skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -16,11 +17,15 @@ export function TrashedRunsList() {
     trashedTestRuns,
     restoreTestRunFromTrash,
     deleteTestRun,
+    emptyTestRunTrash,
+    fetchTrashedTestRuns,
   } = useTestRuns();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [runToDelete, setRunToDelete] = useState<TestRun | null>(null);
+  const [emptyTrashOpen, setEmptyTrashOpen] = useState(false);
+  const [emptyTrashLoading, setEmptyTrashLoading] = useState(false);
 
   const { personas } = usePersonas();
 
@@ -73,12 +78,22 @@ export function TrashedRunsList() {
     }
   };
 
+  const handleEmptyTrash = async () => {
+    setEmptyTrashLoading(true);
+    try {
+      await emptyTestRunTrash();
+      toast.success("Test runs trash emptied");
+      setEmptyTrashOpen(false);
+      fetchTrashedTestRuns();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to empty test runs trash");
+    } finally {
+      setEmptyTrashLoading(false);
+    }
+  };
+
   if (!trashedTestRuns) {
     return <TestRunsCardSkeleton count={6} />;
-  }
-
-  if (uniqueRuns.length === 0) {
-    return <p className="text-muted-foreground p-4">No test runs in trash.</p>;
   }
 
   const statusBadge = (status: string) => {
@@ -93,34 +108,47 @@ export function TrashedRunsList() {
 
   return (
     <section>
-      <header className="px-4 mb-4">
-        <h2 className="text-xl font-semibold">Trashed Test Runs</h2>
-      </header>
-
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 p-4" aria-label="Trashed test runs list">
-        {uniqueRuns.map(run => {
-          const rp = run as RunWithPersona;
-          return (
-          <article key={run._id} className="rounded-3xl border dark:border-0 bg-card/80 p-4 flex flex-col gap-3">
-            <header className="flex items-start gap-3">
-              <figure className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl font-bold shrink-0" aria-hidden="true">
-                {(getPersonaName(rp)?.[0] ?? "R").toUpperCase()}
-              </figure>
-              <section className="flex-1 min-w-0">
-                <h3 className="font-semibold leading-tight truncate" title={getPersonaName(rp) ?? run._id}>{getPersonaName(rp) ?? run._id}</h3>
-                <div className="flex items-center gap-2 mt-1">
-                  {statusBadge(run.status)}
-                  {run.browserUseStatus && <Badge variant="outline" className="text-xs whitespace-nowrap">{run.browserUseStatus}</Badge>}
-                </div>
-                
-              </section>
-              <nav onClick={e=>e.stopPropagation()} data-stop-row>
-                <TrashCardActionsDropdown onRestore={() => handleRestore(run)} onDelete={() => promptDelete(run)} />
-              </nav>
-            </header>
-          </article>
-        );})}
+      <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2 px-4">
+        <h2 className="text-xl font-semibold">Trashed Test Runs · {uniqueRuns.length}</h2>
+        {uniqueRuns.length > 0 && (
+          <Button 
+            variant="outline" 
+            onClick={() => setEmptyTrashOpen(true)}
+            disabled={emptyTrashLoading}
+          >
+            Empty test runs trash
+          </Button>
+        )}
       </section>
+
+      {uniqueRuns.length === 0 ? (
+        <p className="text-muted-foreground p-4">No test runs in trash.</p>
+      ) : (
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 p-4" aria-label="Trashed test runs list">
+          {uniqueRuns.map(run => {
+            const rp = run as RunWithPersona;
+            return (
+            <article key={run._id} className="rounded-3xl border dark:border-0 bg-card/80 p-4 flex flex-col gap-3">
+              <header className="flex items-start gap-3">
+                <figure className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl font-bold shrink-0" aria-hidden="true">
+                  {(getPersonaName(rp)?.[0] ?? "R").toUpperCase()}
+                </figure>
+                <section className="flex-1 min-w-0">
+                  <h3 className="font-semibold leading-tight truncate" title={getPersonaName(rp) ?? run._id}>{getPersonaName(rp) ?? run._id}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    {statusBadge(run.status)}
+                    {run.browserUseStatus && <Badge variant="outline" className="text-xs whitespace-nowrap">{run.browserUseStatus}</Badge>}
+                  </div>
+                  
+                </section>
+                <nav onClick={e=>e.stopPropagation()} data-stop-row>
+                  <TrashCardActionsDropdown onRestore={() => handleRestore(run)} onDelete={() => promptDelete(run)} />
+                </nav>
+              </header>
+            </article>
+          );})}
+        </section>
+      )}
 
       <ConfirmDialog
         open={confirmOpen}
@@ -131,6 +159,18 @@ export function TrashedRunsList() {
         confirmVariant="destructive"
         loading={confirmLoading}
         onConfirm={confirmDelete}
+      />
+
+      {/* Empty trash confirmation */}
+      <ConfirmDialog
+        open={emptyTrashOpen}
+        onOpenChange={setEmptyTrashOpen}
+        title="Empty Test Runs Trash"
+        description="Are you sure you want to permanently delete all trashed test runs? This action cannot be undone."
+        confirmLabel="Empty trash"
+        confirmVariant="destructive"
+        loading={emptyTrashLoading}
+        onConfirm={handleEmptyTrash}
       />
     </section>
   );
