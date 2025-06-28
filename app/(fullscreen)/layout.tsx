@@ -7,6 +7,9 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Toaster } from "@/components/ui/sonner";
 import { useTestRuns } from "@/hooks/use-testruns";
 
+// Force dynamic rendering to prevent static generation issues with useSearchParams in TokenGate
+export const dynamic = 'force-dynamic';
+
 function SocketProvider({ children }: { children: React.ReactNode }) {
   // establish socket after auth is available
   useTestRuns();
