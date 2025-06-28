@@ -11,6 +11,9 @@ import { CreateBatchPersonasModalProvider } from '@/app/(main)/(web-app)/persona
 import { ImportPersonasModalProvider } from '@/app/(main)/(web-app)/personas/_components/import-personas-modal';
 import { useTestRuns } from '@/hooks/use-testruns';
 
+// Force dynamic rendering since this layout includes components that use useSearchParams
+export const dynamic = 'force-dynamic';
+
 export default function WebAppLayout({ children }: { children: React.ReactNode }) {
   // Establish socket connection for test-run real-time updates exactly once per web-app tab
   useTestRuns();

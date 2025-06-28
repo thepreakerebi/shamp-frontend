@@ -14,6 +14,9 @@ import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { StartTestRunModal } from '@/app/(main)/(web-app)/test-runs/_components/start-test-run-modal';
 
+// Force dynamic rendering since this component includes Breadcrumbs that uses useSearchParams
+export const dynamic = 'force-dynamic';
+
 export function Topbar() {
   const pathname = usePathname();
   const router = useRouter();

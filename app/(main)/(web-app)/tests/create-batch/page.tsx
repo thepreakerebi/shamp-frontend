@@ -11,6 +11,9 @@ import ProjectCommand from "../create/_components/project-command";
 import BatchPersonaCommand from "./_components/batch-persona-command";
 import TestCommand from "./_components/test-command";
 
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = 'force-dynamic';
+
 export default function CreateBatchTestPage() {
   const { createBatchTest } = useBatchTests();
   const router = useRouter();
