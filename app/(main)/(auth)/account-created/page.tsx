@@ -6,6 +6,9 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 
+// Force dynamic rendering to prevent static generation issues with useSearchParams
+export const dynamic = 'force-dynamic';
+
 function AccountCreatedContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
