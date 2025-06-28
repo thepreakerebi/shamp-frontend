@@ -1,22 +1,31 @@
 "use client";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 
 // Force dynamic rendering to prevent static generation issues with useSearchParams
 export const dynamic = 'force-dynamic';
 
-function TokenGateContent({ children }: { children: React.ReactNode }) {
+export function TokenGate({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
   const [ready, setReady] = useState(false);
 
+  // Prevent hydration mismatch by only running client-side logic after mount
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
     // Skip TokenHandler logic on /reset-password route
     if (pathname === "/reset-password") {
       setReady(true);
       return;
     }
+    
     const token = searchParams.get("token");
     if (token) {
       localStorage.setItem("authToken", token);
@@ -29,16 +38,10 @@ function TokenGateContent({ children }: { children: React.ReactNode }) {
     } else {
       setReady(true);
     }
-  }, [searchParams, pathname, router]);
+  }, [mounted, searchParams, pathname, router]);
 
-  if (!ready) return null;
+  // During SSR and before mount, just render children
+  if (!mounted || !ready) return <>{children}</>;
+  
   return <>{children}</>;
-}
-
-export function TokenGate({ children }: { children: React.ReactNode }) {
-  return (
-    <Suspense fallback={<>{children}</>}>
-      <TokenGateContent>{children}</TokenGateContent>
-    </Suspense>
-  );
 } 
