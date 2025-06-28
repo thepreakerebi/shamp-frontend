@@ -54,6 +54,17 @@ export const useBatchTestsStore = create<BatchTestsState>((set, get) => ({
           merged.failedRuns = prev.failedRuns;
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- preserving analysis when type lacks field
+        if ((next as any).analysis === undefined && (prev as any).analysis !== undefined) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (merged as any).analysis = (prev as any).analysis;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- handling analysis updates
+        } else if ((next as any).analysis !== undefined) {
+          // If next has analysis, use it (this handles real analysis updates)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (merged as any).analysis = (next as any).analysis;
+        }
+
         // Same for testruns array
         if ((next.testruns === undefined || (Array.isArray(next.testruns) && next.testruns.length === 0)) && prev.testruns?.length) {
           merged.testruns = prev.testruns;

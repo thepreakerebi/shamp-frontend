@@ -126,12 +126,32 @@ export function useBatchTests() {
     socket.on("batchTest:updated", mergeHandler);
     socket.on("batchTest:trashed", mergeHandler);
 
+    // Handle analysis updates separately to merge latest analysis into store
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server payload lacks type details
+    socket.on("batchTest:analysisUpdated", (payload: { _id: string; latestAnalysis: any }) => {
+      // Get the current batch test from store to merge properly
+      const currentBatch = useBatchTestsStore.getState().batchTests?.find(bt => bt._id === payload._id);
+      if (currentBatch) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const currentAnalysis = (currentBatch as any).analysis || [];
+        // Add the new analysis to the beginning of the array (newest first)
+        const updatedAnalysis = [payload.latestAnalysis, ...currentAnalysis];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        updateBatchTestInList({ _id: payload._id, analysis: updatedAnalysis } as any);
+      } else {
+        // If we don't have the batch test in store, just set the analysis array with the latest
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        updateBatchTestInList({ _id: payload._id, analysis: [payload.latestAnalysis] } as any);
+      }
+    });
+
     return () => {
       socket.off("batchTest:created", handleUpdate);
       socket.off("batchTest:deleted", handleUpdate);
       socket.off("batchTest:statusUpdated", handleUpdate);
       socket.off("batchTest:updated", mergeHandler);
       socket.off("batchTest:trashed", mergeHandler);
+      socket.off("batchTest:analysisUpdated");
       socket.disconnect();
     };
   }, [fetchBatchTests, token]);

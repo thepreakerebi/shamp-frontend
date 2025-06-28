@@ -14,38 +14,37 @@ export default function BatchTestPage() {
   const { batchTestId } = useParams<{ batchTestId: string }>();
   const { getBatchTestById } = useBatchTests();
   const { batchTests } = useBatchTestsStore();
-  const [batchTest, setBatchTest] = useState<import("@/hooks/use-batch-tests").BatchTest | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [batchTest, setBatchTest] = useState(() => batchTests?.find(t => t._id === batchTestId));
+  const [loading, setLoading] = useState(!batchTest);
 
-  // Fetch once on mount; avoid re-fetching when store updates change function identity
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!batchTestId) return;
-    // Only fetch if we don't have the batchTest yet
-    if (batchTest) return;
-    setLoading(true);
-    getBatchTestById(batchTestId as string)
-      .then((data) => {
-        setBatchTest(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setBatchTest(null);
-        setLoading(false);
-      });
-  }, [batchTestId, batchTest]);
-
-  // Keep local state in sync with store updates (realtime socket events)
-  useEffect(() => {
-    const updated = batchTests?.find((b) => b._id === batchTestId);
-    if (updated && updated !== batchTest) {
-      setBatchTest(updated);
+    let needsFetch = false;
+    if (!batchTest) {
+      needsFetch = true;
+    } else {
+      const analysisArr = (batchTest as unknown as { analysis?: unknown[] }).analysis;
+      needsFetch = !(Array.isArray(analysisArr) && analysisArr.length > 0);
     }
-  }, [batchTests, batchTestId]);
+    if (needsFetch) {
+      (async () => {
+        setLoading(true);
+        try {
+          const fetched = await getBatchTestById(batchTestId);
+          setBatchTest(fetched);
+          try { useBatchTestsStore.getState().updateBatchTestInList(fetched); } catch {}
+        } catch {
+          notFound();
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }
+  }, [batchTestId, batchTest, getBatchTestById]);
 
   const [tab, setTab] = useState<"details"|"analysis"|"runs">("details");
 
-  if (loading) {
+  if (loading && !batchTest) {
     return (
       <main className="p-4 w-full flex flex-col gap-8">
         <Skeleton className="h-32 w-full" />
@@ -54,7 +53,7 @@ export default function BatchTestPage() {
     );
   }
 
-  if (!batchTest) {
+  if (!loading && !batchTest) {
     notFound();
     return null;
   }
@@ -70,13 +69,13 @@ export default function BatchTestPage() {
           </TabsList>
           <section className="flex-1 min-w-0">
             <TabsContent value="details">
-              <DetailsSection batch={batchTest} />
+              <DetailsSection batch={batchTest!} />
             </TabsContent>
             <TabsContent value="analysis">
-              <AnalysisSection batch={batchTest} />
+              <AnalysisSection batch={batchTest!} />
             </TabsContent>
             <TabsContent value="runs">
-              <BatchTestRunsSection batch={batchTest} />
+              <BatchTestRunsSection batch={batchTest!} />
             </TabsContent>
           </section>
         </div>
