@@ -1,18 +1,29 @@
 "use client";
 import { Button } from '@/components/ui/button';
-import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { Suspense } from 'react';
+import { useState, useEffect } from 'react';
 
-// Force dynamic rendering to prevent static generation issues with useSearchParams
+// Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
-function GoogleButtonContent({ mode = 'signup' }: { mode?: 'signup' | 'login' }) {
+export function CreateAccountWithGoogleButton({ mode = 'signup' }: { mode?: 'signup' | 'login' }) {
+  const [mounted, setMounted] = useState(false);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
   const buttonText = mode === 'login' ? 'Log in with Google' : 'Create account with Google';
-  const searchParams = useSearchParams();
-  const inviteToken = searchParams.get('token');
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      // Use native URLSearchParams instead of useSearchParams hook
+      const urlParams = new URLSearchParams(window.location.search);
+      setInviteToken(urlParams.get('token'));
+    }
+  }, [mounted]);
 
   const handleGoogle = () => {
     let url = `${API_BASE}/users/auth/google`;
@@ -39,26 +50,6 @@ function GoogleButtonContent({ mode = 'signup' }: { mode?: 'signup' | 'login' })
       </span>
       {buttonText}
     </Button>
-  );
-}
-
-export function CreateAccountWithGoogleButton({ mode = 'signup' }: { mode?: 'signup' | 'login' }) {
-  return (
-    <Suspense fallback={
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full flex items-center justify-center gap-2 font-medium text-base border-muted-foreground/30 py-5"
-        disabled
-      >
-        <span className="inline-block align-middle">
-          <Image src="/google-icon-logo.svg" alt="Google Logo" width={24} height={24} />
-        </span>
-        {mode === 'login' ? 'Log in with Google' : 'Create account with Google'}
-      </Button>
-    }>
-      <GoogleButtonContent mode={mode} />
-    </Suspense>
   );
 }
 
