@@ -45,8 +45,8 @@ export default function EditTestPage() {
     const deviceInitial = (()=>{
       if (!existing) return "";
       const vpMap: Record<string,string> = {
-        "1280x1024":"desktop",
-        "1024x768":"tablet",
+        "1280x720":"desktop",
+        "820x1180":"tablet",
         "800x1280":"mobile",
       };
       const key = `${(existing as any).browserViewportWidth ?? ""}x${(existing as any).browserViewportHeight ?? ""}`;
@@ -77,8 +77,8 @@ export default function EditTestPage() {
         })();
         const deviceInitial = (()=>{
           const vpMap: Record<string,string> = {
-            "1280x1024":"desktop",
-            "1024x768":"tablet",
+            "1280x720":"desktop",
+            "820x1180":"tablet",
             "800x1280":"mobile",
           };
           const key = `${(t as any).browserViewportWidth ?? ""}x${(t as any).browserViewportHeight ?? ""}`;
@@ -107,7 +107,7 @@ export default function EditTestPage() {
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setSaving(true);
     try{
-      const viewportMap: Record<string,{w:number;h:number}> = {desktop:{w:1280,h:1024}, tablet:{w:1024,h:768}, mobile:{w:800,h:1280}};
+      const viewportMap: Record<string,{w:number;h:number}> = {desktop:{w:1280,h:720}, tablet:{w:820,h:1180}, mobile:{w:800,h:1280}};
       const vp = viewportMap[form.device as keyof typeof viewportMap];
       await updateTest(testId, { name: form.name, description: form.description, project: form.projectId, persona: form.personaId, browserViewportWidth: vp.w, browserViewportHeight: vp.h });
       toast.success("Test updated");

@@ -35,8 +35,8 @@ export default function CreateTestPage() {
     setLoading(true);
     try {
       const viewportMap: Record<string, { w: number; h: number }> = {
-        desktop: { w: 1280, h: 1024 },
-        tablet: { w: 1024, h: 768 },
+        desktop: { w: 1280, h: 720 },
+        tablet: { w: 820, h: 1180 },
         mobile: { w: 800, h: 1280 },
       };
       const vp = viewportMap[form.device as keyof typeof viewportMap];
