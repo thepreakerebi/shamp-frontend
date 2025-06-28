@@ -28,6 +28,7 @@ interface ProjectsState {
   reset: () => void;
   addTrashedProject: (project: Project) => void;
   removeTrashedProject: (id: string) => void;
+  emptyTrashedProjects: () => void;
   projectTestRuns: Record<string, import("@/hooks/use-testruns").TestRun[]>;
   getTestRunsForProject: (projectId: string) => import("@/hooks/use-testruns").TestRun[] | undefined;
   setTestRunsForProject: (projectId: string, runs: import("@/hooks/use-testruns").TestRun[]) => void;
@@ -134,6 +135,8 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     set((state) => ({
       trashedProjects: state.trashedProjects ? state.trashedProjects.filter((p) => p._id !== id) : null,
     })),
+  emptyTrashedProjects: () =>
+    set({ trashedProjects: null }),
   projectTestRuns: {},
   getTestRunsForProject: (projectId: string) => get().projectTestRuns[projectId],
   setTestRunsForProject: (projectId: string, runs: import("@/hooks/use-testruns").TestRun[]) =>

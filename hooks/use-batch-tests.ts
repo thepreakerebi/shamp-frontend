@@ -55,6 +55,7 @@ export function useBatchTests() {
     removeBatchTestFromList,
     trashedBatchTests,
     setTrashedBatchTests,
+    emptyTrashedBatchTests,
   } = useBatchTestsStore();
   const { setTestRuns, addTestRunToList } = useTestRunsStore();
 
@@ -315,6 +316,21 @@ export function useBatchTests() {
     return sorted;
   };
 
+  // Empty trash - permanently delete all trashed batch tests
+  const emptyBatchTestTrash = async (deleteTestRuns = false) => {
+    if (!token) throw new Error("Not authenticated");
+    const url = `${API_BASE}/batchtests/trash/empty${deleteTestRuns ? `?deleteTestRuns=true` : ''}`;
+    const res = await fetch(url, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to empty batch test trash");
+    const result = await res.json();
+    emptyTrashedBatchTests();
+    return result;
+  };
+
   return {
     batchTests,
     trashedBatchTests,
@@ -332,5 +348,6 @@ export function useBatchTests() {
     getBatchTestAnalysisHistory,
     refetch: fetchBatchTests,
     refetchTrashed: fetchTrashedBatchTests,
+    emptyBatchTestTrash,
   };
 } 

@@ -83,6 +83,7 @@ export function useTestRuns() {
     updateTestRunInList,
     addTrashedTestRun,
     removeTrashedTestRun,
+    emptyTrashedTestRuns,
     setTestRuns,
     setTestRunsLoading,
     setTestRunsError,
@@ -598,6 +599,20 @@ export function useTestRuns() {
     }
   }, [token, setTrashedTestRuns]);
 
+  // Empty trash - permanently delete all trashed test runs
+  const emptyTestRunTrash = async () => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/testruns/trash/empty`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to empty test run trash");
+    const result = await res.json();
+    emptyTrashedTestRuns();
+    return result;
+  };
+
   return {
     testRuns: store.testRuns,
     testRunsLoading: store.testRunsLoading,
@@ -621,5 +636,6 @@ export function useTestRuns() {
     updateScheduledTestRun,
     refetchAllTestRuns,
     fetchTrashedTestRuns,
+    emptyTestRunTrash,
   };
 } 

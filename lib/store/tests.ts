@@ -25,6 +25,7 @@ interface TestsState {
   setTrashedTests: (tests: Test[] | null) => void;
   addTrashedTest: (test: Test) => void;
   removeTrashedTest: (id: string) => void;
+  emptyTrashedTests: () => void;
   reset: () => void;
   removeTestRunFromList: (id: string, testId?: string) => void;
 }
@@ -73,6 +74,7 @@ export const useTestsStore = create<TestsState>((set, get) => ({
     set((state) => ({
       trashedTests: state.trashedTests ? state.trashedTests.filter((t) => t._id !== id) : null,
     })),
+  emptyTrashedTests: () => set({ trashedTests: null }),
   reset: () =>
     set({
       tests: null,

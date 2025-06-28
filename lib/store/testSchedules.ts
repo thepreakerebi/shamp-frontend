@@ -30,6 +30,7 @@ interface TestSchedulesState {
   addTrashedSchedule: (s: TestSchedule) => void;
   removeTrashedSchedule: (id: string) => void;
   addScheduleToList: (s: TestSchedule) => void;
+  emptyTrashedSchedules: () => void;
 }
 
 export const useTestSchedulesStore = create<TestSchedulesState>((set) => ({
@@ -77,4 +78,5 @@ export const useTestSchedulesStore = create<TestSchedulesState>((set) => ({
         schedules: exists ? state.schedules.map(s=> s._id===schedule._id ? schedule : s) : [schedule, ...state.schedules]
       };
     }),
+  emptyTrashedSchedules: () => set({ trashedSchedules: null }),
 })); 

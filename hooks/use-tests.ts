@@ -76,6 +76,7 @@ export function useTests() {
     setTrashedTests,
     addTrashedTest,
     removeTrashedTest,
+    emptyTrashedTests,
     setTestsLoading,
     setTestsError,
     setCount,
@@ -373,6 +374,21 @@ export function useTests() {
     return sorted;
   };
 
+  // Empty trash - permanently delete all trashed tests
+  const emptyTestTrash = async (deleteTestRuns = false) => {
+    if (!token) throw new Error("Not authenticated");
+    const url = `${API_BASE}/tests/trash/empty${deleteTestRuns ? `?deleteTestRuns=true` : ''}`;
+    const res = await fetch(url, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to empty test trash");
+    const result = await res.json();
+    emptyTrashedTests();
+    return result;
+  };
+
   return {
     tests,
     trashedTests,
@@ -394,5 +410,6 @@ export function useTests() {
     getTestAnalysisHistory,
     searchTests,
     getTestRunsForTest,
+    emptyTestTrash,
   };
 } 

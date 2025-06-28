@@ -13,6 +13,7 @@ interface BatchTestsState {
   updateBatchTestInList: (test: BatchTest) => void;
   removeBatchTestFromList: (id: string) => void;
   addBatchTestToList: (test: BatchTest) => void;
+  emptyTrashedBatchTests: () => void;
   reset: () => void;
   batchTestRuns: Record<string, import("@/hooks/use-testruns").TestRun[]>;
   getTestRunsForBatchTest: (batchId: string) => import("@/hooks/use-testruns").TestRun[] | undefined;
@@ -118,6 +119,10 @@ export const useBatchTestsStore = create<BatchTestsState>((set, get) => ({
           ? [test, ...(trashList ?? [])]
           : trashList,
       };
+    }),
+  emptyTrashedBatchTests: () =>
+    set({
+      trashedBatchTests: null,
     }),
   reset: () =>
     set({

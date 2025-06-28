@@ -295,6 +295,20 @@ export function useProjects() {
     return sorted;
   };
 
+  // Empty trash - permanently delete all trashed projects
+  const emptyProjectTrash = async () => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/projects/trash/empty`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to empty project trash");
+    const result = await res.json();
+    store.emptyTrashedProjects();
+    return result;
+  };
+
   return {
     projects: store.projects,
     projectsError: store.projectsError,
@@ -315,5 +329,6 @@ export function useProjects() {
     restoreProjectFromTrash,
     getProjectTests,
     getProjectTestruns,
+    emptyProjectTrash,
   };
 } 

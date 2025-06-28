@@ -41,6 +41,7 @@ export function useTestSchedules() {
     addTrashedSchedule,
     removeTrashedSchedule,
     addScheduleToList,
+    emptyTrashedSchedules,
   } = store;
 
   // Initial fetch (only once)
@@ -284,6 +285,20 @@ export function useTestSchedules() {
     [token, setSchedules, setSchedulesLoading, setSchedulesError, fetchSchedules]
   );
 
+  // Empty trash - permanently delete all trashed test schedules
+  const emptyTestScheduleTrash = async () => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/testschedules/trash/empty`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to empty test schedule trash");
+    const result = await res.json();
+    emptyTrashedSchedules();
+    return result;
+  };
+
   return {
     schedules,
     schedulesLoading,
@@ -299,5 +314,7 @@ export function useTestSchedules() {
     updateRecurringSchedule,
     addScheduleToList,
     searchSchedules,
+    emptyTrashedSchedules,
+    emptyTestScheduleTrash,
   };
 } 
