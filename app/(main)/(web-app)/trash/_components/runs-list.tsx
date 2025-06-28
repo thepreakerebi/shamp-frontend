@@ -124,30 +124,30 @@ export function TrashedRunsList() {
       {uniqueRuns.length === 0 ? (
         <p className="text-muted-foreground p-4">No test runs in trash.</p>
       ) : (
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 p-4" aria-label="Trashed test runs list">
-          {uniqueRuns.map(run => {
-            const rp = run as RunWithPersona;
-            return (
-            <article key={run._id} className="rounded-3xl border dark:border-0 bg-card/80 p-4 flex flex-col gap-3">
-              <header className="flex items-start gap-3">
-                <figure className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl font-bold shrink-0" aria-hidden="true">
-                  {(getPersonaName(rp)?.[0] ?? "R").toUpperCase()}
-                </figure>
-                <section className="flex-1 min-w-0">
-                  <h3 className="font-semibold leading-tight truncate" title={getPersonaName(rp) ?? run._id}>{getPersonaName(rp) ?? run._id}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    {statusBadge(run.status)}
-                    {run.browserUseStatus && <Badge variant="outline" className="text-xs whitespace-nowrap">{run.browserUseStatus}</Badge>}
-                  </div>
-                  
-                </section>
-                <nav onClick={e=>e.stopPropagation()} data-stop-row>
-                  <TrashCardActionsDropdown onRestore={() => handleRestore(run)} onDelete={() => promptDelete(run)} />
-                </nav>
-              </header>
-            </article>
-          );})}
-        </section>
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 p-4" aria-label="Trashed test runs list">
+        {uniqueRuns.map(run => {
+          const rp = run as RunWithPersona;
+          return (
+          <article key={run._id} className="rounded-3xl border dark:border-0 bg-card/80 p-4 flex flex-col gap-3">
+            <header className="flex items-start gap-3">
+              <figure className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl font-bold shrink-0" aria-hidden="true">
+                {(getPersonaName(rp)?.[0] ?? "R").toUpperCase()}
+              </figure>
+              <section className="flex-1 min-w-0">
+                <h3 className="font-semibold leading-tight truncate" title={getPersonaName(rp) ?? run._id}>{getPersonaName(rp) ?? run._id}</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  {statusBadge(run.status)}
+                  {run.browserUseStatus && <Badge variant="outline" className="text-xs whitespace-nowrap">{run.browserUseStatus}</Badge>}
+                </div>
+                
+              </section>
+              <nav onClick={e=>e.stopPropagation()} data-stop-row>
+                <TrashCardActionsDropdown onRestore={() => handleRestore(run)} onDelete={() => promptDelete(run)} />
+              </nav>
+            </header>
+          </article>
+        );})}
+      </section>
       )}
 
       <ConfirmDialog

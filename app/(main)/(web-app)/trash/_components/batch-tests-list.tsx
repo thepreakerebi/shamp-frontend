@@ -118,67 +118,67 @@ export function TrashedBatchTestsList() {
       {uniqueBatches.length === 0 ? (
         <p className="text-muted-foreground p-4">No batch tests in trash.</p>
       ) : (
-        <section
-          className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 p-4"
-          aria-label="Trashed batch tests list"
-        >
-          {uniqueBatches.map((batch, idx) => {
-            const runsCount = batch.testrunsCount ?? (batch.testruns ? batch.testruns.length : 0);
-            const successfulRuns = batch.successfulRuns ?? 0;
-            const failedRuns = batch.failedRuns ?? 0;
-            const testName =
-              typeof batch.test === "object" && batch.test && "name" in batch.test
-                ? (batch.test as { name: string }).name
-                : "Batch Test";
+      <section
+        className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 p-4"
+        aria-label="Trashed batch tests list"
+      >
+        {uniqueBatches.map((batch, idx) => {
+          const runsCount = batch.testrunsCount ?? (batch.testruns ? batch.testruns.length : 0);
+          const successfulRuns = batch.successfulRuns ?? 0;
+          const failedRuns = batch.failedRuns ?? 0;
+          const testName =
+            typeof batch.test === "object" && batch.test && "name" in batch.test
+              ? (batch.test as { name: string }).name
+              : "Batch Test";
 
-            return (
-              <article
-                key={`${batch._id}-${idx}`}
-                className="rounded-3xl border dark:border-0 bg-card/80 p-4 flex flex-col gap-3"
-              >
-                <header className="flex items-start gap-3">
-                  <figure
-                    className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl font-bold shrink-0"
-                    aria-hidden="true"
-                  >
-                    {testName[0]}
-                  </figure>
-                  <section className="flex-1 min-w-0">
-                    <h3 className="font-semibold leading-tight truncate" title={testName}>
-                      {testName}
-                    </h3>
-                    {getProjectName(batch.project) && (
-                      <p
-                        className="text-sm text-muted-foreground line-clamp-2"
-                        title={getProjectName(batch.project)}
-                      >
-                        {getProjectName(batch.project)}
-                      </p>
-                    )}
-                  </section>
-                  <nav onClick={e => e.stopPropagation()} data-stop-row>
-                    <TrashCardActionsDropdown
-                      onRestore={() => handleRestore(batch)}
-                      onDelete={() => promptDelete(batch)}
-                    />
-                  </nav>
-                </header>
-
-                <section className="flex items-center gap-2 mt-auto">
-                  <span className="text-xs bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-1.5 py-0 rounded-md">
-                    ✓ {successfulRuns}
-                  </span>
-                  <span className="text-xs bg-red-500/10 text-red-700 dark:text-red-400 px-1.5 py-0 rounded-md">
-                    ✗ {failedRuns}
-                  </span>
-                  <span className="text-xs bg-primary/10 dark:bg-primary/20 text-primary-foreground dark:text-neutral-200 px-1.5 py-0 rounded-md">
-                    {runsCount} runs
-                  </span>
+          return (
+            <article
+              key={`${batch._id}-${idx}`}
+              className="rounded-3xl border dark:border-0 bg-card/80 p-4 flex flex-col gap-3"
+            >
+              <header className="flex items-start gap-3">
+                <figure
+                  className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl font-bold shrink-0"
+                  aria-hidden="true"
+                >
+                  {testName[0]}
+                </figure>
+                <section className="flex-1 min-w-0">
+                  <h3 className="font-semibold leading-tight truncate" title={testName}>
+                    {testName}
+                  </h3>
+                  {getProjectName(batch.project) && (
+                    <p
+                      className="text-sm text-muted-foreground line-clamp-2"
+                      title={getProjectName(batch.project)}
+                    >
+                      {getProjectName(batch.project)}
+                    </p>
+                  )}
                 </section>
-              </article>
-            );
-          })}
-        </section>
+                <nav onClick={e => e.stopPropagation()} data-stop-row>
+                  <TrashCardActionsDropdown
+                    onRestore={() => handleRestore(batch)}
+                    onDelete={() => promptDelete(batch)}
+                  />
+                </nav>
+              </header>
+
+              <section className="flex items-center gap-2 mt-auto">
+                <span className="text-xs bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-1.5 py-0 rounded-md">
+                  ✓ {successfulRuns}
+                </span>
+                <span className="text-xs bg-red-500/10 text-red-700 dark:text-red-400 px-1.5 py-0 rounded-md">
+                  ✗ {failedRuns}
+                </span>
+                <span className="text-xs bg-primary/10 dark:bg-primary/20 text-primary-foreground dark:text-neutral-200 px-1.5 py-0 rounded-md">
+                  {runsCount} runs
+                </span>
+              </section>
+            </article>
+          );
+        })}
+      </section>
       )}
 
       <DeleteBatchTestModal
