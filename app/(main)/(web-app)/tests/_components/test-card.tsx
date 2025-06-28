@@ -11,6 +11,7 @@ import { useTestRuns } from "@/hooks/use-testruns";
 import { RowActionsDropdown } from "./row-actions-dropdown";
 import { useAuth } from "@/lib/auth";
 import { Separator } from "@/components/ui/separator";
+import { useTestsStore } from "@/lib/store/tests";
 
 export function TestCard({ test, projectId }: { test: Test; projectId?: string }) {
   const router = useRouter();
@@ -24,13 +25,29 @@ export function TestCard({ test, projectId }: { test: Test; projectId?: string }
 
   // Prefer actual count from the global TestRuns store so deletions are reflected
   const testRunsStore = useTestRunsStore(state => state.testRuns);
-  const storeCount = React.useMemo(() => {
-    return testRunsStore?.filter(r => r.test === test._id).length ?? undefined;
-  }, [testRunsStore, test._id]);
+  const testsStore = useTestsStore();
+  const testRunsSlice = testsStore.getTestRunsForTest(test._id);
+  const { getTestRunsForTest } = useTests();
+  const [loadingRuns, setLoadingRuns] = React.useState(false);
 
-  const totalRuns = storeCount !== undefined && storeCount !== 0
+  React.useEffect(() => {
+    if (testRunsSlice === undefined && !loadingRuns) {
+      (async () => {
+        setLoadingRuns(true);
+        try { await getTestRunsForTest(test._id, true); } catch {}
+        setLoadingRuns(false);
+      })();
+    }
+  }, [testRunsSlice, getTestRunsForTest, test._id, loadingRuns]);
+
+  const storeCount = React.useMemo(() => {
+    if (testRunsSlice) return testRunsSlice.length;
+    return testRunsStore?.filter(r => r.test === test._id).length ?? undefined;
+  }, [testRunsSlice, testRunsStore, test._id]);
+
+  const totalRuns = storeCount !== undefined
     ? storeCount
-    : ('totalRuns' in test ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns : successfulRuns + failedRuns);
+    : (loadingRuns ? 0 : ('totalRuns' in test ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns : successfulRuns + failedRuns));
 
   const isRunning = React.useMemo(() => {
     return (

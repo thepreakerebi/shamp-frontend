@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProjectBadge } from "@/components/ui/project-badge";
 import { PersonaBadge } from "@/components/ui/persona-badge";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTestRuns } from "@/hooks/use-testruns";
 import { Loader2, CalendarClock, Laptop, Tablet as TabletIcon, Smartphone } from "lucide-react";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import { RowActionsDropdown } from "../../_components/row-actions-dropdown";
 import { useTests } from "@/hooks/use-tests";
 import { useRouter } from "next/navigation";
 import { useTestRunsStore } from "@/lib/store/testruns";
+import { useTestsStore } from "@/lib/store/tests";
 
 /**
  * DetailsSection
@@ -61,11 +62,24 @@ export default function DetailsSection({ test }: { test: Test }) {
   const failedRuns = "failedRuns" in test ? (test as unknown as { failedRuns?: number }).failedRuns ?? 0 : 0;
 
   const testRunsStore = useTestRunsStore(state => state.testRuns);
-  const totalRunsStore = testRunsStore?.filter(r => r.test === test._id).length;
+  const testsStore = useTestsStore();
+  const runsSlice = testsStore.getTestRunsForTest(test._id);
+  const { getTestRunsForTest } = useTests();
+  const [loadingRuns, setLoadingRuns] = useState(false);
 
-  const totalRuns = totalRunsStore && totalRunsStore !== 0
-    ? totalRunsStore
-    : ("totalRuns" in test ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns : successfulRuns + failedRuns);
+  useEffect(() => {
+    if (runsSlice === undefined && !loadingRuns) {
+      (async () => {
+        setLoadingRuns(true);
+        try { await getTestRunsForTest(test._id, true); } catch {}
+        setLoadingRuns(false);
+      })();
+    }
+  }, [runsSlice, getTestRunsForTest, test._id, loadingRuns]);
+
+  const totalRunsStore = runsSlice ? runsSlice.length : testRunsStore?.filter(r => r.test === test._id).length;
+
+  const totalRuns = totalRunsStore !== undefined ? totalRunsStore : (loadingRuns ? 0 : ("totalRuns" in test ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns : successfulRuns + failedRuns));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const personaNames: string[] | undefined = (test as unknown as { personaNames?: string[] }).personaNames;
