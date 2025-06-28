@@ -1,12 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
-// Force dynamic rendering to prevent static generation issues with useSearchParams
+// Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic';
 
 export function TokenGate({ children }: { children: React.ReactNode }) {
-  const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
@@ -26,7 +25,9 @@ export function TokenGate({ children }: { children: React.ReactNode }) {
       return;
     }
     
-    const token = searchParams.get("token");
+    // Use native URLSearchParams instead of useSearchParams hook
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
     if (token) {
       localStorage.setItem("authToken", token);
       // Remove token from URL but preserve other params
@@ -38,7 +39,7 @@ export function TokenGate({ children }: { children: React.ReactNode }) {
     } else {
       setReady(true);
     }
-  }, [mounted, searchParams, pathname, router]);
+  }, [mounted, pathname, router]);
 
   // During SSR and before mount, just render children
   if (!mounted || !ready) return <>{children}</>;
