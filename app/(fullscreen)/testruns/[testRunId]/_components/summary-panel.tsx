@@ -32,9 +32,18 @@ export function SummaryPanel({ run, personaName }: Props) {
     }
   }, [run._id, showRefresh]);
 
-  // Pick latest run data from store if available
+  // Pick latest run data from store if available, but preserve rich fields from initial run
   const liveRun = (testRuns ?? []).find(r => r._id === run._id) as TestRunStatus | undefined;
-  const active = liveRun ?? run;
+  const active = React.useMemo(() => {
+    if (!liveRun) return run;
+    return {
+      ...run,
+      ...liveRun,
+      // Preserve browserUseOutput and analysis from initial run if store version lacks them
+      browserUseOutput: liveRun.browserUseOutput ?? run.browserUseOutput,
+      analysis: liveRun.analysis ?? run.analysis,
+    } as TestRunStatus;
+  }, [run, liveRun]);
 
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
@@ -79,13 +88,63 @@ export function SummaryPanel({ run, personaName }: Props) {
   };
 
   // Extract narration and summary from browserUseOutput
-  const narrationMatch = active.browserUseOutput?.match(/<narration>([\s\S]*?)<\/narration>/i);
-  const summaryMatch = active.browserUseOutput?.match(/<summary>([\s\S]*?)<\/summary>/i);
+  const extractFromBrowserOutput = (output: string | undefined) => {
+    if (!output) return { narration: undefined, summary: undefined };
+    
+    // Debug: log the raw output to see what we're working with
+    console.log('Raw browserUseOutput:', output);
+    
+    // Updated regex patterns to handle newlines and whitespace properly
+    const narrationPatterns = [
+      /<narration>\s*([\s\S]*?)\s*<\/narration>/i,
+      /<narration>([\s\S]*?)<\/narration>/i,
+      /&lt;narration&gt;\s*([\s\S]*?)\s*&lt;\/narration&gt;/i, // HTML encoded
+      /&lt;narration&gt;([\s\S]*?)&lt;\/narration&gt;/i,
+    ];
+    
+    const summaryPatterns = [
+      /<summary>\s*([\s\S]*?)\s*<\/summary>/i,
+      /<summary>([\s\S]*?)<\/summary>/i,
+      /&lt;summary&gt;\s*([\s\S]*?)\s*&lt;\/summary&gt;/i, // HTML encoded
+      /&lt;summary&gt;([\s\S]*?)&lt;\/summary&gt;/i,
+    ];
+    
+    let narration: string | undefined;
+    let summary: string | undefined;
+    
+    // Try each narration pattern
+    for (const pattern of narrationPatterns) {
+      const match = output.match(pattern);
+      if (match && match[1] && match[1].trim()) {
+        narration = match[1].trim();
+        console.log('Narration match found with pattern:', pattern);
+        break;
+      }
+    }
+    
+    // Try each summary pattern
+    for (const pattern of summaryPatterns) {
+      const match = output.match(pattern);
+      if (match && match[1] && match[1].trim()) {
+        summary = match[1].trim();
+        console.log('Summary match found with pattern:', pattern);
+        break;
+      }
+    }
+    
+    // Debug: log what we extracted
+    console.log('Extracted narration:', narration);
+    console.log('Extracted summary:', summary);
+    
+    return { narration, summary };
+  };
 
-  let narration: string | undefined = narrationMatch ? narrationMatch[1].trim() : undefined;
-  const summary: string | undefined = summaryMatch ? summaryMatch[1].trim() : undefined;
-
+  const { narration: extractedNarration, summary: extractedSummary } = extractFromBrowserOutput(active.browserUseOutput);
+  
   // Fallback: if both tags are absent but we have plain text, treat it as narration
+  let narration = extractedNarration;
+  const summary = extractedSummary;
+  
   if (!narration && !summary && active.browserUseOutput) {
     narration = active.browserUseOutput.trim();
   }
