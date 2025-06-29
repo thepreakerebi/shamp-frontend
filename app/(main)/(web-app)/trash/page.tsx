@@ -1,6 +1,5 @@
 "use client";
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { TrashTab } from "./_components/trash-tab";
 import { TrashedProjectsList } from "./_components/projects-list";
@@ -17,12 +16,27 @@ const TAB_OPTIONS = [
   { key: "runs", label: "Test runs" },
 ];
 
+// Force dynamic rendering to prevent static generation issues with useSearchParams
+export const dynamic = 'force-dynamic';
+
 export default function TrashPage() {
-  const searchParams = useSearchParams();
-  const initialParam = searchParams.get("tab");
-  const valid = TAB_OPTIONS.map(t => t.key);
-  const initialTab = valid.includes(initialParam ?? "") ? initialParam! : "projects";
-  const [tab, setTab] = useState(initialTab);
+  const [mounted, setMounted] = useState(false);
+  const [tab, setTab] = useState("projects");
+
+  useEffect(() => {
+    setMounted(true);
+    // Get tab from URL once component mounts on client
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialParam = urlParams.get("tab");
+    const valid = TAB_OPTIONS.map(t => t.key);
+    const initialTab = valid.includes(initialParam ?? "") ? initialParam! : "projects";
+    setTab(initialTab);
+  }, []);
+
+  // Prevent rendering until client-side mount to avoid hydration issues
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <main className="p-4 w-full flex flex-col gap-8">

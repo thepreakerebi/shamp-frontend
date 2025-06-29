@@ -1,7 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { useSearchParams } from "next/navigation";
 import { SettingsTab } from "./_components/settings-tab";
 import { ProfileSection } from "./_components/profile-section";
 import { SecuritySection } from "./_components/security-section";
@@ -16,6 +15,8 @@ const TAB_OPTIONS = [
   { key: "subscription", label: "Subscription & Usage" },
 ];
 
+export const dynamic = 'force-dynamic';
+
 export default function SettingsPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
@@ -25,11 +26,23 @@ export default function SettingsPage() {
     return t.key !== "members" && t.key !== "subscription";
   });
 
-  const searchParams = useSearchParams();
-  const initialParam = searchParams.get("tab");
-  const allowedKeys = filteredTabs.map(t => t.key);
-  const initialTab: string = allowedKeys.includes(initialParam ?? "") ? (initialParam as string) : (filteredTabs[0].key as string);
-  const [tab, setTab] = useState(initialTab);
+  const [mounted, setMounted] = useState(false);
+  const [tab, setTab] = useState(filteredTabs[0]?.key || "profile");
+
+  useEffect(() => {
+    setMounted(true);
+    // Get tab from URL once component mounts on client
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialParam = urlParams.get("tab");
+    const allowedKeys = filteredTabs.map(t => t.key);
+    const initialTab: string = allowedKeys.includes(initialParam ?? "") ? (initialParam as string) : (filteredTabs[0]?.key as string || "profile");
+    setTab(initialTab);
+  }, [filteredTabs]);
+
+  // Prevent rendering until client-side mount to avoid hydration issues
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <main className="p-4 w-full flex flex-col gap-8">

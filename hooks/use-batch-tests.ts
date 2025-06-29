@@ -6,7 +6,7 @@ import { useTestRunsStore } from "@/lib/store/testruns";
 import type { TestRun } from "@/hooks/use-testruns";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "https://shamp.onrender.com";
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
 export interface BatchTest {
   _id: string;
@@ -57,7 +57,7 @@ export function useBatchTests() {
     setTrashedBatchTests,
     emptyTrashedBatchTests,
   } = useBatchTestsStore();
-  const { setTestRuns, addTestRunToList } = useTestRunsStore();
+  const { addTestRunToList } = useTestRunsStore();
 
   const fetchBatchTests = useCallback(async () => {
     if (!token) {
@@ -304,12 +304,12 @@ export function useBatchTests() {
     const getTimestamp = (id: string) => parseInt(id.substring(0, 8), 16) * 1000;
     const sorted = [...runs].sort((a, b) => getTimestamp(b._id) - getTimestamp(a._id));
 
-    // Cache in both the per-batch store and the global test-run list
+    // Cache in the per-batch store ONLY - never overwrite the global test runs store
     useBatchTestsStore.getState().setTestRunsForBatchTest(batchTestId, sorted);
 
-      if (forceRefresh) {
-      setTestRuns(sorted);
-      } else {
+    // Optionally add individual runs to global store for real-time updates,
+    // but NEVER replace the entire global store with batch-specific runs
+    if (!forceRefresh) {
       sorted.forEach((run) => addTestRunToList(run));
     }
 

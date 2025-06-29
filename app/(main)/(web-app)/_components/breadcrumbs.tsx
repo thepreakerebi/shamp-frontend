@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useProjects } from "@/hooks/use-projects";
 import { useProjectsStore } from "@/lib/store/projects";
@@ -14,11 +14,23 @@ import { useTestsStore } from "@/lib/store/tests";
 import { useBatchTests } from "@/hooks/use-batch-tests";
 import { useBatchTestsStore } from "@/lib/store/batchTests";
 
+// Force dynamic rendering to prevent static generation issues with useSearchParams
+export const dynamic = 'force-dynamic';
+
 export function Breadcrumbs() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const batchQueryId = searchParams.get("batch");
-  const projectIdQuery = searchParams.get("project");
+  const [mounted, setMounted] = useState(false);
+  const [batchQueryId, setBatchQueryId] = useState<string | null>(null);
+  const [projectIdQuery, setProjectIdQuery] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    // Get search params from URL once component mounts on client
+    const urlParams = new URLSearchParams(window.location.search);
+    setBatchQueryId(urlParams.get("batch"));
+    setProjectIdQuery(urlParams.get("project"));
+  }, []);
+
   const segments = pathname.split("/").filter(Boolean);
   let path = "";
   // Find the projectId if present (first segment after 'home')
@@ -181,6 +193,11 @@ export function Breadcrumbs() {
     }else{ setBatchTestName(null); }
     return ()=>{ignore=true;};
   },[batchTestId, batchTests]);
+
+  // Prevent rendering until client-side mount to avoid hydration issues
+  if (!mounted) {
+    return null;
+  }
 
   // Special-cased breadcrumb for tests detail with project context via query param
   const isTestDetailWithProject = segments[0] === "tests" && !!projectIdQuery;

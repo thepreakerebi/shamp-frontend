@@ -1,14 +1,29 @@
 "use client";
 import { Button } from '@/components/ui/button';
-import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
+
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = 'force-dynamic';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
 export function CreateAccountWithGoogleButton({ mode = 'signup' }: { mode?: 'signup' | 'login' }) {
+  const [mounted, setMounted] = useState(false);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
   const buttonText = mode === 'login' ? 'Log in with Google' : 'Create account with Google';
-  const searchParams = useSearchParams();
-  const inviteToken = searchParams.get('token');
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      // Use native URLSearchParams instead of useSearchParams hook
+      const urlParams = new URLSearchParams(window.location.search);
+      setInviteToken(urlParams.get('token'));
+    }
+  }, [mounted]);
 
   const handleGoogle = () => {
     let url = `${API_BASE}/users/auth/google`;
@@ -21,8 +36,6 @@ export function CreateAccountWithGoogleButton({ mode = 'signup' }: { mode?: 'sig
     }
     window.location.href = url;
   };
-
- 
 
   return (
     <Button

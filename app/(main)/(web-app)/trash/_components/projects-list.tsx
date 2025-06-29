@@ -115,44 +115,44 @@ export function TrashedProjectsList() {
       {uniqueProjects.length === 0 ? (
         <p className="text-muted-foreground p-4">No projects in trash.</p>
       ) : (
-        <section className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-4 p-4" aria-label="Trashed projects list">
-          {uniqueProjects.map((project, idx) => (
-            <article
-              key={`${project._id}-${idx}`}
-              className="rounded-2xl overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 h-full group"
-            >
-              {/* URL Preview */}
-              <div className="relative h-32 w-full bg-muted flex items-center justify-center select-none" aria-hidden="true">
-                <Image
-                  src={project.previewImageUrl ?? `/placeholder-image.svg`}
-                  alt={`Preview of ${project.url ?? "no url"}`}
-                  className="object-fill w-full h-full group-hover/image:brightness-90 transition"
-                  fill
-                  unoptimized
-                  onError={e => {
-                    const target = e.currentTarget as HTMLImageElement;
-                    target.src = "/placeholder-image.svg";
-                  }}
+      <section className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-4 p-4" aria-label="Trashed projects list">
+        {uniqueProjects.map((project, idx) => (
+          <article
+            key={`${project._id}-${idx}`}
+            className="rounded-2xl overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 h-full group"
+          >
+            {/* URL Preview */}
+            <div className="relative h-32 w-full bg-muted flex items-center justify-center select-none" aria-hidden="true">
+              <Image
+                src={project.previewImageUrl ?? `/placeholder-image.svg`}
+                alt={`Preview of ${project.url ?? "no url"}`}
+                className="object-fill w-full h-full group-hover/image:brightness-90 transition"
+                fill
+                unoptimized
+                onError={e => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  target.src = "/placeholder-image.svg";
+                }}
+              />
+            </div>
+            {/* Card Content */}
+            <section className="flex flex-col gap-1 flex-1 justify-end p-4">
+              <header>
+                <h2 className="font-medium truncate text-md text-foreground leading-tight">{project.name}</h2>
+              </header>
+              <footer className="flex items-center gap-2">
+                <h3 className="text-muted-foreground w-full text-sm truncate">
+                  {project.url || "No URL"}
+                </h3>
+                <TrashCardActionsDropdown
+                  onRestore={() => handleRestore(project)}
+                  onDelete={() => handleDeletePrompt(project)}
                 />
-              </div>
-              {/* Card Content */}
-              <section className="flex flex-col gap-1 flex-1 justify-end p-4">
-                <header>
-                  <h2 className="font-medium truncate text-md text-foreground leading-tight">{project.name}</h2>
-                </header>
-                <footer className="flex items-center gap-2">
-                  <h3 className="text-muted-foreground w-full text-sm truncate">
-                    {project.url || "No URL"}
-                  </h3>
-                  <TrashCardActionsDropdown
-                    onRestore={() => handleRestore(project)}
-                    onDelete={() => handleDeletePrompt(project)}
-                  />
-                </footer>
-              </section>
-            </article>
-          ))}
-        </section>
+              </footer>
+            </section>
+          </article>
+        ))}
+      </section>
       )}
 
       {/* Confirm permanent delete */}

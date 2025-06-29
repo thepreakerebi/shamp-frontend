@@ -5,7 +5,7 @@ import { useTestSchedulesStore, TestSchedule } from "@/lib/store/testSchedules";
 import { toast } from "sonner";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "https://shamp.onrender.com";
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
 // --- Singleton guards to avoid duplicate effects per browser tab ---
 let socketInitialized = false;

@@ -4,7 +4,7 @@ import io from "socket.io-client";
 import { usePersonasStore } from "@/lib/store/personas";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "https://shamp.onrender.com";
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
 export interface Persona {
   _id: string;

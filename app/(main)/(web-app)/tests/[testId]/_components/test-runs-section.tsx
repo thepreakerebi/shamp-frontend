@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Test, TestRunSummary } from "@/hooks/use-tests";
 import { useTests } from "@/hooks/use-tests";
-import { useTestRuns, type TestRun } from "@/hooks/use-testruns";
+import { type TestRun } from "@/hooks/use-testruns";
 import { useTestRunsStore } from "@/lib/store/testruns";
 import { useTestsStore } from "@/lib/store/tests";
 import { TestRunCard } from "./test-run-card";
@@ -11,14 +11,13 @@ import TestRunsFilter from "./test-runs-filter";
 
 export default function TestRunsSection({ test }: { test: Test }) {
   const { getTestRunsForTest } = useTests();
-  const { testRuns: storeRuns } = useTestRuns();
   const { addTestRunToList } = useTestRunsStore();
   const testsStore = useTestsStore();
   const [runs, setRuns] = useState<TestRunSummary[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ result: 'any', run: 'any', persona: 'any' });
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Initial fetch and cache setup
   useEffect(() => {
     if (!test?._id) return;
     let mounted = true;
@@ -48,17 +47,20 @@ export default function TestRunsSection({ test }: { test: Test }) {
     return () => {
       mounted = false;
     };
-  }, [test?._id]);
+  }, [test?._id, getTestRunsForTest, addTestRunToList, testsStore]);
 
-  // Sync statuses/deletions: update only runs that already belong to this test
+  // Sync with store changes: handle updates, additions, and deletions
   useEffect(() => {
-    if (!storeRuns || !runs) return;
-    setRuns(prev => {
-      if (!prev) return prev;
-      const map = new Map(storeRuns.map(r => [r._id, r]));
-      return prev.map(r => (map.has(r._id) ? (map.get(r._id) as TestRunSummary) : r));
-    });
-  }, [storeRuns]);
+    if (!test?._id) return;
+    
+    // Get the latest runs for this specific test from the tests store
+    const testSpecificRuns = testsStore.getTestRunsForTest(test._id);
+    
+    if (testSpecificRuns) {
+      // Use test-specific store as the source of truth (this handles real-time updates)
+      setRuns(testSpecificRuns as unknown as TestRunSummary[]);
+    }
+  }, [test?._id, testsStore]);
 
   const displayRuns = runs;
 

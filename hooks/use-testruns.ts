@@ -5,7 +5,7 @@ import { useTestRunsStore } from "@/lib/store/testruns";
 import { useTestsStore } from "@/lib/store/tests";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "https://shamp.onrender.com";
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
 // --- Singleton guards so side-effects run only once per browser session ---
 let runsFetchedOnce = false;
@@ -148,10 +148,33 @@ export function useTestRuns() {
         removeRunFromTestCache(idToRemove);
       }
     });
-    socket.on("testRun:stopped", ({ testRunId }: { testRunId: string }) => {
-      const existing = getState().testRuns?.find(r => r._id === testRunId);
-      if (!existing) return;
-      const updated = { ...existing, status: 'cancelled', browserUseStatus: 'stopped' } as TestRun;
+    socket.on("testRun:stopped", async ({ testRunId }: { testRunId: string }) => {
+      const current = getState().testRuns?.find(r => r._id === testRunId);
+      if (!current) return;
+
+      // Attempt to get the definitive status from the backend; if the request
+      // fails we at least update browserUseStatus without touching status.
+      try {
+        const res = await fetch(`${API_BASE}/testruns/${testRunId}`, {
+          credentials: "include",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const run = (await res.json()) as TestRunStatus;
+          const updated = {
+            ...current,
+            status: run.status as typeof current.status,
+            browserUseStatus: run.browserUseStatus,
+            browserUseOutput: (run as TestRunStatus).browserUseOutput,
+          } as TestRun;
+          updateTestRunInList(updated);
+          syncRunToTestCache(updated);
+          return;
+        }
+      } catch {/* ignore */}
+
+      // Fallback: only update browserUseStatus if backend fetch fails
+      const updated = { ...current, browserUseStatus: 'stopped' } as TestRun;
       updateTestRunInList(updated);
       syncRunToTestCache(updated);
     });

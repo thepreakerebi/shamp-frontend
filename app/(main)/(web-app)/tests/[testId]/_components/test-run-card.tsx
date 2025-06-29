@@ -37,6 +37,7 @@ export function TestRunCard({ run }: { run: MinimalRun }) {
       succeeded: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
       failed: "bg-red-500/10 text-red-700 dark:text-red-400",
       pending: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+      cancelled: "bg-gray-500/10 text-gray-700 dark:text-gray-400",
     };
     const cls = map[status] ?? "bg-muted text-muted-foreground";
     return (

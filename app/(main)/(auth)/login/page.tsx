@@ -8,8 +8,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth, EmailNotVerifiedError } from '@/lib/auth';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { CreateAccountWithGoogleButton } from '../create-account/_components/google-button';
+
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = 'force-dynamic';
 
 interface FieldErrors {
   email?: string;
@@ -22,23 +25,32 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [showVerifiedAlert, setShowVerifiedAlert] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const nextRouter = useRouter();
-
-  const showVerifiedAlert = searchParams.get('verified') === '1';
 
   useEffect(() => {
-    if (showVerifiedAlert) {
-      const timeout = setTimeout(() => {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('verified');
-        nextRouter.replace(url.pathname, { scroll: false });
-      }, 3000);
-      return () => clearTimeout(timeout);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      // Use native URLSearchParams instead of useSearchParams hook
+      const urlParams = new URLSearchParams(window.location.search);
+      const verified = urlParams.get('verified') === '1';
+      setShowVerifiedAlert(verified);
+      
+      if (verified) {
+        const timeout = setTimeout(() => {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('verified');
+          router.replace(url.pathname, { scroll: false });
+        }, 3000);
+        return () => clearTimeout(timeout);
+      }
     }
-  }, [showVerifiedAlert, nextRouter]);
+  }, [mounted, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });

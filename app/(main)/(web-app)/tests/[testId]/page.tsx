@@ -1,5 +1,5 @@
 "use client";
-import { useParams, useSearchParams, notFound } from "next/navigation";
+import { useParams, notFound } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { useTests } from "@/hooks/use-tests";
@@ -11,11 +11,25 @@ import TestRunsSection from "./_components/test-runs-section";
 import { DetailsSectionSkeleton } from "./_components/details-section-skeleton";
 import { AnalysisSectionSkeleton } from "./_components/analysis-section-skeleton";
 
+// Force dynamic rendering to prevent static generation issues with useSearchParams
+export const dynamic = 'force-dynamic';
+
 export default function TestDetailPage() {
   const { testId } = useParams<{ testId: string }>();
   const { tests, getTestById } = useTests();
   const [test, setTest] = useState(() => tests?.find(t => t._id === testId));
   const [loading, setLoading] = useState(!test);
+  const [mounted, setMounted] = useState(false);
+  const [tab, setTab] = useState("details");
+
+  useEffect(() => {
+    setMounted(true);
+    // Get tab from URL once component mounts on client
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialTabParam = urlParams.get("tab");
+    const initialTab = initialTabParam === "analysis" || initialTabParam === "runs" ? initialTabParam : "details";
+    setTab(initialTab);
+  }, []);
 
   useEffect(() => {
     if (!testId) return;
@@ -42,11 +56,10 @@ export default function TestDetailPage() {
     }
   }, [testId, test, getTestById]);
 
-  // Determine initial tab from query param if provided
-  const searchParams = useSearchParams();
-  const initialTabParam = searchParams.get("tab");
-  const initialTab = initialTabParam === "analysis" || initialTabParam === "runs" ? initialTabParam : "details";
-  const [tab, setTab] = useState(initialTab);
+  // Prevent rendering until client-side mount to avoid hydration issues
+  if (!mounted) {
+    return null;
+  }
 
   if (loading && !test) {
     return (
