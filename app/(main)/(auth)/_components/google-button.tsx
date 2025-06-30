@@ -1,24 +1,51 @@
 "use client";
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { useAuthActions } from "@convex-dev/auth/react";
+import { useState, useEffect } from 'react';
+
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = 'force-dynamic';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
 export function CreateAccountWithGoogleButton({ mode = 'signup' }: { mode?: 'signup' | 'login' }) {
+  const [mounted, setMounted] = useState(false);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
   const buttonText = mode === 'login' ? 'Log in with Google' : 'Create account with Google';
-  const { signIn } = useAuthActions();
-  const frontendUrl = process.env.NEXT_PUBLIC_FRONTEND_URL;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      // Use native URLSearchParams instead of useSearchParams hook
+      const urlParams = new URLSearchParams(window.location.search);
+      setInviteToken(urlParams.get('token'));
+    }
+  }, [mounted]);
+
+  const handleGoogle = () => {
+    let url = `${API_BASE}/users/auth/google`;
+    if (inviteToken) {
+      url += `?inviteToken=${encodeURIComponent(inviteToken)}`;
+    }
+    // Set flag before redirecting to Google
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('showLoggedInToast', '1');
+    }
+    window.location.href = url;
+  };
 
   return (
     <Button
       type="button"
       variant="outline"
       className="w-full flex items-center justify-center gap-2 font-medium text-base border-muted-foreground/30 py-5"
-      onClick={() => void signIn("google", {
-        redirectTo: frontendUrl + "/home",
-      })}
+      onClick={handleGoogle}
       data-testid={mode === 'login' ? 'google-login' : 'google-signup'}
     >
-      <span className="inline-block align-middle mr-4">
+      <span className="inline-block align-middle">
         <Image src="/google-icon-logo.svg" alt="Google Logo" width={24} height={24} />
       </span>
       {buttonText}

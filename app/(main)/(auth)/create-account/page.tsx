@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CreateAccountWithGoogleButton } from './_components/google-button';
+import { CreateAccountWithGoogleButton } from '../_components/google-button';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
@@ -100,7 +100,7 @@ export default function CreateAccountPage() {
           </section>
           <p className="text-sm w-full text-center">
             Already have an account?{' '}
-            <Link href="/login" className="text-secondary font-medium hover:underline">Log In</Link>
+            <Link href="/" className="text-secondary font-medium hover:underline">Log In</Link>
           </p>
         </header>
         <nav aria-label="Sign up options" className="mb-4">

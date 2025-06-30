@@ -92,7 +92,7 @@ export default function ForgotPasswordPage() {
           </Button>
         </form>
         <footer className="text-xs text-muted-foreground mt-4 text-center">
-          <Link href="/login" className="text-secondary hover:underline">Back to login</Link>
+          <Link href="/" className="text-secondary hover:underline">Back to login</Link>
         </footer>
       </section>
     </main>
