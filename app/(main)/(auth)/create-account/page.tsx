@@ -178,9 +178,6 @@ export default function CreateAccountPage() {
           <section className="w-full flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
-              <Button asChild variant="link" size="sm" className="px-0 h-auto text-secondary">
-                <Link href="/forgot-password">Forgot password?</Link>
-              </Button>
             </div>
             <div className="relative">
               <Input
