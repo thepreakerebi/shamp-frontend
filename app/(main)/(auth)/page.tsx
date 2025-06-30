@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth, EmailNotVerifiedError } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
-import { CreateAccountWithGoogleButton } from '../create-account/_components/google-button';
+import { CreateAccountWithGoogleButton } from './create-account/_components/google-button';
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic';
