@@ -16,7 +16,7 @@ export default function AcceptInvitePage() {
   const router = useRouter();
   const { acceptInvite } = useAuth();
 
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null | undefined>(undefined);
   const [form, setForm] = useState({ firstName: "", lastName: "", password: "" });
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +55,11 @@ export default function AcceptInvitePage() {
     } finally { setLoading(false); }
   };
 
-  if (!token) {
+  if (token === undefined) {
+    return null;
+  }
+
+  if (token === null) {
     return (
       <main className="w-full flex items-center justify-center p-4"><p className="text-destructive">Invalid or expired invite link.</p></main>
     );
