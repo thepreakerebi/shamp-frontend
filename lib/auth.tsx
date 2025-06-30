@@ -25,6 +25,7 @@ interface AuthContextType {
   updateProfile: (changes: { firstName?: string; lastName?: string }) => Promise<void>;
   workspaceSettings: WorkspaceSettings | null;
   updateMaxAgentSteps: (value: number) => Promise<void>;
+  acceptInvite: (data: { token: string; firstName: string; lastName: string; password: string; profilePicture?: string }) => Promise<void>;
 }
 
 interface SignupData {
@@ -223,8 +224,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setWorkspaceSettings(data);
   };
 
+  // Accept invite
+  const acceptInvite = async ({ token: inviteToken, firstName, lastName, password, profilePicture }: { token: string; firstName: string; lastName: string; password: string; profilePicture?: string }) => {
+    setLoading(true);
+    const res = await fetch(`${API_BASE}/users/accept-invite`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: inviteToken, firstName, lastName, password, profilePicture }),
+    });
+    if (!res.ok) {
+      setLoading(false);
+      throw new Error((await res.json()).error || 'Failed to accept invite');
+    }
+    const data = await res.json();
+    const authToken = data.token;
+    if (!authToken) {
+      setLoading(false);
+      throw new Error('No auth token returned');
+    }
+    localStorage.setItem('authToken', authToken);
+    setToken(authToken);
+    setUser(data.user);
+    // fetch workspace settings
+    try {
+      const wsRes = await fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken);
+      if (wsRes.ok) {
+        setWorkspaceSettings(await wsRes.json());
+      }
+    } catch {}
+    setLoading(false);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, signup, refresh, getUser, updateProfile, workspaceSettings, updateMaxAgentSteps }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, signup, refresh, getUser, updateProfile, workspaceSettings, updateMaxAgentSteps, acceptInvite }}>
       {children}
     </AuthContext.Provider>
   );
