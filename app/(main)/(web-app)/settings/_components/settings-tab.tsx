@@ -10,6 +10,7 @@ export function SettingsTab({ tabs }: SettingsTabProps) {
     <TabsList aria-label="Settings tabs">
       {tabs.map(tab => (
         <TabsTrigger
+          type="button"
           key={tab.key}
           value={tab.key}
           className="text-left w-full md:rounded-lg rounded-none"
