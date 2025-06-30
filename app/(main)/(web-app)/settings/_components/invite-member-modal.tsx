@@ -37,17 +37,39 @@ export function InviteMemberModal({ open, onOpenChange }: InviteMemberModalProps
           <DialogTitle>Invite member</DialogTitle>
           <DialogDescription>Send an invitation to join your workspace.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="space-y-1">
-            <label htmlFor="email" className="text-sm font-medium">Email</label>
-            <Input id="email" type="email" value={email} onChange={e=>setEmail(e.target.value)} aria-invalid={!!error} />
-            {error && <p className="text-destructive text-xs">{error}</p>}
+        <form
+          onSubmit={(e)=>{
+            e.preventDefault();
+            void handleSubmit();
+          }}
+        >
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <label htmlFor="email" className="text-sm font-medium">Email</label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={e=>setEmail(e.target.value)}
+                aria-invalid={!!error}
+              />
+              {error && <p className="text-destructive text-xs">{error}</p>}
+            </div>
           </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={()=>onOpenChange(false)} disabled={sending}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={sending}>{sending?'Sending…':'Send invite'}</Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={()=>onOpenChange(false)}
+              disabled={sending}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={sending}>
+              {sending ? 'Sending…' : 'Send invite'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
