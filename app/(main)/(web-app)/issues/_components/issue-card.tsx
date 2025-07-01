@@ -40,10 +40,13 @@ export function IssueCard({ issue }: IssueCardProps) {
       const newResolvedState = unresolved;
       setOptimisticResolved(newResolvedState);
       await resolveIssue(issue._id, newResolvedState);
-    } catch (error) {
+      
+      // Show success toast
+      toast.success(newResolvedState ? "Issue marked as resolved" : "Issue marked as unresolved");
+    } catch {
       // Revert optimistic update on error
       setOptimisticResolved(issue.resolved);
-      throw error;
+      toast.error("Failed to update issue status");
     } finally {
       setSubmitting(false);
     }
