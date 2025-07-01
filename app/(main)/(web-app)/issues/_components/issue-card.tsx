@@ -2,12 +2,13 @@
 import { Card } from "@/components/ui/card";
 import { Issue } from "@/lib/store/issues";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertCircle, Trash2, CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, Trash2, CheckCircle, XCircle, Copy } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useIssues } from "@/hooks/use-issues";
 import { useState } from "react";
 import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface IssueCardProps {
   issue: Issue;
@@ -41,6 +42,32 @@ export function IssueCard({ issue }: IssueCardProps) {
       await deleteIssue(issue._id);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    try {
+      // Combine all issue text into a single string
+      const allIssues = [];
+      
+      if (issue.uiIssues.length > 0) {
+        allIssues.push(`UI Issues:\n${issue.uiIssues.map(text => `• ${text}`).join('\n')}`);
+      }
+      
+      if (issue.copyIssues.length > 0) {
+        allIssues.push(`Copy Issues:\n${issue.copyIssues.map(text => `• ${text}`).join('\n')}`);
+      }
+      
+      if (issue.interactionIssues.length > 0) {
+        allIssues.push(`Interaction Issues:\n${issue.interactionIssues.map(text => `• ${text}`).join('\n')}`);
+      }
+
+      const fullText = `Issues for ${issue.personaName} - ${issue.testName}\n\n${allIssues.join('\n\n')}`;
+      
+      await navigator.clipboard.writeText(fullText);
+      toast.success("Issues copied to clipboard");
+    } catch {
+      toast.error("Failed to copy issues");
     }
   };
 
@@ -119,6 +146,10 @@ export function IssueCard({ issue }: IssueCardProps) {
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" disabled={submitting} onClick={handleToggleResolve} className="h-7 w-7">
             {unresolved ? <CheckCircle2 className="size-3.5 text-green-500" /> : <XCircle className="size-3.5 text-zinc-500" />}
+          </Button>
+
+          <Button variant="ghost" size="icon" disabled={submitting} onClick={handleCopy} className="h-7 w-7">
+            <Copy className="size-3.5 text-blue-500" />
           </Button>
 
           <AlertDialog>
