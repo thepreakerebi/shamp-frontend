@@ -99,7 +99,7 @@ export function IssueCard({ issue }: IssueCardProps) {
       </section>
 
       {/* Issue content */}
-      <section className="text-xs text-foreground space-y-3">
+      <section className="text-xs text-foreground flex flex-col gap-4">
         {issue.uiIssues.length > 0 && (
           <section 
             className="cursor-pointer rounded-md p-2 -m-2 transition-all duration-200 hover:scale-[1.02] hover:bg-muted/30 hover:border hover:border-red-200 hover:shadow-md dark:hover:border-red-800"
