@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Filter } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { useProjects, type Project } from "@/hooks/use-projects";
 import { usePersonas, type Persona as PersonaType } from "@/hooks/use-personas";
 import { useAuth } from "@/lib/auth";
@@ -59,12 +59,24 @@ export function TestsCardToolbar() {
 
   return (
     <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-2 py-4">
-      <Input
-        placeholder="Search tests…"
-        value={query}
-        onChange={e=>setQuery(e.target.value)}
-        className="max-w-xs"
-      />
+      <div className="relative max-w-xs">
+        <Input
+          placeholder="Search tests…"
+          value={query}
+          onChange={e=>setQuery(e.target.value)}
+          className="pr-8"
+        />
+        {query && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setQuery("")}
+            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-transparent"
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        )}
+      </div>
       <Popover>
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" className="gap-1"><Filter className="w-4 h-4"/> Filters</Button>
