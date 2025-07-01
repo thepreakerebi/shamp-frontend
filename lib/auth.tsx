@@ -10,6 +10,7 @@ export interface User {
   email?: string;
   profilePicture?: string;
   provider?: string;
+  invitedBy?: string;
   extraFields?: Record<string, unknown>;
 }
 
@@ -24,6 +25,7 @@ interface AuthContextType {
   getUser: () => Promise<User | null>;
   updateProfile: (changes: { firstName?: string; lastName?: string }) => Promise<void>;
   workspaceSettings: WorkspaceSettings | null;
+  workspaceAdmin: WorkspaceAdmin | null;
   updateMaxAgentSteps: (value: number) => Promise<void>;
   acceptInvite: (data: { token: string; firstName: string; lastName: string; password: string; profilePicture?: string }) => Promise<void>;
 }
@@ -38,6 +40,13 @@ interface SignupData {
 
 interface WorkspaceSettings {
   maxAgentStepsDefault: number;
+}
+
+interface WorkspaceAdmin {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  profilePicture?: string;
 }
 
 // Custom error for unverified email
@@ -77,6 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
   const [loading, setLoading] = useState(true);
   const [workspaceSettings, setWorkspaceSettings] = useState<WorkspaceSettings | null>(null);
+  const [workspaceAdmin, setWorkspaceAdmin] = useState<WorkspaceAdmin | null>(null);
 
   // On mount, try to fetch user if token exists
   useEffect(() => {
@@ -86,12 +96,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (res.ok) {
             const data = await res.json();
             setUser(data);
-            // fetch workspace settings in parallel
+            // fetch workspace settings and admin info in parallel
             try {
-              const wsRes = await fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, token);
+              const [wsRes, adminRes] = await Promise.all([
+                fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, token),
+                fetchWithToken(`${API_BASE}/users/workspace/admin`, token)
+              ]);
               if (wsRes.ok) {
                 const wsData = await wsRes.json();
                 setWorkspaceSettings(wsData);
+              }
+              if (adminRes.ok) {
+                const adminData = await adminRes.json();
+                setWorkspaceAdmin(adminData);
               }
             } catch {}
           } else {
@@ -142,10 +159,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const userData = await userRes.json();
     setUser(userData);
     try {
-      const wsRes = await fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken);
+      const [wsRes, adminRes] = await Promise.all([
+        fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken),
+        fetchWithToken(`${API_BASE}/users/workspace/admin`, authToken)
+      ]);
       if (wsRes.ok) {
         const wsData = await wsRes.json();
         setWorkspaceSettings(wsData);
+      }
+      if (adminRes.ok) {
+        const adminData = await adminRes.json();
+        setWorkspaceAdmin(adminData);
       }
     } catch {}
     setLoading(false);
@@ -185,6 +209,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     setUser(null);
     setToken(null);
+    setWorkspaceSettings(null);
+    setWorkspaceAdmin(null);
     localStorage.removeItem('authToken');
   };
 
@@ -245,18 +271,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('authToken', authToken);
     setToken(authToken);
     setUser(data.user);
-    // fetch workspace settings
+    // fetch workspace settings and admin info
     try {
-      const wsRes = await fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken);
+      const [wsRes, adminRes] = await Promise.all([
+        fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken),
+        fetchWithToken(`${API_BASE}/users/workspace/admin`, authToken)
+      ]);
       if (wsRes.ok) {
         setWorkspaceSettings(await wsRes.json());
+      }
+      if (adminRes.ok) {
+        setWorkspaceAdmin(await adminRes.json());
       }
     } catch {}
     setLoading(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, signup, refresh, getUser, updateProfile, workspaceSettings, updateMaxAgentSteps, acceptInvite }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, signup, refresh, getUser, updateProfile, workspaceSettings, workspaceAdmin, updateMaxAgentSteps, acceptInvite }}>
       {children}
     </AuthContext.Provider>
   );

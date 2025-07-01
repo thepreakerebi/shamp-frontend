@@ -70,7 +70,7 @@ function getInitials(firstName?: string, lastName?: string, email?: string) {
 }
 
 export function AppSidebar() {
-  const { user, logout, loading } = useAuth();
+  const { user, logout, loading, workspaceAdmin } = useAuth();
   const pathname = usePathname();
   return (
     <Sidebar>
@@ -111,6 +111,16 @@ export function AppSidebar() {
         </section>
         {/* Create buttons */}
         <section className="flex flex-col gap-2 mt-3">
+          {loading ? (
+            <Skeleton className="h-4 w-32 mb-2" />
+          ) : (
+            <p className="text-sm text-muted-foreground font-medium mb-2">
+              {user?.role === 'admin' && !user?.invitedBy 
+                ? 'Your workspace' 
+                : `${workspaceAdmin?.firstName || 'Admin'}&apos;s workspace`
+              }
+            </p>
+          )}
           <CreateTestButton />
           {/* <CreateProjectButton /> */}
         </section>
