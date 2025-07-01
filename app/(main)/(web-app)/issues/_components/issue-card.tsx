@@ -71,6 +71,16 @@ export function IssueCard({ issue }: IssueCardProps) {
     }
   };
 
+  const handleCopySection = async (sectionType: string, issues: string[]) => {
+    try {
+      const sectionText = `${sectionType}:\n${issues.map(text => `• ${text}`).join('\n')}`;
+      await navigator.clipboard.writeText(sectionText);
+      toast.success(`${sectionType} copied to clipboard`);
+    } catch {
+      toast.error("Failed to copy section");
+    }
+  };
+
   return (
     <Card 
       className="flex flex-col gap-3 p-4 break-words h-fit cursor-pointer hover:bg-muted/60 transition-colors" 
@@ -82,16 +92,22 @@ export function IssueCard({ issue }: IssueCardProps) {
           {issue.personaAvatarUrl && <AvatarImage alt={issue.personaName} src={issue.personaAvatarUrl} />}
           <AvatarFallback>{issue.personaName?.charAt(0).toUpperCase() || "?"}</AvatarFallback>
         </Avatar>
-        <div className="flex flex-col min-w-0 flex-1">
+        <section className="flex flex-col min-w-0 flex-1">
           <span className="text-sm font-medium truncate">{issue.personaName || "Unknown Persona"}</span>
           <span className="text-xs text-muted-foreground truncate">{issue.testName || "Unnamed Test"}</span>
-        </div>
+        </section>
       </section>
 
       {/* Issue content */}
       <section className="text-xs text-foreground space-y-3">
         {issue.uiIssues.length > 0 && (
-          <div>
+          <section 
+            className="cursor-pointer rounded-md p-2 -m-2 transition-all duration-200 hover:scale-[1.02] hover:bg-muted/30 hover:border hover:border-red-200 hover:shadow-md dark:hover:border-red-800"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCopySection("UI Issues", issue.uiIssues);
+            }}
+          >
             <p className="font-semibold mb-2 text-sm">UI Issues</p>
             <ul className="space-y-1">
               {issue.uiIssues.map((issueText, i) => (
@@ -101,10 +117,16 @@ export function IssueCard({ issue }: IssueCardProps) {
                 </li>
               ))}
             </ul>
-          </div>
+          </section>
         )}
         {issue.copyIssues.length > 0 && (
-          <div>
+          <section 
+            className="cursor-pointer rounded-md p-2 -m-2 transition-all duration-200 hover:scale-[1.02] hover:bg-muted/30 hover:border hover:border-yellow-200 hover:shadow-md dark:hover:border-yellow-800"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCopySection("Copy Issues", issue.copyIssues);
+            }}
+          >
             <p className="font-semibold mb-2 text-sm">Copy Issues</p>
             <ul className="space-y-1">
               {issue.copyIssues.map((issueText, i) => (
@@ -114,10 +136,16 @@ export function IssueCard({ issue }: IssueCardProps) {
                 </li>
               ))}
             </ul>
-          </div>
+          </section>
         )}
         {issue.interactionIssues.length > 0 && (
-          <div>
+          <section 
+            className="cursor-pointer rounded-md p-2 -m-2 transition-all duration-200 hover:scale-[1.02] hover:bg-muted/30 hover:border hover:border-blue-200 hover:shadow-md dark:hover:border-blue-800"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCopySection("Interaction Issues", issue.interactionIssues);
+            }}
+          >
             <p className="font-semibold mb-2 text-sm">Interaction Issues</p>
             <ul className="space-y-1">
               {issue.interactionIssues.map((issueText, i) => (
@@ -127,7 +155,7 @@ export function IssueCard({ issue }: IssueCardProps) {
                 </li>
               ))}
             </ul>
-          </div>
+          </section>
         )}
       </section>
 
@@ -143,7 +171,7 @@ export function IssueCard({ issue }: IssueCardProps) {
           <Badge className="gap-1 bg-green-500 text-white dark:bg-green-600 text-xs"><CheckCircle className="size-3" /> Resolved</Badge>
         )}
 
-        <div className="flex items-center gap-1">
+        <section className="flex items-center gap-1">
           <Button variant="ghost" size="icon" disabled={submitting} onClick={handleToggleResolve} className="h-7 w-7">
             {unresolved ? <CheckCircle2 className="size-3.5 text-green-500" /> : <XCircle className="size-3.5 text-zinc-500" />}
           </Button>
@@ -168,7 +196,7 @@ export function IssueCard({ issue }: IssueCardProps) {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </div>
+        </section>
       </section>
     </Card>
   );
