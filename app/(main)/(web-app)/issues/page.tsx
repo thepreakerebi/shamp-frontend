@@ -90,6 +90,10 @@ export default function IssuesPage() {
       setTimeout(layoutMasonry, 50);
     });
 
+    // Observe container width changes (sidebar collapse/expand)
+    observer.observe(containerRef.current);
+
+    // Observe individual items for height changes
     const items = containerRef.current.querySelectorAll('.masonry-item');
     items.forEach(item => observer.observe(item));
 
