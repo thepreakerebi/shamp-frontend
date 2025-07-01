@@ -42,7 +42,7 @@ export function IssueCard({ issue }: IssueCardProps) {
       {/* Top row: avatar + names */}
       <section className="flex items-center gap-3">
         <Avatar className="h-8 w-8">
-          <AvatarImage alt={issue.personaName} />
+          {issue.personaAvatarUrl && <AvatarImage alt={issue.personaName} src={issue.personaAvatarUrl} />}
           <AvatarFallback>{issue.personaName?.charAt(0).toUpperCase() || "?"}</AvatarFallback>
         </Avatar>
         <div className="flex flex-col min-w-0">

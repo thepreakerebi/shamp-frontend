@@ -5,6 +5,7 @@ export interface Issue {
   testRunId: string;
   testName: string;
   personaName: string;
+  personaAvatarUrl?: string;
   uiIssues: string[];
   accessibilityIssues: string[];
   copyIssues: string[];
