@@ -1,18 +1,49 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useIssues } from "@/hooks/use-issues";
 import { IssueCard } from "./_components/issue-card";
 import { IssueCardSkeleton } from "./_components/issue-card-skeleton";
 import { IssuesListEmpty } from "./_components/issues-list-empty";
-import { Button } from "@/components/ui/button";
-import { Filter } from "lucide-react";
+import IssuesFilter from "./_components/issues-filter";
 
 export default function IssuesPage() {
   const { issues: storeIssues } = useIssues();
   const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(0);
+  const [filters, setFilters] = useState({
+    persona: "any",
+    status: "any"
+  });
+
+  // Get unique persona names for filter options
+  const personaOptions = useMemo(() => {
+    if (!storeIssues) return [];
+    const personas = [...new Set(storeIssues.map(issue => issue.personaName).filter(Boolean))];
+    return personas.sort();
+  }, [storeIssues]);
+
+  // Filter issues based on selected filters
+  const filteredIssues = useMemo(() => {
+    if (!storeIssues) return null;
+    
+    return storeIssues.filter(issue => {
+      // Filter by persona
+      if (filters.persona !== "any" && issue.personaName !== filters.persona) {
+        return false;
+      }
+      
+      // Filter by status
+      if (filters.status !== "any") {
+        const isResolved = issue.resolved;
+        if (filters.status === "resolved" && !isResolved) return false;
+        if (filters.status === "unresolved" && isResolved) return false;
+      }
+      
+      return true;
+    });
+  }, [storeIssues, filters]);
 
   // Simple logic: stop loading when we get data from the store
   useEffect(() => {
@@ -81,7 +112,7 @@ export default function IssuesPage() {
       clearTimeout(timer);
       window.removeEventListener('resize', handleResize);
     };
-  }, [storeIssues, loading, layoutMasonry]);
+  }, [filteredIssues, loading, layoutMasonry]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -98,7 +129,7 @@ export default function IssuesPage() {
     items.forEach(item => observer.observe(item));
 
     return () => observer.disconnect();
-  }, [storeIssues, layoutMasonry, loading]);
+  }, [filteredIssues, layoutMasonry, loading]);
 
   // LOADING STATE: Show skeletons
   if (loading) {
@@ -106,9 +137,6 @@ export default function IssuesPage() {
       <section className="p-4 space-y-4">
         <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">
           <h1 className="text-2xl font-semibold">Issues</h1>
-          <Button variant="outline" size="sm" className="gap-2" disabled>
-            <Filter className="size-4" /> Filter
-          </Button>
         </section>
 
         <div 
@@ -125,14 +153,12 @@ export default function IssuesPage() {
   }
 
   // NOT LOADING + NO DATA: Show empty state
-  if (!storeIssues || storeIssues.length === 0) {
+  if (!filteredIssues || filteredIssues.length === 0) {
     return (
       <section className="p-4 space-y-4">
         <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">
           <h1 className="text-2xl font-semibold">Issues · 0</h1>
-          <Button variant="outline" size="sm" className="gap-2" disabled>
-            <Filter className="size-4" /> Filter
-          </Button>
+          
         </section>
         <IssuesListEmpty />
       </section>
@@ -143,10 +169,12 @@ export default function IssuesPage() {
   return (
     <section className="p-4 space-y-4">
       <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">
-        <h1 className="text-2xl font-semibold">Issues · {storeIssues.length}</h1>
-        <Button variant="outline" size="sm" className="gap-2" disabled>
-          <Filter className="size-4" /> Filter
-        </Button>
+        <h1 className="text-2xl font-semibold">Issues · {filteredIssues.length}</h1>
+        <IssuesFilter
+          personaOptions={personaOptions}
+          filters={filters}
+          onChange={setFilters}
+        />
       </section>
 
       <div 
@@ -154,7 +182,7 @@ export default function IssuesPage() {
         className="relative w-full"
         style={{ height: containerHeight || 'auto' }}
       >
-        {storeIssues.map((issue) => (
+        {filteredIssues.map((issue) => (
           <div key={issue._id ?? issue.createdAt} className="masonry-item">
             <IssueCard issue={issue} />
           </div>
