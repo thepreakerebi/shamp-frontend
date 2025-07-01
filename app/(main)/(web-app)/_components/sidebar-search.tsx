@@ -6,6 +6,8 @@ import { useAuth } from "@/lib/auth";
 import { SidebarInput } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 interface SearchItem {
   _id: string;
@@ -13,13 +15,26 @@ interface SearchItem {
   type: "test" | "project" | "persona" | "batchpersona";
 }
 
-function SearchInput({ query, setQuery }: { query: string; setQuery: (v: string) => void }) {
+function SearchInput({ query, setQuery, onClear }: { query: string; setQuery: (v: string) => void; onClear: () => void }) {
   return (
-    <SidebarInput
-      placeholder="Search..."
-      value={query}
-      onChange={(e) => setQuery(e.target.value)}
-    />
+    <div className="relative">
+      <SidebarInput
+        placeholder="Search..."
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        className="pr-8"
+      />
+      {query && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onClear}
+          className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-transparent"
+        >
+          <X className="h-3 w-3" />
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -123,7 +138,14 @@ export function SidebarSearchDropdown() {
 
   return (
     <div ref={containerRef} className="relative w-full">
-      <SearchInput query={query} setQuery={setQuery} />
+      <SearchInput 
+        query={query} 
+        setQuery={setQuery} 
+        onClear={() => {
+          setQuery("");
+          setDropdownOpen(false);
+        }} 
+      />
       {dropdownOpen && (
         <div className="absolute top-full left-0 z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-md max-h-64 overflow-y-auto">
           {loading && (
