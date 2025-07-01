@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SettingsTab } from "./_components/settings-tab";
 import { ProfileSection } from "./_components/profile-section";
@@ -21,10 +21,12 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
-  const filteredTabs = TAB_OPTIONS.filter(t => {
-    if (isAdmin) return true;
-    return t.key !== "members" && t.key !== "subscription";
-  });
+  const filteredTabs = useMemo(() => {
+    return TAB_OPTIONS.filter(t => {
+      if (isAdmin) return true;
+      return t.key !== "members" && t.key !== "subscription";
+    });
+  }, [isAdmin]);
 
   const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState(filteredTabs[0]?.key || "profile");

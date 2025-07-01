@@ -65,7 +65,7 @@ export default function IssuesPage() {
   }, [getColumnCount]);
 
   useEffect(() => {
-    if (loading || !containerRef.current) return;
+    if (!containerRef.current) return;
 
     const timer = setTimeout(() => {
       layoutMasonry();
@@ -84,7 +84,7 @@ export default function IssuesPage() {
   }, [storeIssues, loading, layoutMasonry]);
 
   useEffect(() => {
-    if (loading || !containerRef.current) return;
+    if (!containerRef.current) return;
 
     const observer = new ResizeObserver(() => {
       setTimeout(layoutMasonry, 50);
@@ -116,10 +116,8 @@ export default function IssuesPage() {
           className="relative w-full"
           style={{ height: containerHeight || 'auto' }}
         >
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="masonry-item">
-              <IssueCardSkeleton />
-            </div>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <IssueCardSkeleton key={i} />
           ))}
         </div>
       </section>
