@@ -18,7 +18,6 @@ import { useAuth } from '@/lib/auth';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Notifications } from "./notifications";
 import { ThemeSwitcher } from "./theme-switcher";
-import { CreateProjectButton } from "./create-project-button";
 import { CreateTestButton } from "./create-test-button";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -113,7 +112,7 @@ export function AppSidebar() {
         {/* Create buttons */}
         <section className="flex flex-col gap-2 mt-3">
           <CreateTestButton />
-          <CreateProjectButton />
+          {/* <CreateProjectButton /> */}
         </section>
         {/* Search input */}
         <section className="mt-3">
