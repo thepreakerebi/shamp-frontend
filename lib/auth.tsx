@@ -203,6 +203,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     const updated = await res.json();
     setUser(updated);
+    
+    // If this is an admin (root user), also update workspaceAdmin to reflect changes in sidebar
+    if (user.role === 'admin' && !user.invitedBy) {
+      setWorkspaceAdmin(prev => ({
+        ...prev,
+        firstName: updated.firstName,
+        lastName: updated.lastName,
+      }));
+    }
   };
 
   // Logout method

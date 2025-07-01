@@ -117,7 +117,7 @@ export function AppSidebar() {
             <p className="text-sm text-muted-foreground font-medium mb-2">
               {user?.role === 'admin' && !user?.invitedBy 
                 ? 'Your workspace' 
-                : `${workspaceAdmin?.firstName || 'Admin'}&apos;s workspace`
+                : `${workspaceAdmin?.firstName || 'Admin'}'s workspace`
               }
             </p>
           )}
