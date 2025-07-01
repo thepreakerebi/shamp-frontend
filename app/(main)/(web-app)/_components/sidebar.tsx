@@ -10,7 +10,6 @@ import {
   SidebarMenuItem,
   SidebarFooter,
   SidebarHeader,
-  SidebarInput,
   sidebarMenuButtonVariants,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
@@ -23,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+import { SidebarSearchDropdown } from "./sidebar-search";
 
 const items = [
   {
@@ -116,7 +116,7 @@ export function AppSidebar() {
         </section>
         {/* Search input */}
         <section className="mt-3">
-          {loading ? <Skeleton className="h-8 w-full rounded-md" /> : <SidebarInput placeholder="Search..." />}
+          {loading ? <Skeleton className="h-8 w-full rounded-md" /> : <SidebarSearchDropdown />}
         </section>
       </SidebarHeader>
       <SidebarContent>
