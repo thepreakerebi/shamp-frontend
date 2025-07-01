@@ -3,27 +3,23 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useIssues } from "@/hooks/use-issues";
 import { IssueCard } from "./_components/issue-card";
+import { IssueCardSkeleton } from "./_components/issue-card-skeleton";
 import { IssuesListEmpty } from "./_components/issues-list-empty";
 import { Button } from "@/components/ui/button";
 import { Filter } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function IssuesPage() {
   const { issues: storeIssues } = useIssues();
-  const [issues, setIssues] = useState(storeIssues);
-  const [loading, setLoading] = useState(storeIssues ? false : true);
-  const [initialDone, setInitialDone] = useState(false);
+  const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(0);
 
-  // Sync state from store
+  // Simple logic: stop loading when we get data from the store
   useEffect(() => {
-    setIssues(storeIssues ?? null);
-    if (!initialDone) {
+    if (storeIssues !== null) {
       setLoading(false);
-      setInitialDone(true);
     }
-  }, [storeIssues, initialDone]);
+  }, [storeIssues]);
 
   const getColumnCount = useCallback(() => {
     if (!containerRef.current) return 1;
@@ -35,7 +31,7 @@ export default function IssuesPage() {
   }, []);
 
   const layoutMasonry = useCallback(() => {
-    if (!containerRef.current || !issues?.length) return;
+    if (!containerRef.current) return;
 
     const container = containerRef.current;
     const items = container.querySelectorAll('.masonry-item') as NodeListOf<HTMLElement>;
@@ -66,12 +62,11 @@ export default function IssuesPage() {
     // Set container height to the tallest column
     const maxHeight = Math.max(...columnHeights) - gap;
     setContainerHeight(maxHeight);
-  }, [issues, getColumnCount]);
+  }, [getColumnCount]);
 
   useEffect(() => {
-    if (!initialDone || loading || !issues?.length) return;
+    if (loading || !containerRef.current) return;
 
-    // Layout after a short delay to ensure content is rendered
     const timer = setTimeout(() => {
       layoutMasonry();
     }, 150);
@@ -86,11 +81,10 @@ export default function IssuesPage() {
       clearTimeout(timer);
       window.removeEventListener('resize', handleResize);
     };
-  }, [issues, initialDone, loading, layoutMasonry]);
+  }, [storeIssues, loading, layoutMasonry]);
 
-  // Re-layout when content changes
   useEffect(() => {
-    if (!containerRef.current || !issues?.length) return;
+    if (loading || !containerRef.current) return;
 
     const observer = new ResizeObserver(() => {
       setTimeout(layoutMasonry, 50);
@@ -100,28 +94,54 @@ export default function IssuesPage() {
     items.forEach(item => observer.observe(item));
 
     return () => observer.disconnect();
-  }, [issues, layoutMasonry]);
+  }, [storeIssues, layoutMasonry, loading]);
 
-  if ((!initialDone && loading) || (loading && (issues === null || issues.length === 0))) {
+  // LOADING STATE: Show skeletons
+  if (loading) {
     return (
       <section className="p-4 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">
+          <h1 className="text-2xl font-semibold">Issues</h1>
+          <Button variant="outline" size="sm" className="gap-2" disabled>
+            <Filter className="size-4" /> Filter
+          </Button>
+        </section>
+
+        <div 
+          ref={containerRef}
+          className="relative w-full"
+          style={{ height: containerHeight || 'auto' }}
+        >
           {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-40 rounded-xl" />
+            <div key={i} className="masonry-item">
+              <IssueCardSkeleton />
+            </div>
           ))}
         </div>
       </section>
     );
   }
 
-  if (initialDone && !loading && (issues === null || issues.length === 0)) {
-    return <IssuesListEmpty />;
+  // NOT LOADING + NO DATA: Show empty state
+  if (!storeIssues || storeIssues.length === 0) {
+    return (
+      <section className="p-4 space-y-4">
+        <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">
+          <h1 className="text-2xl font-semibold">Issues · 0</h1>
+          <Button variant="outline" size="sm" className="gap-2" disabled>
+            <Filter className="size-4" /> Filter
+          </Button>
+        </section>
+        <IssuesListEmpty />
+      </section>
+    );
   }
 
+  // NOT LOADING + HAS DATA: Show actual cards
   return (
     <section className="p-4 space-y-4">
       <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">
-        <h1 className="text-2xl font-semibold">Issues · {(issues ?? []).length}</h1>
+        <h1 className="text-2xl font-semibold">Issues · {storeIssues.length}</h1>
         <Button variant="outline" size="sm" className="gap-2" disabled>
           <Filter className="size-4" /> Filter
         </Button>
@@ -132,7 +152,7 @@ export default function IssuesPage() {
         className="relative w-full"
         style={{ height: containerHeight || 'auto' }}
       >
-        {(issues ?? []).map((issue) => (
+        {storeIssues.map((issue) => (
           <div key={issue._id ?? issue.createdAt} className="masonry-item">
             <IssueCard issue={issue} />
           </div>
