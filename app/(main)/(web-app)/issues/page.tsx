@@ -116,7 +116,7 @@ export default function IssuesPage() {
           className="relative w-full"
           style={{ height: containerHeight || 'auto' }}
         >
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 8 }).map((_, i) => (
             <IssueCardSkeleton key={i} />
           ))}
         </div>

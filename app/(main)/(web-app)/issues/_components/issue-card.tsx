@@ -6,7 +6,7 @@ import { CheckCircle2, AlertCircle, Trash2, CheckCircle, XCircle, Copy } from "l
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useIssues } from "@/hooks/use-issues";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
@@ -17,8 +17,14 @@ interface IssueCardProps {
 export function IssueCard({ issue }: IssueCardProps) {
   const { resolveIssue, deleteIssue } = useIssues();
   const [submitting, setSubmitting] = useState(false);
+  const [optimisticResolved, setOptimisticResolved] = useState(issue.resolved);
 
-  const unresolved = !issue.resolved;
+  const unresolved = !optimisticResolved;
+
+  // Sync optimistic state with prop changes
+  useEffect(() => {
+    setOptimisticResolved(issue.resolved);
+  }, [issue.resolved]);
 
   // Handle navigation to test run
   const handleOpen: React.MouseEventHandler<HTMLDivElement> = () => {
@@ -30,7 +36,14 @@ export function IssueCard({ issue }: IssueCardProps) {
   const handleToggleResolve = async () => {
     try {
       setSubmitting(true);
-      await resolveIssue(issue._id, unresolved);
+      // Optimistically update the UI immediately
+      const newResolvedState = unresolved;
+      setOptimisticResolved(newResolvedState);
+      await resolveIssue(issue._id, newResolvedState);
+    } catch (error) {
+      // Revert optimistic update on error
+      setOptimisticResolved(issue.resolved);
+      throw error;
     } finally {
       setSubmitting(false);
     }
