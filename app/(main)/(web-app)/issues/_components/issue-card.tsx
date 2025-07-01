@@ -19,6 +19,13 @@ export function IssueCard({ issue }: IssueCardProps) {
 
   const unresolved = !issue.resolved;
 
+  // Handle navigation to test run
+  const handleOpen: React.MouseEventHandler<HTMLDivElement> = () => {
+    if (issue.testRunId) {
+      window.open(`/testruns/${issue.testRunId}`, "_blank");
+    }
+  };
+
   const handleToggleResolve = async () => {
     try {
       setSubmitting(true);
@@ -38,7 +45,10 @@ export function IssueCard({ issue }: IssueCardProps) {
   };
 
   return (
-    <Card className="flex flex-col gap-3 p-4 break-words h-fit">
+    <Card 
+      className="flex flex-col gap-3 p-4 break-words h-fit cursor-pointer hover:bg-muted/60 transition-colors" 
+      onClick={handleOpen}
+    >
       {/* Top row: avatar + names */}
       <section className="flex items-center gap-3">
         <Avatar className="h-8 w-8 flex-shrink-0">
@@ -95,7 +105,11 @@ export function IssueCard({ issue }: IssueCardProps) {
       </section>
 
       {/* Actions row */}
-      <section className="flex items-center justify-between gap-2 text-xs mt-auto pt-2">
+      <section 
+        className="flex items-center justify-between gap-2 text-xs mt-auto pt-2" 
+        onClick={(e) => e.stopPropagation()} 
+        data-stop-row
+      >
         {unresolved ? (
           <Badge variant="destructive" className="gap-1 text-xs"><AlertCircle className="size-3" /> Unresolved</Badge>
         ) : (
