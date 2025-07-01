@@ -1,4 +1,4 @@
-import { Home, ListChecks, PlayCircle, Settings, LogOut, Users, Trash2 } from "lucide-react";
+import { Home, ListChecks, PlayCircle, Settings, LogOut, Users, Trash2, Bug } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -45,6 +45,11 @@ const items = [
     title: "Test Runs",
     url: "/test-runs",
     icon: PlayCircle,
+  },
+  {
+    title: "Issues",
+    url: "/issues",
+    icon: Bug,
   },
   {
     title: "Settings",
