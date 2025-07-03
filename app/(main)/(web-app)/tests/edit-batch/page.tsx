@@ -34,7 +34,7 @@ export default function EditBatchTestPage() {
     setBatchId(id);
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     if (!batchId) return;
     (async () => {

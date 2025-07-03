@@ -5,6 +5,8 @@ import { ProjectCardDropdown } from "../../_components/project-card-dropdown";
 import { EditProjectModal } from "../../../_components/edit-project-modal";
 import { MoveProjectToTrashModal } from "../../../_components/move-project-to-trash-modal";
 import { ProjectDetailsTabContentSkeleton } from "./project-details-tab-content-skeleton";
+import { Eye, EyeOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ProjectDetailsTabContentProps {
   projectId: string;
@@ -13,7 +15,15 @@ interface ProjectDetailsTabContentProps {
 export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContentProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [trashOpen, setTrashOpen] = useState(false);
+  const [visibleCredentials, setVisibleCredentials] = useState<Record<string, boolean>>({});
   const project = useProjectsStore((s) => s.projects?.find((p) => p._id === projectId) || null);
+
+  const toggleCredentialVisibility = (key: string) => {
+    setVisibleCredentials(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
 
   if (!project) return <ProjectDetailsTabContentSkeleton />;
 
@@ -88,12 +98,29 @@ export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContent
             <section className="flex-1 min-w-0">
               <header className="mb-1 font-semibold text-base">Auth Credentials</header>
               <div className="flex flex-col">
-                {Object.entries(project.authCredentials).map(([key, value]) => (
-                  <section key={key} className="flex flex-row items-center py-1 min-w-0">
-                    <h4 className="flex-[1_1_0%] text-muted-foreground text-sm font-medium truncate min-w-0">{key}</h4>
-                    <span className="flex-[2_1_0%] text-foreground text-sm break-all min-w-0">{value}</span>
-                  </section>
-                ))}
+                {Object.entries(project.authCredentials).map(([key, value]) => {
+                  const credentialKey = `auth-${key}`;
+                  const isVisible = visibleCredentials[credentialKey];
+                  return (
+                    <section key={key} className="flex flex-row items-center py-1 min-w-0">
+                      <h4 className="flex-[1_1_0%] text-muted-foreground text-sm font-medium truncate min-w-0">{key}</h4>
+                      <div className="flex-[2_1_0%] flex items-center gap-2 min-w-0">
+                        <span className="text-foreground text-sm break-all min-w-0">
+                          {isVisible ? value : '•'.repeat(value.length)}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 flex-shrink-0"
+                          onClick={() => toggleCredentialVisibility(credentialKey)}
+                          aria-label={isVisible ? 'Hide credential' : 'Show credential'}
+                        >
+                          {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </section>
+                  );
+                })}
               </div>
             </section>
           )}
@@ -102,12 +129,29 @@ export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContent
             <section className="flex-1 min-w-0">
               <header className="mb-1 font-semibold text-base">Payment Credentials</header>
               <div className="flex flex-col">
-                {Object.entries(project.paymentCredentials).map(([key, value]) => (
-                  <section key={key} className="flex flex-row items-center py-1 min-w-0">
-                    <h4 className="flex-[1_1_0%] text-muted-foreground text-sm font-medium truncate min-w-0">{key}</h4>
-                    <span className="flex-[2_1_0%] text-foreground text-sm break-all min-w-0">{value}</span>
-                  </section>
-                ))}
+                {Object.entries(project.paymentCredentials).map(([key, value]) => {
+                  const credentialKey = `payment-${key}`;
+                  const isVisible = visibleCredentials[credentialKey];
+                  return (
+                    <section key={key} className="flex flex-row items-center py-1 min-w-0">
+                      <h4 className="flex-[1_1_0%] text-muted-foreground text-sm font-medium truncate min-w-0">{key}</h4>
+                      <div className="flex-[2_1_0%] flex items-center gap-2 min-w-0">
+                        <span className="text-foreground text-sm break-all min-w-0">
+                          {isVisible ? value : '•'.repeat(value.length)}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 flex-shrink-0"
+                          onClick={() => toggleCredentialVisibility(credentialKey)}
+                          aria-label={isVisible ? 'Hide credential' : 'Show credential'}
+                        >
+                          {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </section>
+                  );
+                })}
               </div>
             </section>
           )}

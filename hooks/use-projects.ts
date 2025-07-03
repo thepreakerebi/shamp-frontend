@@ -209,9 +209,13 @@ export function useProjects() {
   };
 
   // Delete a project
-  const deleteProject = async (id: string) => {
+  const deleteProject = async (id: string, deleteTests?: boolean) => {
     if (!token) throw new Error("Not authenticated");
-    const res = await fetch(`${API_BASE}/projects/${id}`, {
+    const url = new URL(`${API_BASE}/projects/${id}`);
+    if (deleteTests) {
+      url.searchParams.set('deleteTests', 'true');
+    }
+    const res = await fetch(url.toString(), {
       method: "DELETE",
       credentials: "include",
       headers: { Authorization: `Bearer ${token}` },
@@ -296,9 +300,13 @@ export function useProjects() {
   };
 
   // Empty trash - permanently delete all trashed projects
-  const emptyProjectTrash = async () => {
+  const emptyProjectTrash = async (deleteTests?: boolean) => {
     if (!token) throw new Error("Not authenticated");
-    const res = await fetch(`${API_BASE}/projects/trash/empty`, {
+    const url = new URL(`${API_BASE}/projects/trash/empty`);
+    if (deleteTests) {
+      url.searchParams.set('deleteTests', 'true');
+    }
+    const res = await fetch(url.toString(), {
       method: "DELETE",
       credentials: "include",
       headers: { Authorization: `Bearer ${token}` },
