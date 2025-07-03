@@ -81,9 +81,9 @@ export default function DetailsSection({ test }: { test: Test }) {
 
   const totalRuns = totalRunsStore !== undefined ? totalRunsStore : (loadingRuns ? 0 : ("totalRuns" in test ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns : successfulRuns + failedRuns));
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const personaNames: string[] | undefined = (test as unknown as { personaNames?: string[] }).personaNames;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const personasWithIds: Array<{ _id: string; name: string }> | undefined = (test as unknown as { personas?: Array<{ _id: string; name: string }> }).personas;
 
   // Determine device type from viewport

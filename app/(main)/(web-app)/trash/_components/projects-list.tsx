@@ -3,10 +3,11 @@ import { useProjects, type Project } from "@/hooks/use-projects";
 import Image from "next/image";
 import React, { useState } from "react";
 import { TrashCardActionsDropdown } from "@/components/ui/trash-card-actions-dropdown";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ProjectListSkeleton } from "../../home/_components/project-list-skeleton";
+import { DeleteProjectModal } from "./delete-project-modal";
+import { EmptyProjectTrashModal } from "./empty-project-trash-modal";
 
 export function TrashedProjectsList() {
   const {
@@ -19,8 +20,8 @@ export function TrashedProjectsList() {
     emptyProjectTrash,
   } = useProjects();
 
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [emptyTrashOpen, setEmptyTrashOpen] = useState(false);
   const [emptyTrashLoading, setEmptyTrashLoading] = useState(false);
@@ -36,30 +37,30 @@ export function TrashedProjectsList() {
 
   const handleDeletePrompt = (project: Project) => {
     setProjectToDelete(project);
-    setConfirmOpen(true);
+    setDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = async (deleteTests: boolean) => {
     if (!projectToDelete) return;
-    setConfirmLoading(true);
+    setDeleteLoading(true);
     try {
-      await deleteProject(projectToDelete._id);
+      await deleteProject(projectToDelete._id, deleteTests);
       toast.success("Project permanently deleted");
-      setConfirmOpen(false);
+      setDeleteModalOpen(false);
       setProjectToDelete(null);
       // refresh list
       refetchTrashed();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete project");
     } finally {
-      setConfirmLoading(false);
+      setDeleteLoading(false);
     }
   };
 
-  const handleEmptyTrash = async () => {
+  const handleEmptyTrash = async (deleteTests: boolean) => {
     setEmptyTrashLoading(true);
     try {
-      await emptyProjectTrash();
+      await emptyProjectTrash(deleteTests);
       toast.success("Projects trash emptied");
       setEmptyTrashOpen(false);
       refetchTrashed();
@@ -156,27 +157,20 @@ export function TrashedProjectsList() {
       )}
 
       {/* Confirm permanent delete */}
-      <ConfirmDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title="Delete Project Permanently"
-        description={`Are you sure you want to permanently delete "${projectToDelete?.name}"? This action cannot be undone.`}
-        confirmLabel="Delete"
-        confirmVariant="destructive"
-        loading={confirmLoading}
+      <DeleteProjectModal
+        open={deleteModalOpen}
+        setOpen={setDeleteModalOpen}
+        projectName={projectToDelete?.name ?? null}
         onConfirm={handleConfirmDelete}
+        loading={deleteLoading}
       />
 
       {/* Empty trash confirmation */}
-      <ConfirmDialog
+      <EmptyProjectTrashModal
         open={emptyTrashOpen}
-        onOpenChange={setEmptyTrashOpen}
-        title="Empty Projects Trash"
-        description="Are you sure you want to permanently delete all trashed projects? This action cannot be undone."
-        confirmLabel="Empty trash"
-        confirmVariant="destructive"
-        loading={emptyTrashLoading}
+        setOpen={setEmptyTrashOpen}
         onConfirm={handleEmptyTrash}
+        loading={emptyTrashLoading}
       />
     </section>
   );

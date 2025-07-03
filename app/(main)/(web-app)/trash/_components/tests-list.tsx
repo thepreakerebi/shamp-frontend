@@ -4,8 +4,8 @@ import { useProjects } from "@/hooks/use-projects";
 import React, { useState } from "react";
 import { TrashCardActionsDropdown } from "@/components/ui/trash-card-actions-dropdown";
 import { DeleteTestModal } from "../../tests/_components/delete-test-modal";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
+import { EmptyTestTrashModal } from "./empty-test-trash-modal";
 import { toast } from "sonner";
 import { TestsCardSkeleton } from "../../tests/_components/tests-card-skeleton";
 
@@ -152,15 +152,11 @@ export function TrashedTestsList() {
       />
 
       {/* Empty trash confirmation */}
-      <ConfirmDialog
+      <EmptyTestTrashModal
         open={emptyTrashOpen}
-        onOpenChange={setEmptyTrashOpen}
-        title="Empty Tests Trash"
-        description="Are you sure you want to permanently delete all trashed tests? This action cannot be undone."
-        confirmLabel="Empty trash"
-        confirmVariant="destructive"
+        setOpen={setEmptyTrashOpen}
+        onConfirm={handleEmptyTrash}
         loading={emptyTrashLoading}
-        onConfirm={() => handleEmptyTrash(false)}
       />
     </section>
   );
