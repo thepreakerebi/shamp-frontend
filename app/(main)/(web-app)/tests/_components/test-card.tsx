@@ -103,6 +103,7 @@ export function TestCard({ test, projectId }: { test: Test; projectId?: string }
           testId={test._id}
           testName={test.name}
           actions={{ moveTestToTrash, deleteTest, duplicateTest }}
+          showRun={false}
         />
       </nav>
       </header>
