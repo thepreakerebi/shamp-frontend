@@ -7,9 +7,8 @@ import { useTestsStore } from "@/lib/store/tests";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
-// --- Singleton guards so side-effects run only once per browser session ---
-let runsFetchedOnce = false;
-let trashedRunsFetchedOnce = false;
+// --- Workspace-specific guards to prevent duplicate fetches ---
+const workspaceFetchState: Record<string, { runsFetched: boolean; trashedRunsFetched: boolean }> = {};
 
 export interface TestRun {
   _id: string;
@@ -362,18 +361,41 @@ export function useTestRuns() {
     }
   }, [token, currentWorkspaceId, setTrashedTestRuns]);
 
-  // One-time startup fetch
+  // One-time startup fetch per workspace
   useEffect(() => {
-    if (runsFetchedOnce || !token || !currentWorkspaceId) return;
-    runsFetchedOnce = true;
-    fetchTestRuns();
-    fetchCounts();
-  }, [token, currentWorkspaceId, fetchTestRuns, fetchCounts]);
+    if (!token || !currentWorkspaceId) {
+      // Clear data when no workspace context
+      setTestRuns([]);
+      setTrashedTestRuns([]);
+      return;
+    }
+    
+    // Get or create workspace state
+    if (!workspaceFetchState[currentWorkspaceId]) {
+      workspaceFetchState[currentWorkspaceId] = { runsFetched: false, trashedRunsFetched: false };
+    }
+    
+    const wsState = workspaceFetchState[currentWorkspaceId];
+    if (!wsState.runsFetched) {
+      wsState.runsFetched = true;
+      fetchTestRuns();
+      fetchCounts();
+    }
+  }, [token, currentWorkspaceId, fetchTestRuns, fetchCounts, setTestRuns, setTrashedTestRuns]);
 
   useEffect(() => {
-    if (trashedRunsFetchedOnce || !token || !currentWorkspaceId) return;
-    trashedRunsFetchedOnce = true;
-    fetchTrashedTestRuns();
+    if (!token || !currentWorkspaceId) return;
+    
+    // Get or create workspace state
+    if (!workspaceFetchState[currentWorkspaceId]) {
+      workspaceFetchState[currentWorkspaceId] = { runsFetched: false, trashedRunsFetched: false };
+    }
+    
+    const wsState = workspaceFetchState[currentWorkspaceId];
+    if (!wsState.trashedRunsFetched) {
+      wsState.trashedRunsFetched = true;
+      fetchTrashedTestRuns();
+    }
   }, [token, currentWorkspaceId, fetchTrashedTestRuns]);
 
   // Start a test run

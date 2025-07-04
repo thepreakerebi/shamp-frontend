@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import type { TestRunSummary } from "@/hooks/use-tests";
 import { useTestRuns } from "@/hooks/use-testruns";
+import { useAuth } from "@/lib/auth";
 import { TestRunCard } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card";
 import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-card-skeleton";
 import TestRunsFilter from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-filter";
 import { TestRunsListEmpty } from "./_components/test-runs-list-empty";
 
 export default function TestRunsListPage() {
+  const { currentWorkspaceId } = useAuth();
   const { testRuns: storeRuns, refetchAllTestRuns } = useTestRuns();
 
   // Local state mirrors store so we can control skeleton visibility
@@ -16,14 +18,21 @@ export default function TestRunsListPage() {
   const [loading, setLoading] = useState(storeRuns ? false : true);
   const [initialDone, setInitialDone] = useState(false);
 
+  // Reset state when workspace changes
+  useEffect(() => {
+    setRuns(null);
+    setLoading(true);
+    setInitialDone(false);
+  }, [currentWorkspaceId]);
+
   // Keep local state in sync with global store
   useEffect(() => {
     setRuns(storeRuns ?? null);
   }, [storeRuns]);
 
-  // Trigger a background refresh on mount
+  // Trigger a background refresh on mount or workspace change
   useEffect(() => {
-    if (!refetchAllTestRuns) return;
+    if (!refetchAllTestRuns || !currentWorkspaceId) return;
     (async () => {
       try {
         setLoading(runs === null || runs.length === 0);
@@ -34,7 +43,7 @@ export default function TestRunsListPage() {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentWorkspaceId]);
 
   const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any" });
 
