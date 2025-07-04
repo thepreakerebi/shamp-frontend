@@ -319,8 +319,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }));
     }
     
-    // Refresh user data to get updated workspace info
-    refresh();
+    // Update user state directly with new workspace name if it was changed
+    if (data.name !== undefined && user && user.currentWorkspace) {
+      setUser(prev => {
+        if (!prev || !prev.currentWorkspace) return prev;
+        
+        return {
+          ...prev,
+          currentWorkspace: {
+            ...prev.currentWorkspace,
+            name: workspaceData.name
+          },
+          workspaces: prev.workspaces?.map(ws => 
+            ws._id === currentWorkspaceId ? { ...ws, name: workspaceData.name } : ws
+          ) || prev.workspaces
+        };
+      });
+    }
     
     return workspaceData;
   };

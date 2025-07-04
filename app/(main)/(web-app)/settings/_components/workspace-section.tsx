@@ -15,6 +15,7 @@ export function WorkspaceSection() {
   });
   const [saving, setSaving] = useState(false);
 
+  // Initialize form when data is available
   useEffect(() => {
     if (user?.currentWorkspace && workspaceSettings) {
       setForm({ 
@@ -22,14 +23,13 @@ export function WorkspaceSection() {
         maxAgentStepsDefault: workspaceSettings.maxAgentStepsDefault ?? 50 
       });
     }
-  }, [user, workspaceSettings]);
+  }, [user?.currentWorkspace?.name, workspaceSettings?.maxAgentStepsDefault]);
 
   const dirty =
     form.name.trim() !== (user?.currentWorkspace?.name ?? "") ||
     form.maxAgentStepsDefault !== (workspaceSettings?.maxAgentStepsDefault ?? 50);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!dirty) return;
     
     setSaving(true);
@@ -49,7 +49,7 @@ export function WorkspaceSection() {
   return (
     <section className="p-4 space-y-6 max-w-md">
       <h2 className="text-xl font-semibold">Workspace Settings</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-4">
         <div className="space-y-2">
           <label htmlFor="workspaceName" className="text-sm font-medium">Workspace name</label>
           <Input
@@ -77,11 +77,16 @@ export function WorkspaceSection() {
             Maximum number of steps the agent can take when running tests (50-150)
           </p>
         </div>
-        <Button type="submit" disabled={!dirty || saving || loading} className="mt-2 flex items-center gap-2">
+        <Button 
+          type="button" 
+          onClick={handleSubmit}
+          disabled={!dirty || saving || loading} 
+          className="mt-2 flex items-center gap-2"
+        >
           {saving && <Loader2 className="size-4 animate-spin" />}
           {saving ? "Saving…" : "Save changes"}
         </Button>
-      </form>
+      </div>
     </section>
   );
 } 
