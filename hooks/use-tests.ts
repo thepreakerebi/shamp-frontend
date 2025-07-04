@@ -98,19 +98,19 @@ export function useTests() {
   // Fetch trashed tests
   const fetchTrashedTests = useCallback(async () => {
     if (!token || !currentWorkspaceId) return;
-    store.setTrashedTestsLoading(true);
-    store.setTrashedTestsError(null);
+    store.setTestsLoading(true);
+    store.setTestsError(null);
     try {
       const data = await fetcher("/tests/trash", token, currentWorkspaceId);
       store.setTrashedTests(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        store.setTrashedTestsError(err.message);
+        store.setTestsError(err.message);
       } else {
-        store.setTrashedTestsError("Failed to fetch trashed tests");
+        store.setTestsError("Failed to fetch trashed tests");
       }
     } finally {
-      store.setTrashedTestsLoading(false);
+      store.setTestsLoading(false);
     }
   }, [token, currentWorkspaceId, store]);
 
