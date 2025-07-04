@@ -8,7 +8,7 @@ interface PageSkeletonProps {
 
 export function PageSkeleton({ className, variant = "default" }: PageSkeletonProps) {
   return (
-    <div className={cn("flex h-screen w-full bg-background", className)}>
+    <div suppressHydrationWarning className={cn("flex h-screen w-full bg-background", className)}>
       {/* Workspace switching indicator */}
       {variant === "workspace-switching" && (
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">

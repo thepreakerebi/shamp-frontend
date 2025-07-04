@@ -235,9 +235,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const adminData = await adminRes.json();
           setWorkspaceAdmin(adminData);
         }
-    } catch {}
+      } catch {}
     }
-    setLoading(false);
+
+    // Ensure user context is fully updated before proceeding
+    await refresh();
   };
 
   // Switch workspace
@@ -506,9 +508,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (adminRes.ok) {
           setWorkspaceAdmin(await adminRes.json());
         }
-    } catch {}
+      } catch {}
     }
-    setLoading(false);
+
+    // Ensure user context is fully updated before proceeding
+    await refresh();
   };
 
   return (
