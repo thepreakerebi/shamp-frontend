@@ -41,7 +41,7 @@ const fetcher = (url: string, token: string) =>
   });
 
 export function useProjects() {
-  const { token } = useAuth();
+  const { token, currentWorkspaceId } = useAuth();
   const store = useProjectsStore();
 
   // Fetch all projects
