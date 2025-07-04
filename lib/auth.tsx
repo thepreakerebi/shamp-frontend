@@ -35,6 +35,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
+  switchingWorkspace: boolean;
   currentWorkspaceId: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -124,6 +125,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [workspaceSettings, setWorkspaceSettings] = useState<WorkspaceSettings | null>(null);
   const [workspaceAdmin, setWorkspaceAdmin] = useState<WorkspaceAdmin | null>(null);
+  const [switchingWorkspace, setSwitchingWorkspace] = useState(false);
 
   // On mount, try to fetch user if token exists
   useEffect(() => {
@@ -242,9 +244,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setCurrentWorkspaceId(workspaceId);
     localStorage.setItem('currentWorkspaceId', workspaceId);
     
+    // Set loading state briefly before refresh
+    setLoading(true);
+    setSwitchingWorkspace(true);
+    
     // Trigger page refresh to load with new workspace context
     if (typeof window !== 'undefined') {
-      window.location.reload();
+      // Small delay to allow loading state to show
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     }
   };
 
@@ -419,6 +428,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       user, 
       token, 
       loading, 
+      switchingWorkspace,
       currentWorkspaceId,
       login, 
       logout, 
