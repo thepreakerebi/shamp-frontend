@@ -141,6 +141,8 @@ export function useTestRuns() {
         removeTestRunFromList(_id);
         addTrashedTestRun({ ...existing, trashed: true });
         removeRunFromTestCache(_id);
+        // Refresh counts when a test run is trashed
+        fetchCounts();
       }
     });
     socket.on("testRun:deleted", (payload: { _id?: string; testRunId?: string }) => {
@@ -149,6 +151,8 @@ export function useTestRuns() {
         removeTestRunFromList(idToRemove);
         removeTrashedTestRun(idToRemove);
         removeRunFromTestCache(idToRemove);
+        // Refresh counts when a test run is deleted
+        fetchCounts();
       }
     });
     socket.on("testRun:stopped", async ({ testRunId }: { testRunId: string }) => {
@@ -260,6 +264,12 @@ export function useTestRuns() {
             // not in list yet – add with full payload
             addRunToStores(run as unknown as TestRun);
           }
+          
+          // Refresh counts when a test run finishes (succeeded or failed)
+          if (run.status === 'succeeded' || run.status === 'failed') {
+            fetchCounts();
+          }
+          
           return;
         }
       } catch {
@@ -271,6 +281,8 @@ export function useTestRuns() {
         const updated = { ...existing, status: "succeeded", browserUseStatus: "finished" } as TestRun;
         updateTestRunInList(updated);
         syncRunToTestCache(updated);
+        // Refresh counts on fallback success
+        fetchCounts();
       }
     });
     socket.on(
@@ -309,6 +321,8 @@ export function useTestRuns() {
       // remove from trash and add to active list
       removeTrashedTestRun(testRun._id);
       addRunToStores(testRun);
+      // Refresh counts when a test run is restored
+      fetchCounts();
     });
     return () => {
       socket.disconnect();
