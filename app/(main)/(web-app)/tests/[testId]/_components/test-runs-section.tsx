@@ -80,11 +80,11 @@ export default function TestRunsSection({ test }: { test: Test }) {
         <h2 className="text-xl font-semibold">Test runs · {(displayRuns ?? []).length}</h2>
         <TestRunsFilter personaOptions={personaOptions} filters={filters} onChange={setFilters} />
       </section>
-      {loading && <TestRunsCardSkeleton />}
+      {loading && !runs && <TestRunsCardSkeleton />}
       {!loading && (filtered.length === 0) && (
         <p className="text-muted-foreground text-sm">No runs yet.</p>
       )}
-      {!loading && filtered.length > 0 && (
+      {((!loading && filtered.length > 0) || (loading && runs && filtered.length > 0)) && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(run => (
             <TestRunCard key={run._id} run={run} />
