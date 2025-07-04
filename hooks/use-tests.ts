@@ -84,12 +84,20 @@ export function useTests() {
 
   // Fetch tests
   const fetchTests = useCallback(async () => {
-    if (!token || !currentWorkspaceId) return;
+    if (!token || !currentWorkspaceId) {
+      store.setTests([]);
+      store.setTestsLoading(false);
+      store.setTestsError(null);
+      return;
+    }
+    
     store.setTestsLoading(true);
     store.setTestsError(null);
     try {
       const data = await fetcher("/tests", token, currentWorkspaceId);
-      store.setTests(Array.isArray(data) ? data : []);
+      // Handle paginated response - extract tests from data.data array
+      const tests = data.data || data;
+      store.setTests(Array.isArray(tests) ? tests : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
         store.setTestsError(err.message);
@@ -103,12 +111,17 @@ export function useTests() {
 
   // Fetch trashed tests
   const fetchTrashedTests = useCallback(async () => {
-    if (!token || !currentWorkspaceId) return;
+    if (!token || !currentWorkspaceId) {
+      store.setTrashedTests([]);
+      return;
+    }
     store.setTestsLoading(true);
     store.setTestsError(null);
     try {
       const data = await fetcher("/tests/trash", token, currentWorkspaceId);
-      store.setTrashedTests(Array.isArray(data) ? data : []);
+      // Handle paginated response - extract tests from data.data array
+      const trashedTests = data.data || data;
+      store.setTrashedTests(Array.isArray(trashedTests) ? trashedTests : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
         store.setTestsError(err.message);
@@ -122,7 +135,12 @@ export function useTests() {
 
   // Fetch count
   const fetchCount = useCallback(async () => {
-    if (!token || !currentWorkspaceId) return;
+    if (!token || !currentWorkspaceId) {
+      store.setCount(0);
+      store.setCountLoading(false);
+      store.setCountError(null);
+      return;
+    }
     store.setCountLoading(true);
     store.setCountError(null);
     try {
@@ -146,7 +164,6 @@ export function useTests() {
   }, [fetchTests, fetchCount]);
 
   useEffect(() => {
-    if (!token || !currentWorkspaceId) return;
     fetchTests();
     fetchCount();
     // eslint-disable-next-line react-hooks/exhaustive-deps
