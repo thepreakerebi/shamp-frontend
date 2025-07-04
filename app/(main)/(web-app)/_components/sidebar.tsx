@@ -115,7 +115,7 @@ export function AppSidebar() {
             <Skeleton className="h-4 w-32 mb-2" />
           ) : (
             <p className="text-sm text-muted-foreground font-medium mb-2">
-              {user?.role === 'admin' && !user?.invitedBy 
+              {user?.currentWorkspaceRole === 'admin' && user?.currentWorkspace?.ownerId === user?._id
                 ? 'Your workspace' 
                 : `${workspaceAdmin?.firstName || 'Admin'}'s workspace`
               }

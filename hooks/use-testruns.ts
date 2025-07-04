@@ -26,6 +26,7 @@ export interface TestRun {
   scheduledFor?: string;
   stepsWithScreenshots?: { step: Record<string, unknown>; screenshot: string | null }[];
   recordings?: Artifact[];
+  personaName?: string;
   // Add other fields as needed
 }
 
@@ -646,6 +647,10 @@ export function useTestRuns() {
     refetch: fetchTestRuns,
     refetchCounts: fetchCounts,
     refetchTrashed: fetchTrashedTestRuns,
+    fetchFailedCount: fetchCounts,
+    fetchSuccessfulCount: fetchCounts,
+    refetchAllTestRuns: fetchTestRuns,
+    fetchTrashedTestRuns,
     hasWorkspaceContext: !!currentWorkspaceId,
   };
 } 
