@@ -4,6 +4,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SettingsTab } from "./_components/settings-tab";
 import { ProfileSection } from "./_components/profile-section";
 import { SecuritySection } from "./_components/security-section";
+import { WorkspaceSection } from "./_components/workspace-section";
 import { MembersSection } from "./_components/members-section";
 import { SubscriptionSection } from "./_components/subscription-section";
 import { useAuth } from "@/lib/auth";
@@ -11,6 +12,7 @@ import { useAuth } from "@/lib/auth";
 const TAB_OPTIONS = [
   { key: "profile", label: "Profile" },
   { key: "security", label: "Security" },
+  { key: "workspace", label: "Workspace" },
   { key: "members", label: "Members" },
   { key: "subscription", label: "Subscription & Usage" },
 ];
@@ -34,7 +36,7 @@ export default function SettingsPage() {
   const filteredTabs = useMemo(() => {
     return TAB_OPTIONS.filter(t => {
       if (isOnOwnWorkspace) return true;
-      return t.key !== "members" && t.key !== "subscription";
+      return t.key !== "workspace" && t.key !== "members" && t.key !== "subscription";
     });
   }, [isOnOwnWorkspace]);
 
@@ -65,6 +67,9 @@ export default function SettingsPage() {
           <section className="flex-1 min-w-0">
             <TabsContent value="profile"><ProfileSection /></TabsContent>
             <TabsContent value="security"><SecuritySection /></TabsContent>
+            {isOnOwnWorkspace && (
+              <TabsContent value="workspace"><WorkspaceSection /></TabsContent>
+            )}
             {isOnOwnWorkspace && (
               <TabsContent value="members"><MembersSection /></TabsContent>
             )}
