@@ -49,6 +49,7 @@ interface AuthContextType {
   updateWorkspace: (data: { name?: string; description?: string; maxAgentStepsDefault?: number }) => Promise<void>;
   acceptInvite: (data: { token: string; firstName: string; lastName: string; password: string; profilePicture?: string }) => Promise<void>;
   joinWorkspace: (token: string) => Promise<void>;
+  seamlessJoinWorkspace: (inviteToken: string) => Promise<{ message: string; workspaceName?: string; inviterName?: string; } | void>;
 }
 
 interface SignupData {
@@ -362,6 +363,58 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return data;
   };
 
+  // Seamless join workspace via invite without prior authentication
+  const seamlessJoinWorkspace = async (inviteToken: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/users/seamless-join-workspace`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: inviteToken }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to join workspace');
+      }
+
+      const data = await res.json();
+      const authToken: string | undefined = data.token;
+      if (!authToken) throw new Error('No auth token returned');
+
+      // Store token and update state
+      localStorage.setItem('authToken', authToken);
+      setToken(authToken);
+
+      // Fetch full user info to populate context and workspace details
+      const userRes = await fetchWithToken(`${API_BASE}/users/me`, authToken);
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        setUser(userData);
+
+        // Determine initial workspace ID
+        const wsId = userData.currentWorkspace?._id || userData.defaultWorkspace?._id || userData.workspaces?.[0]?._id;
+        if (wsId) {
+          setCurrentWorkspaceId(wsId);
+          localStorage.setItem('currentWorkspaceId', wsId);
+
+          // Fetch workspace specific settings & admin info
+          try {
+            const [wsRes, adminRes] = await Promise.all([
+              fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken, wsId),
+              fetchWithToken(`${API_BASE}/users/workspace/admin`, authToken, wsId),
+            ]);
+            if (wsRes.ok) setWorkspaceSettings(await wsRes.json());
+            if (adminRes.ok) setWorkspaceAdmin(await adminRes.json());
+          } catch {}
+        }
+      }
+
+      return data;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Logout method
   const logout = () => {
     setUser(null);
@@ -461,7 +514,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       workspaceAdmin, 
       updateWorkspace, 
       acceptInvite,
-      joinWorkspace
+      joinWorkspace,
+      seamlessJoinWorkspace
     }}>
       {children}
     </AuthContext.Provider>
