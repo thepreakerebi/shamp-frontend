@@ -381,9 +381,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const authToken: string | undefined = data.token;
       if (!authToken) throw new Error('No auth token returned');
 
+      // Extract workspaceId from invite token so we can switch context right away
+      let workspaceIdFromToken: string | undefined;
+      try {
+        const [, payload] = inviteToken.split('.') as [string,string?];
+        if (payload) {
+          const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+          workspaceIdFromToken = decoded?.workspaceId;
+        }
+      } catch {}
+
       // Store token and update state
       localStorage.setItem('authToken', authToken);
       setToken(authToken);
+
+      if (workspaceIdFromToken) {
+        setCurrentWorkspaceId(workspaceIdFromToken);
+        localStorage.setItem('currentWorkspaceId', workspaceIdFromToken);
+      }
 
       // Fetch full user info to populate context and workspace details
       const userRes = await fetchWithToken(`${API_BASE}/users/me`, authToken);
@@ -391,12 +406,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const userData = await userRes.json();
         setUser(userData);
 
-        // Determine initial workspace ID
-        const wsId = userData.currentWorkspace?._id || userData.defaultWorkspace?._id || userData.workspaces?.[0]?._id;
+        // Determine initial workspace ID, prefer the workspace we just joined
+        const wsId = workspaceIdFromToken || userData.currentWorkspace?._id || userData.defaultWorkspace?._id || userData.workspaces?.[0]?._id;
         if (wsId) {
           setCurrentWorkspaceId(wsId);
           localStorage.setItem('currentWorkspaceId', wsId);
-
+          
           // Fetch workspace specific settings & admin info
           try {
             const [wsRes, adminRes] = await Promise.all([
