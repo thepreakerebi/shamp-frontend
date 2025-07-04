@@ -20,16 +20,17 @@ export interface BatchTestActionResult {
 }
 
 export function useBatchTestRuns() {
-  const { token } = useAuth();
+  const { token, currentWorkspaceId } = useAuth();
   const { addTestRunToList, updateTestRunInList } = useTestRunsStore();
 
-  if (!token) {
+  if (!token || !currentWorkspaceId) {
     // Return no-op functions when unauthenticated to avoid extra guards in callers
     return {
-      startBatchTestRuns: async () => { throw new Error("Not authenticated"); },
-      pauseBatchTestRuns: async () => { throw new Error("Not authenticated"); },
-      resumeBatchTestRuns: async () => { throw new Error("Not authenticated"); },
-      stopBatchTestRuns: async () => { throw new Error("Not authenticated"); },
+      startBatchTestRuns: async () => { throw new Error("Not authenticated or no workspace context"); },
+      pauseBatchTestRuns: async () => { throw new Error("Not authenticated or no workspace context"); },
+      resumeBatchTestRuns: async () => { throw new Error("Not authenticated or no workspace context"); },
+      stopBatchTestRuns: async () => { throw new Error("Not authenticated or no workspace context"); },
+      hasWorkspaceContext: false,
     } as const;
   }
 
@@ -40,6 +41,7 @@ export function useBatchTestRuns() {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          'X-Workspace-ID': currentWorkspaceId
         },
         body: JSON.stringify({ batchTestId }),
       });
@@ -54,7 +56,10 @@ export function useBatchTestRuns() {
     const res = await fetch(`${API_BASE}/batchtestruns/${id}/${action}`, {
         method: "POST",
         credentials: "include",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'X-Workspace-ID': currentWorkspaceId
+        },
       });
     if (!res.ok) throw new Error(`Failed to ${action} batch test runs`);
     const data = await res.json();
@@ -68,5 +73,6 @@ export function useBatchTestRuns() {
     pauseBatchTestRuns: (id: string) => postAction(id, "pause"),
     resumeBatchTestRuns: (id: string) => postAction(id, "resume"),
     stopBatchTestRuns: (id: string) => postAction(id, "stop"),
+    hasWorkspaceContext: !!currentWorkspaceId,
   } as const;
 } 

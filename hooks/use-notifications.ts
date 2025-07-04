@@ -6,27 +6,30 @@ import { useAuth } from "@/lib/auth";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
-const fetcher = (url: string, token: string) =>
+const fetcher = (url: string, token: string, workspaceId?: string | null) =>
   fetch(`${API_BASE}${url}`, {
     credentials: "include",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { 
+      Authorization: `Bearer ${token}`,
+      ...(workspaceId ? { 'X-Workspace-ID': workspaceId } : {})
+    },
   }).then((res) => {
     if (!res.ok) throw new Error("Failed to fetch");
     return res.json();
   });
 
 export function useNotifications(enabled: boolean = true) {
-  const { token } = useAuth();
+  const { token, currentWorkspaceId } = useAuth();
   const store = useNotificationsStore();
 
   // Initial fetch
   useEffect(() => {
-    if (!enabled || !token) return;
+    if (!enabled || !token || !currentWorkspaceId) return;
     (async () => {
       store.setNotificationsLoading(true);
       store.setNotificationsError(null);
       try {
-        const data = await fetcher("/notifications", token);
+        const data = await fetcher("/notifications", token, currentWorkspaceId);
         store.setNotifications(Array.isArray(data) ? data : []);
       } catch (err: unknown) {
         if (err instanceof Error) store.setNotificationsError(err.message);
@@ -35,14 +38,14 @@ export function useNotifications(enabled: boolean = true) {
         store.setNotificationsLoading(false);
       }
     })();
-  }, [token, enabled]);
+  }, [token, currentWorkspaceId, enabled]);
 
   // Socket real‐time updates
   useEffect(() => {
-    if (!enabled || !token) return;
+    if (!enabled || !token || !currentWorkspaceId) return;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
-      auth: { token },
+      auth: { token, workspaceId: currentWorkspaceId },
     });
 
     socket.on("notification:created", (notif: Notification) => {
@@ -63,28 +66,34 @@ export function useNotifications(enabled: boolean = true) {
       socket.off("notifications:cleared", () => {});
       socket.disconnect();
     };
-  }, [token, enabled]);
+  }, [token, currentWorkspaceId, enabled]);
 
   // API mutations
   const markAllAsRead = useCallback(async () => {
-    if (!token) return;
+    if (!token || !currentWorkspaceId) return;
     await fetch(`${API_BASE}/notifications/mark-all-read`, {
       method: "PUT",
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     store.markAllReadLocally();
-  }, [token]);
+  }, [token, currentWorkspaceId]);
 
   const clearAll = useCallback(async () => {
-    if (!token) return;
+    if (!token || !currentWorkspaceId) return;
     await fetch(`${API_BASE}/notifications/clear-all`, {
       method: "DELETE",
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     store.clearAllLocally();
-  }, [token]);
+  }, [token, currentWorkspaceId]);
 
   return {
     notifications: store.notifications,
@@ -92,5 +101,6 @@ export function useNotifications(enabled: boolean = true) {
     notificationsLoading: store.notificationsLoading,
     markAllAsRead,
     clearAll,
+    hasWorkspaceContext: !!currentWorkspaceId,
   };
 } 
