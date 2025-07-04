@@ -62,28 +62,34 @@ export function WorkspaceSwitcher() {
             <CustomDropdownMenuItem
               key={workspace._id}
               onSelect={() => handleWorkspaceSelect(workspace._id)}
-              className="flex items-center justify-between py-2"
+              className="flex items-center py-2 px-3"
             >
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <div className="flex flex-col min-w-0 flex-1">
-                  <span className="font-medium truncate">
-                    {workspace.name}
-                  </span>
+              <div className="flex flex-col gap-1 flex-1 min-w-0">
+                {/* Workspace name in its own row */}
+                <span className="font-medium truncate">
+                  {workspace.name}
+                </span>
+                
+                {/* Role and badge in same row */}
+                <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">
                     {workspace.role === 'admin' ? 'Admin' : 'Member'}
                   </span>
+                  
+                  {isWorkspaceOwner && (
+                    <Badge variant="secondary" className="text-xs">
+                      Your workspace
+                    </Badge>
+                  )}
                 </div>
-                
-                {isWorkspaceOwner && (
-                  <Badge variant="secondary" className="text-xs">
-                    Your workspace
-                  </Badge>
-                )}
               </div>
               
-              {isCurrentWorkspace && (
-                <Check className="h-4 w-4 text-primary ml-2" />
-              )}
+              {/* Checkmark container - always present for consistent spacing */}
+              <div className="ml-3 flex items-center justify-center w-4 h-4">
+                {isCurrentWorkspace && (
+                  <Check className="h-4 w-4 text-blue-600" strokeWidth={2.5} />
+                )}
+              </div>
             </CustomDropdownMenuItem>
           );
         })}
