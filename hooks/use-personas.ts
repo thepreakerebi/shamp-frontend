@@ -1,4 +1,4 @@
-import { useAuth, type User } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 import { useEffect, useCallback } from "react";
 import io from "socket.io-client";
 import { usePersonasStore } from "@/lib/store/personas";
