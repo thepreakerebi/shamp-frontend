@@ -147,9 +147,10 @@ export function useProjects() {
       // Only process events for the current workspace
       if (data.workspace === currentWorkspaceId) {
         store.addProjectToList(data);
-        // Update count when a project is created
-        const currentCount = useProjectsStore.getState().count;
-        store.setCount(currentCount + 1);
+        // Calculate count based on actual projects in store
+        const { projects } = useProjectsStore.getState();
+        const newCount = Array.isArray(projects) ? projects.length : 0;
+        store.setCount(newCount);
       }
     });
     socket.on("project:deleted", (data: { _id: string; workspace?: string }) => {
@@ -157,9 +158,10 @@ export function useProjects() {
       if (data.workspace === currentWorkspaceId) {
         store.removeProjectFromList(data._id);
         store.removeTrashedProject(data._id);
-        // Update count when a project is permanently deleted
-        const currentCount = useProjectsStore.getState().count;
-        store.setCount(Math.max(0, currentCount - 1));
+        // Calculate count based on actual projects in store
+        const { projects } = useProjectsStore.getState();
+        const newCount = Array.isArray(projects) ? projects.length : 0;
+        store.setCount(newCount);
       }
     });
     socket.on("project:trashed", (data: Project & { workspace?: string }) => {
@@ -167,9 +169,10 @@ export function useProjects() {
       if (data.workspace === currentWorkspaceId) {
         store.removeProjectFromList(data._id);
         store.addTrashedProject({ ...data, trashed: true });
-        // Update count when a project is moved to trash
-        const currentCount = useProjectsStore.getState().count;
-        store.setCount(Math.max(0, currentCount - 1));
+        // Calculate count based on actual projects in store after removal
+        const { projects } = useProjectsStore.getState();
+        const newCount = Array.isArray(projects) ? projects.length : 0;
+        store.setCount(newCount);
       }
     });
     socket.on("project:updated", (data: Project & { workspace?: string }) => {
@@ -178,15 +181,17 @@ export function useProjects() {
         if (data.trashed) {
           store.removeProjectFromList(data._id);
           store.addTrashedProject({ ...data, trashed: true });
-          // Update count when a project is moved to trash
-          const currentCount = useProjectsStore.getState().count;
-          store.setCount(Math.max(0, currentCount - 1));
+          // Calculate count based on actual projects in store after removal
+          const { projects } = useProjectsStore.getState();
+          const newCount = Array.isArray(projects) ? projects.length : 0;
+          store.setCount(newCount);
         } else {
           store.removeTrashedProject(data._id);
           store.updateProjectInList(data);
-          // Update count when a project is restored from trash
-          const currentCount = useProjectsStore.getState().count;
-          store.setCount(currentCount + 1);
+          // Calculate count based on actual projects in store after addition
+          const { projects } = useProjectsStore.getState();
+          const newCount = Array.isArray(projects) ? projects.length : 0;
+          store.setCount(newCount);
         }
       }
     });
@@ -234,7 +239,7 @@ export function useProjects() {
     });
     if (!res.ok) throw new Error("Failed to create project");
     const project = await res.json();
-    store.addProjectToList(project);
+    // Don't manually update store - let Socket.IO events handle it
     return project;
   };
 
@@ -253,7 +258,7 @@ export function useProjects() {
     });
     if (!res.ok) throw new Error("Failed to update project");
     const project = await res.json();
-    store.updateProjectInList(project);
+    // Don't manually update store - let Socket.IO events handle it
     return project;
   };
 
@@ -270,8 +275,7 @@ export function useProjects() {
       },
     });
     if (!res.ok) throw new Error("Failed to delete project");
-    store.removeProjectFromList(id);
-    store.removeTrashedProject(id);
+    // Don't manually update store - let Socket.IO events handle it
     return res.json();
   };
 
@@ -288,8 +292,7 @@ export function useProjects() {
     });
     if (!res.ok) throw new Error("Failed to move project to trash");
     const project = await res.json();
-    store.removeProjectFromList(id);
-    store.addTrashedProject({ ...project, trashed: true });
+    // Don't manually update store - let Socket.IO events handle it
     return project;
   };
 
@@ -306,8 +309,7 @@ export function useProjects() {
     });
     if (!res.ok) throw new Error("Failed to restore project from trash");
     const project = await res.json();
-    store.removeTrashedProject(id);
-    store.addProjectToList({ ...project, trashed: false });
+    // Don't manually update store - let Socket.IO events handle it
     return project;
   };
 
