@@ -153,15 +153,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, token, workspaceIdToUse),
                   fetchWithToken(`${API_BASE}/users/workspace/admin`, token, workspaceIdToUse)
                 ]);
-                if (wsRes.ok) {
-                  const wsData = await wsRes.json();
-                  setWorkspaceSettings(wsData);
-                }
+              if (wsRes.ok) {
+                const wsData = await wsRes.json();
+                setWorkspaceSettings(wsData);
+              }
                 if (adminRes.ok) {
                   const adminData = await adminRes.json();
                   setWorkspaceAdmin(adminData);
                 }
-              } catch {}
+            } catch {}
             }
           } else {
             setUser(null);
@@ -226,15 +226,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken, initialWorkspaceId),
           fetchWithToken(`${API_BASE}/users/workspace/admin`, authToken, initialWorkspaceId)
         ]);
-        if (wsRes.ok) {
-          const wsData = await wsRes.json();
-          setWorkspaceSettings(wsData);
-        }
+      if (wsRes.ok) {
+        const wsData = await wsRes.json();
+        setWorkspaceSettings(wsData);
+      }
         if (adminRes.ok) {
           const adminData = await adminRes.json();
           setWorkspaceAdmin(adminData);
         }
-      } catch {}
+    } catch {}
     }
     setLoading(false);
   };
@@ -432,13 +432,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken, initialWorkspaceId),
           fetchWithToken(`${API_BASE}/users/workspace/admin`, authToken, initialWorkspaceId)
         ]);
-        if (wsRes.ok) {
-          setWorkspaceSettings(await wsRes.json());
-        }
+      if (wsRes.ok) {
+        setWorkspaceSettings(await wsRes.json());
+      }
         if (adminRes.ok) {
           setWorkspaceAdmin(await adminRes.json());
         }
-      } catch {}
+    } catch {}
     }
     setLoading(false);
   };
