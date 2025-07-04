@@ -42,7 +42,7 @@ const fetcher = (url: string, token: string) =>
   });
 
 export function useBatchTests() {
-  const { token } = useAuth();
+  const { token, currentWorkspaceId } = useAuth();
   const {
     batchTests,
     batchTestsLoading,
