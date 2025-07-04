@@ -299,11 +299,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Update workspace settings
   const updateWorkspace = async (data: { name?: string; description?: string; maxAgentStepsDefault?: number }) => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    
     const res = await fetchWithToken(`${API_BASE}/users/workspace`, token, currentWorkspaceId, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error((await res.json()).error || 'Failed to update workspace');
+    
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Failed to update workspace');
+    }
     const workspaceData = await res.json();
     
     // Update workspace settings if maxAgentStepsDefault was changed

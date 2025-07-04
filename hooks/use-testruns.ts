@@ -347,7 +347,7 @@ export function useTestRuns() {
     } finally {
       setTestRunsLoading(false);
     }
-  }, [token, currentWorkspaceId, setTestRuns, setTestRunsLoading, setTestRunsError]);
+  }, [token, currentWorkspaceId]);
 
   // Count successful/failed runs
   const fetchCounts = useCallback(async () => {
@@ -375,7 +375,7 @@ export function useTestRuns() {
     } finally {
       store.setCountsLoading(false);
     }
-  }, [token, currentWorkspaceId, setSuccessfulCount, setFailedCount, store]);
+  }, [token, currentWorkspaceId]);
 
   // Fetch trashed test runs
   const fetchTrashedTestRuns = useCallback(async () => {
@@ -386,7 +386,7 @@ export function useTestRuns() {
     } catch {
       // silent fail for trashed runs
     }
-  }, [token, currentWorkspaceId, setTrashedTestRuns]);
+  }, [token, currentWorkspaceId]);
 
   // One-time startup fetch per workspace
   useEffect(() => {
@@ -408,7 +408,7 @@ export function useTestRuns() {
       fetchTestRuns();
       fetchCounts();
     }
-  }, [token, currentWorkspaceId, fetchTestRuns, fetchCounts, setTestRuns, setTrashedTestRuns]);
+  }, [token, currentWorkspaceId, fetchTestRuns, fetchCounts]);
 
   useEffect(() => {
     if (!token || !currentWorkspaceId) return;
