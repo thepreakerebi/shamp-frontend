@@ -20,6 +20,12 @@ export interface Project {
   lastTestRunAt?: string | null;
   previewImageUrl?: string;
   trashed?: boolean;
+  createdBy?: {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  };
   // Add other fields as needed
 }
 
