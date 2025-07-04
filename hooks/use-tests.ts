@@ -24,6 +24,8 @@ export interface Test {
   // Add other fields as needed
 }
 
+export type TestRunSummary = TestRun;
+
 export interface TestPayload {
   name: string;
   description?: string;
@@ -58,6 +60,10 @@ export interface TestSearch {
   results: Test[];
   loading: boolean;
   error: string | null;
+}
+
+export interface TestSearchParams {
+  [key: string]: string | number | boolean | undefined;
 }
 
 const fetcher = (url: string, token: string, workspaceId?: string | null) =>
@@ -322,13 +328,28 @@ export function useTests() {
   };
 
   // Search tests
-  const searchTests = async (query: string): Promise<TestSearch> => {
+  const searchTests = async (query: string | TestSearchParams): Promise<TestSearch> => {
     if (!token || !currentWorkspaceId) {
-      return { query, results: [], loading: false, error: "Not authenticated or no workspace context" };
+      const queryStr = typeof query === 'string' ? query : '';
+      return { query: queryStr, results: [], loading: false, error: "Not authenticated or no workspace context" };
     }
     
     try {
-      const res = await fetch(`${API_BASE}/tests/search?q=${encodeURIComponent(query)}`, {
+      let url: string;
+      if (typeof query === 'string') {
+        url = `${API_BASE}/tests/search?q=${encodeURIComponent(query)}`;
+      } else {
+        // Handle object parameters by converting to query string
+        const params = new URLSearchParams();
+        Object.entries(query).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            params.set(key, String(value));
+          }
+        });
+        url = `${API_BASE}/tests/search?${params.toString()}`;
+      }
+      
+      const res = await fetch(url, {
         credentials: "include",
         headers: { 
           Authorization: `Bearer ${token}`,
@@ -337,10 +358,12 @@ export function useTests() {
       });
       if (!res.ok) throw new Error("Failed to search tests");
       const results = await res.json();
-      return { query, results: Array.isArray(results) ? results : [], loading: false, error: null };
+      const queryStr = typeof query === 'string' ? query : JSON.stringify(query);
+      return { query: queryStr, results: Array.isArray(results) ? results : [], loading: false, error: null };
     } catch (err) {
+      const queryStr = typeof query === 'string' ? query : JSON.stringify(query);
       return { 
-        query, 
+        query: queryStr, 
         results: [], 
         loading: false, 
         error: err instanceof Error ? err.message : "Failed to search tests" 
