@@ -1,5 +1,5 @@
 import { useAuth } from "@/lib/auth";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import io from "socket.io-client";
 import { useProjectsStore } from "@/lib/store/projects";
 import { useTestRunsStore } from "@/lib/store/testruns";
@@ -46,6 +46,7 @@ const fetcher = (url: string, token: string, workspaceId?: string | null) =>
 export function useProjects() {
   const { token, currentWorkspaceId } = useAuth();
   const store = useProjectsStore();
+  const previousWorkspaceId = useRef<string | null>(null);
 
   // Fetch projects
   const fetchProjects = useCallback(async () => {
@@ -115,6 +116,21 @@ export function useProjects() {
 
   useEffect(() => {
     if (!token || !currentWorkspaceId) return;
+    
+    // Check if workspace has changed
+    if (previousWorkspaceId.current && previousWorkspaceId.current !== currentWorkspaceId) {
+      // Clear store data when workspace changes
+      store.setProjects(null);
+      store.setTrashedProjects(null);
+      store.setCount(0);
+      store.setCountLoading(true);
+      store.setProjectsLoading(true);
+      store.setTrashedProjectsLoading(true);
+    }
+    
+    // Update the ref to current workspace
+    previousWorkspaceId.current = currentWorkspaceId;
+    
     fetchProjects();
     fetchCount();
     fetchTrashedProjects();
@@ -127,45 +143,65 @@ export function useProjects() {
       transports: ["websocket"],
       auth: { token, workspaceId: currentWorkspaceId },
     });
-    socket.on("project:created", (project: Project) => {
-      store.addProjectToList(project);
-      // Update count when a project is created
-      const currentCount = useProjectsStore.getState().count;
-      store.setCount(currentCount + 1);
+    socket.on("project:created", (data: Project & { workspace?: string }) => {
+      // Only process events for the current workspace
+      if (data.workspace === currentWorkspaceId) {
+        store.addProjectToList(data);
+        // Update count when a project is created
+        const currentCount = useProjectsStore.getState().count;
+        store.setCount(currentCount + 1);
+      }
     });
-    socket.on("project:deleted", ({ _id }: { _id: string }) => {
-      store.removeProjectFromList(_id);
-      store.removeTrashedProject(_id);
-      // Update count when a project is permanently deleted
-      const currentCount = useProjectsStore.getState().count;
-      store.setCount(Math.max(0, currentCount - 1));
+    socket.on("project:deleted", (data: { _id: string; workspace?: string }) => {
+      // Only process events for the current workspace
+      if (data.workspace === currentWorkspaceId) {
+        store.removeProjectFromList(data._id);
+        store.removeTrashedProject(data._id);
+        // Update count when a project is permanently deleted
+        const currentCount = useProjectsStore.getState().count;
+        store.setCount(Math.max(0, currentCount - 1));
+      }
     });
-    socket.on("project:trashed", (project: Project) => {
-      store.removeProjectFromList(project._id);
-      store.addTrashedProject({ ...project, trashed: true });
-      // Update count when a project is moved to trash
-      const currentCount = useProjectsStore.getState().count;
-      store.setCount(Math.max(0, currentCount - 1));
-    });
-    socket.on("project:updated", (project: Project) => {
-      if (project.trashed) {
-        store.removeProjectFromList(project._id);
-        store.addTrashedProject({ ...project, trashed: true });
+    socket.on("project:trashed", (data: Project & { workspace?: string }) => {
+      // Only process events for the current workspace
+      if (data.workspace === currentWorkspaceId) {
+        store.removeProjectFromList(data._id);
+        store.addTrashedProject({ ...data, trashed: true });
         // Update count when a project is moved to trash
         const currentCount = useProjectsStore.getState().count;
         store.setCount(Math.max(0, currentCount - 1));
-      } else {
-        store.removeTrashedProject(project._id);
-        store.updateProjectInList(project);
-        // Update count when a project is restored from trash
-        const currentCount = useProjectsStore.getState().count;
-        store.setCount(currentCount + 1);
+      }
+    });
+    socket.on("project:updated", (data: Project & { workspace?: string }) => {
+      // Only process events for the current workspace
+      if (data.workspace === currentWorkspaceId) {
+        if (data.trashed) {
+          store.removeProjectFromList(data._id);
+          store.addTrashedProject({ ...data, trashed: true });
+          // Update count when a project is moved to trash
+          const currentCount = useProjectsStore.getState().count;
+          store.setCount(Math.max(0, currentCount - 1));
+        } else {
+          store.removeTrashedProject(data._id);
+          store.updateProjectInList(data);
+          // Update count when a project is restored from trash
+          const currentCount = useProjectsStore.getState().count;
+          store.setCount(currentCount + 1);
+        }
+      }
+    });
+    socket.on("project:trashEmptied", (data: { deletedCount: number; workspace?: string }) => {
+      // Only process events for the current workspace
+      if (data.workspace === currentWorkspaceId) {
+        // Clear all trashed projects since they were permanently deleted
+        store.setTrashedProjects([]);
+        // Count should not be affected since trashed projects don't count towards active count
       }
     });
     return () => {
       socket.disconnect();
     };
-  }, [token, currentWorkspaceId, store.addProjectToList, store.removeProjectFromList, store.addTrashedProject, store.removeTrashedProject, store.updateProjectInList, store.setCount]);
+  }, [token, currentWorkspaceId]);
 
   // Get a single project by ID
   const getProjectById = async (id: string): Promise<Project> => {
