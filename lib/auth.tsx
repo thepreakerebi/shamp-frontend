@@ -89,9 +89,14 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
 async function fetchWithToken(url: string, token: string | null, workspaceId?: string | null, options: RequestInit = {}) {
   const headers: Record<string, string> = {
-    ...(options.headers || {}),
     'Content-Type': 'application/json',
   };
+  
+  // Add existing headers from options if they are properly typed
+  if (options.headers) {
+    const existingHeaders = options.headers as Record<string, string>;
+    Object.assign(headers, existingHeaders);
+  }
   
   if (token) {
     headers.Authorization = `Bearer ${token}`;
@@ -130,7 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUser(userData);
             
             // Set current workspace if not set or if user doesn't have access to current workspace
-            if (!currentWorkspaceId || !userData.workspaces?.find((ws: any) => ws._id === currentWorkspaceId)) {
+            if (!currentWorkspaceId || !userData.workspaces?.find((ws: { _id: string }) => ws._id === currentWorkspaceId)) {
               const newWorkspaceId = userData.currentWorkspace?._id || userData.defaultWorkspace?._id || userData.workspaces?.[0]?._id;
               if (newWorkspaceId) {
                 setCurrentWorkspaceId(newWorkspaceId);
