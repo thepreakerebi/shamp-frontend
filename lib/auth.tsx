@@ -242,30 +242,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setCurrentWorkspaceId(workspaceId);
     localStorage.setItem('currentWorkspaceId', workspaceId);
     
-    // Refresh workspace-specific data
-    if (token) {
-      fetchWithToken(`${API_BASE}/users/me`, token, workspaceId)
-        .then(async (res) => {
-          if (res.ok) {
-            const userData = await res.json();
-            setUser(userData);
-          }
-        });
-      
-      // Fetch new workspace settings and admin info
-      Promise.all([
-        fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, token, workspaceId),
-        fetchWithToken(`${API_BASE}/users/workspace/admin`, token, workspaceId)
-      ]).then(async ([wsRes, adminRes]) => {
-        if (wsRes.ok) {
-          const wsData = await wsRes.json();
-          setWorkspaceSettings(wsData);
-        }
-        if (adminRes.ok) {
-          const adminData = await adminRes.json();
-          setWorkspaceAdmin(adminData);
-        }
-      }).catch(() => {});
+    // Trigger page refresh to load with new workspace context
+    if (typeof window !== 'undefined') {
+      window.location.reload();
     }
   };
 
