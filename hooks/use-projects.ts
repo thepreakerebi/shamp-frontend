@@ -91,7 +91,7 @@ export function useProjects() {
     store.setTrashedProjectsLoading(true);
     store.setTrashedProjectsError(null);
     try {
-      const data = await fetcher("/projects/trash", token, currentWorkspaceId);
+      const data = await fetcher("/projects/trashed", token, currentWorkspaceId);
       store.setTrashedProjects(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
