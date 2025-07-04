@@ -63,17 +63,20 @@ export interface ChatMessage {
   createdAt?: string;
 }
 
-const fetcher = (url: string, token: string): Promise<unknown> =>
+const fetcher = (url: string, token: string, workspaceId?: string | null): Promise<unknown> =>
   fetch(`${API_BASE}${url}`, {
     credentials: "include",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { 
+      Authorization: `Bearer ${token}`,
+      ...(workspaceId ? { 'X-Workspace-ID': workspaceId } : {})
+    },
   }).then(res => {
     if (!res.ok) throw new Error("Failed to fetch");
     return res.json() as Promise<unknown>;
   });
 
 export function useTestRuns() {
-  const { token } = useAuth();
+  const { token, currentWorkspaceId } = useAuth();
   const store = useTestRunsStore();
   const {
     setSuccessfulCount,
@@ -117,12 +120,12 @@ export function useTestRuns() {
   // Real-time updates (initialize socket only once)
   const socketRef = useRef<ReturnType<typeof io> | null>(null);
   useEffect(() => {
-    if (!token) return;
+    if (!token || !currentWorkspaceId) return;
     if (socketRef.current) return; // already connected in this tab
 
     socketRef.current = io(SOCKET_URL, {
       transports: ["websocket"],
-      auth: { token },
+      auth: { token, workspaceId: currentWorkspaceId },
     });
     const socket = socketRef.current;
     // Listen for test run events
@@ -157,7 +160,10 @@ export function useTestRuns() {
       try {
         const res = await fetch(`${API_BASE}/testruns/${testRunId}`, {
           credentials: "include",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'X-Workspace-ID': currentWorkspaceId
+          },
         });
         if (res.ok) {
           const run = (await res.json()) as TestRunStatus;
@@ -190,7 +196,10 @@ export function useTestRuns() {
           try {
             const res = await fetch(`${API_BASE}/testruns/${testRunId}`, {
               credentials: 'include',
-              headers: { Authorization: `Bearer ${token}` },
+              headers: { 
+                Authorization: `Bearer ${token}`,
+                'X-Workspace-ID': currentWorkspaceId
+              },
             });
             if (res.ok) {
               const run = (await res.json()) as TestRunStatus;
@@ -212,7 +221,10 @@ export function useTestRuns() {
           try {
             const res = await fetch(`${API_BASE}/testruns/${testRunId}`, {
               credentials: 'include',
-              headers: { Authorization: `Bearer ${token}` },
+              headers: { 
+                Authorization: `Bearer ${token}`,
+                'X-Workspace-ID': currentWorkspaceId
+              },
             });
             if (res.ok) {
               const run = (await res.json()) as TestRunStatus;
@@ -228,7 +240,10 @@ export function useTestRuns() {
         // ended in "succeeded" or "failed".
         const res = await fetch(`${API_BASE}/testruns/${testRunId}`, {
           credentials: "include",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'X-Workspace-ID': currentWorkspaceId
+          },
         });
         if (res.ok) {
           const run = (await res.json()) as TestRunStatus;
@@ -299,336 +314,308 @@ export function useTestRuns() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [token]);
+  }, [token, currentWorkspaceId, addTestRunToList, removeTestRunFromList, updateTestRunInList, addTrashedTestRun, removeTrashedTestRun]);
 
-  // Analytics
-  const fetchSuccessfulCount = useCallback(async () => {
-    if (!token) return;
+  // Fetch all test runs
+  const fetchTestRuns = useCallback(async () => {
+    if (!token || !currentWorkspaceId) return;
+    setTestRunsLoading(true);
+    setTestRunsError(null);
     try {
-      const data = await fetcher("/testruns/count/successful", token) as { count?: number };
-      setSuccessfulCount(data.count ?? 0);
-    } catch {
-      setSuccessfulCount(null);
+      const data = await fetcher("/testruns", token, currentWorkspaceId) as TestRun[];
+      setTestRuns(Array.isArray(data) ? data : []);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setTestRunsError(err.message);
+      } else {
+        setTestRunsError("Failed to fetch test runs");
+      }
+    } finally {
+      setTestRunsLoading(false);
     }
-  }, [token, setSuccessfulCount]);
+  }, [token, currentWorkspaceId, setTestRuns, setTestRunsLoading, setTestRunsError]);
 
-  const fetchFailedCount = useCallback(async () => {
-    if (!token) return;
+  // Count successful/failed runs
+  const fetchCounts = useCallback(async () => {
+    if (!token || !currentWorkspaceId) return;
     try {
-      const data = await fetcher("/testruns/count/failed", token) as { count?: number };
-      setFailedCount(data.count ?? 0);
+      const [successData, failData] = await Promise.all([
+        fetcher("/testruns/count/successful", token, currentWorkspaceId),
+        fetcher("/testruns/count/failed", token, currentWorkspaceId),
+      ]);
+      setSuccessfulCount((successData as { count: number }).count ?? 0);
+      setFailedCount((failData as { count: number }).count ?? 0);
     } catch {
-      setFailedCount(null);
+      // silent fail for counts
     }
-  }, [token, setFailedCount]);
+  }, [token, currentWorkspaceId, setSuccessfulCount, setFailedCount]);
+
+  // Fetch trashed test runs
+  const fetchTrashedTestRuns = useCallback(async () => {
+    if (!token || !currentWorkspaceId) return;
+    try {
+      const data = await fetcher("/testruns/trash", token, currentWorkspaceId) as TestRun[];
+      setTrashedTestRuns(Array.isArray(data) ? data : []);
+    } catch {
+      // silent fail for trashed runs
+    }
+  }, [token, currentWorkspaceId, setTrashedTestRuns]);
+
+  // One-time startup fetch
+  useEffect(() => {
+    if (runsFetchedOnce || !token || !currentWorkspaceId) return;
+    runsFetchedOnce = true;
+    fetchTestRuns();
+    fetchCounts();
+  }, [token, currentWorkspaceId, fetchTestRuns, fetchCounts]);
+
+  useEffect(() => {
+    if (trashedRunsFetchedOnce || !token || !currentWorkspaceId) return;
+    trashedRunsFetchedOnce = true;
+    fetchTrashedTestRuns();
+  }, [token, currentWorkspaceId, fetchTrashedTestRuns]);
 
   // Start a test run
   const startTestRun = async (testId: string) => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/testruns/start`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
       },
       body: JSON.stringify({ testId }),
     });
     if (!res.ok) throw new Error("Failed to start test run");
-    const data = (await res.json()) as { testRun: TestRun; message: string };
-    // Optimistically add to store so UI updates immediately
-    addRunToStores(data.testRun);
+    const data = await res.json();
+    const run = data.testRun;
+    if (run) {
+      addRunToStores(run);
+    }
     return data;
   };
 
-  // Stop, pause, resume, delete
+  // Stop a test run
   const stopTestRun = async (id: string) => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/testruns/${id}/stop`, {
-      method: "PATCH",
+      method: "POST",
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     if (!res.ok) throw new Error("Failed to stop test run");
-    const data = (await res.json()) as { status: string; browserUseStatus: string };
-    const existing = getState().testRuns?.find(r=>r._id===id);
-    if (existing) {
-      const updated = { ...existing, status: data.status as TestRun["status"], browserUseStatus: data.browserUseStatus } as TestRun;
-      updateTestRunInList(updated);
-      syncRunToTestCache(updated);
-    }
-    return data;
+    return res.json();
   };
+
+  // Pause a test run
   const pauseTestRun = async (id: string) => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/testruns/${id}/pause`, {
-      method: "PATCH",
+      method: "POST",
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     if (!res.ok) throw new Error("Failed to pause test run");
-    const data = (await res.json()) as { status: string; browserUseStatus: string };
-    const existing = getState().testRuns?.find(r=>r._id===id);
-    if (existing) {
-      const updated = { ...existing, status: data.status as TestRun["status"], browserUseStatus: data.browserUseStatus } as TestRun;
-      updateTestRunInList(updated);
-      syncRunToTestCache(updated);
-    }
-    return data;
+    return res.json();
   };
+
+  // Resume a test run
   const resumeTestRun = async (id: string) => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/testruns/${id}/resume`, {
-      method: "PATCH",
+      method: "POST",
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     if (!res.ok) throw new Error("Failed to resume test run");
-    const data = (await res.json()) as { status: string; browserUseStatus: string };
-    const existing = getState().testRuns?.find(r=>r._id===id);
-    if (existing) {
-      const updated = { ...existing, status: data.status as TestRun["status"], browserUseStatus: data.browserUseStatus } as TestRun;
-      updateTestRunInList(updated);
-      syncRunToTestCache(updated);
-    }
-    return data;
+    return res.json();
   };
+
+  // Delete a test run
   const deleteTestRun = async (id: string) => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/testruns/${id}`, {
       method: "DELETE",
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     if (!res.ok) throw new Error("Failed to delete test run");
-    const resJson = await res.json() as { success: boolean };
     removeTestRunFromList(id);
     removeTrashedTestRun(id);
     removeRunFromTestCache(id);
-    return resJson;
+    return res.json();
   };
 
-  // Move a test run to trash (soft delete)
+  // Move test run to trash
   const moveTestRunToTrash = async (id: string) => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/testruns/${id}/trash`, {
       method: "PATCH",
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     if (!res.ok) throw new Error("Failed to move test run to trash");
-    const { testRun } = await res.json();
+    const testRun = await res.json();
     removeTestRunFromList(id);
     addTrashedTestRun({ ...testRun, trashed: true });
     removeRunFromTestCache(id);
     return testRun;
   };
 
-  // Get status, media
+  // Get test run status (full details)
   const getTestRunStatus = async (id: string): Promise<TestRunStatus> => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/testruns/${id}`, {
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
-    if (!res.ok) throw new Error("Failed to fetch test run status");
-    const run = (await res.json()) as TestRunStatus;
-
-    // Always attempt to fetch latest media when a Browser-Use task ID is present.
-    if (run.browserUseTaskId) {
-      try {
-        const mediaRes = await getTestRunMedia(id);
-        const mediaArr = mediaRes as unknown as unknown[];
-        if (mediaArr && mediaArr.length) {
-          const normalised: Artifact[] = typeof mediaArr[0] === 'string'
-            ? (mediaArr as string[]).map((u, idx) => ({
-                _id: `${id}-media-${idx}`,
-                testRun: id,
-                type: 'recording',
-                url: u,
-              }))
-            : (mediaArr as Artifact[]);
-          run.recordings = normalised;
-        }
-      } catch {
-        /* media might not be ready yet; ignore */
-      }
+    if (res.status === 404) {
+      throw new Error("Not found");
     }
-
-    return run;
+    if (!res.ok) {
+      throw new Error("Failed to fetch test run status");
+    }
+    const status = await res.json();
+    
+    // Update the run in the store if it's there
+    const existing = getState().testRuns?.find(r => r._id === id);
+    if (existing) {
+      const updated = { ...existing, ...status } as TestRun;
+      updateTestRunInList(updated);
+      syncRunToTestCache(updated);
+    }
+    
+    return status;
   };
+
+  // Get test run media/artifacts
   const getTestRunMedia = async (id: string): Promise<Artifact[]> => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/testruns/${id}/media`, {
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     if (!res.ok) throw new Error("Failed to fetch test run media");
-    return res.json() as Promise<Artifact[]>;
+    return res.json();
   };
 
-  // Chat
+  // Chat with agent
   const chatWithAgent = async (payload: { testId?: string; testRunId?: string; message: string }) => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/testruns/chat`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
       },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error("Failed to chat with agent");
-    return res.json() as Promise<{ answer: string }>;
-  };
-  const getChatHistory = async (params: { testId: string; testRunId?: string; personaId?: string }) => {
-    if (!token) throw new Error("Not authenticated");
-    const url = new URL(`${API_BASE}/testruns/chat/history`, window.location.origin);
-    url.searchParams.append("testId", params.testId);
-    if (params.testRunId) url.searchParams.append("testRunId", params.testRunId);
-    if (params.personaId) url.searchParams.append("personaId", params.personaId);
-    const res = await fetch(url.toString(), {
-      credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) throw new Error("Failed to fetch chat history");
-    const raw = (await res.json()) as Record<string, unknown>[];
-    // Backend stores chat messages under `text` but UI expects `message`.
-    const normalised: ChatMessage[] = raw.map(m => {
-      const rec = m as Record<string, unknown>;
-      return {
-        testId: rec.testId as string | undefined,
-        testRunId: rec.testRunId as string | undefined,
-        personaId: rec.personaId as string | undefined,
-        message: (rec.message ?? rec.text ?? "") as string,
-        role: (rec.role as "user" | "agent") ?? "agent",
-        createdAt: (rec.timestamp as string | undefined) ?? undefined,
-      };
-    });
-    return normalised;
+    if (!res.ok) throw new Error("Failed to send message");
+    return res.json();
   };
 
+  // Get chat history
+  const getChatHistory = async (params: { testId: string; testRunId?: string; personaId?: string }) => {
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    const searchParams = new URLSearchParams();
+    if (params.testId) searchParams.set('testId', params.testId);
+    if (params.testRunId) searchParams.set('testRunId', params.testRunId);
+    if (params.personaId) searchParams.set('personaId', params.personaId);
+    
+    const res = await fetch(`${API_BASE}/testruns/chat?${searchParams.toString()}`, {
+      credentials: "include",
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
+    });
+    if (!res.ok) throw new Error("Failed to fetch chat history");
+    return res.json();
+  };
+
+  // Restore test run from trash
   const restoreTestRunFromTrash = async (id: string) => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/testruns/${id}/restore`, {
       method: "PATCH",
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
-    if (!res.ok) throw new Error("Failed to restore test run");
-    const { testRun } = await res.json();
+    if (!res.ok) throw new Error("Failed to restore test run from trash");
+    const testRun = await res.json();
     removeTrashedTestRun(id);
-    addRunToStores(testRun);
+    addRunToStores({ ...testRun, trashed: false });
     return testRun;
   };
 
-  // Update a pending scheduled test run (date/time/persona)
+  // Update scheduled test run
   const updateScheduledTestRun = async (
     id: string,
     update: Partial<{ personaId: string; scheduledFor: string }>,
     personaName?: string,
   ): Promise<TestRun> => {
-    if (!token) throw new Error("Not authenticated");
-    const res = await fetch(`${API_BASE}/testschedules/schedule/${id}`, {
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    const res = await fetch(`${API_BASE}/testruns/${id}/schedule`, {
       method: "PATCH",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
       },
       body: JSON.stringify(update),
     });
     if (!res.ok) throw new Error("Failed to update scheduled test run");
-    const runRaw = (await res.json()) as TestRun & { test?: string };
-    const run = personaName ? ({ ...runRaw, personaName } as TestRun & { test?: string }) : runRaw;
-    // Optimistically update global list
-    updateTestRunInList(run);
-    syncRunToTestCache(run);
-
-    // Also update per-test cache in TestsStore if we have the test id
-    if (run.test) {
-      const testsStore = useTestsStore.getState();
-      const prevRuns = testsStore.getTestRunsForTest(run.test) || [];
-      const existsIdx = prevRuns.findIndex(r=>r._id === run._id);
-      let updatedArr;
-      if (existsIdx !== -1) {
-        updatedArr = prevRuns.map(r=> r._id === run._id ? (run as unknown as TestRun) : r);
-      } else {
-        updatedArr = [run as unknown as TestRun, ...prevRuns];
-      }
-      testsStore.setTestRunsForTest(run.test, updatedArr);
-    }
-    return run;
+    const testRun = await res.json();
+    
+    // Update the run in the store with persona name if provided
+    const updatedRun = personaName 
+      ? { ...testRun, personaName } 
+      : testRun;
+    
+    updateTestRunInList(updatedRun);
+    syncRunToTestCache(updatedRun);
+    return updatedRun;
   };
 
-  // Fetch all accessible test runs once per session after authentication
-  useEffect(() => {
-    if (!token || runsFetchedOnce) return;
-    runsFetchedOnce = true;
-
-    (async () => {
-      if (!getState().testRunsLoading) setTestRunsLoading(true);
-      setTestRunsError(null);
-      try {
-        const data = (await fetcher("/testruns", token)) as TestRunStatus[];
-        setTestRuns(data as unknown as TestRun[]);
-      } catch (err: unknown) {
-        setTestRunsError(
-          err instanceof Error ? err.message : "Failed to fetch test runs",
-        );
-        setTestRuns(null);
-      } finally {
-        setTestRunsLoading(false);
-      }
-    })();
-  }, [token]);
-
-  // Initial fetch for trashed runs (only once)
-  useEffect(() => {
-    if (!token || trashedRunsFetchedOnce) return;
-    trashedRunsFetchedOnce = true;
-    fetcher('/testruns/trashed', token)
-      .then(data => {
-        if (Array.isArray(data)) {
-          setTrashedTestRuns(data as unknown as TestRun[]);
-        }
-      })
-      .catch(()=>{/* ignore */});
-  }, [token, setTrashedTestRuns]);
-
-  // Force reload of all runs
-  const refetchAllTestRuns = useCallback(async () => {
-    if (!token) return;
-    setTestRunsLoading(true);
-    setTestRunsError(null);
-    try {
-      const data = (await fetcher('/testruns', token)) as TestRun[];
-      setTestRuns(data);
-    } catch (err) {
-      setTestRunsError(err instanceof Error ? err.message : 'Failed to fetch test runs');
-    } finally {
-      setTestRunsLoading(false);
-    }
-  }, [token, setTestRuns, setTestRunsLoading, setTestRunsError]);
-
-  const fetchTrashedTestRuns = useCallback(async () => {
-    if (!token) return;
-    try {
-      const data = (await fetcher('/testruns/trashed', token)) as TestRun[];
-      setTrashedTestRuns(data || []);
-    } catch {
-      /* silent */
-    }
-  }, [token, setTrashedTestRuns]);
-
-  // Empty trash - permanently delete all trashed test runs
+  // Empty test run trash
   const emptyTestRunTrash = async () => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/testruns/trash/empty`, {
       method: "DELETE",
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     if (!res.ok) throw new Error("Failed to empty test run trash");
     const result = await res.json();
@@ -649,16 +636,16 @@ export function useTestRuns() {
     resumeTestRun,
     deleteTestRun,
     moveTestRunToTrash,
+    restoreTestRunFromTrash,
     getTestRunStatus,
     getTestRunMedia,
     chatWithAgent,
     getChatHistory,
-    fetchSuccessfulCount,
-    fetchFailedCount,
-    restoreTestRunFromTrash,
     updateScheduledTestRun,
-    refetchAllTestRuns,
-    fetchTrashedTestRuns,
     emptyTestRunTrash,
+    refetch: fetchTestRuns,
+    refetchCounts: fetchCounts,
+    refetchTrashed: fetchTrashedTestRuns,
+    hasWorkspaceContext: !!currentWorkspaceId,
   };
 } 
