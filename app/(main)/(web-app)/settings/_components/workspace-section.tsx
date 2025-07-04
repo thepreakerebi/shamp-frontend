@@ -29,7 +29,14 @@ export function WorkspaceSection() {
     form.name.trim() !== (user?.currentWorkspace?.name ?? "") ||
     form.maxAgentStepsDefault !== (workspaceSettings?.maxAgentStepsDefault ?? 50);
 
-  const handleSubmit = async () => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === 'Return') {
+      e.preventDefault();
+      handleSave();
+    }
+  };
+
+  const handleSave = async () => {
     if (!dirty) return;
     
     setSaving(true);
@@ -56,6 +63,7 @@ export function WorkspaceSection() {
             id="workspaceName"
             value={form.name}
             onChange={e => setForm({ ...form, name: e.target.value })}
+            onKeyDown={handleKeyDown}
             disabled={saving || loading}
             placeholder="Enter workspace name"
           />
@@ -71,6 +79,7 @@ export function WorkspaceSection() {
             max="150"
             value={form.maxAgentStepsDefault}
             onChange={e => setForm({ ...form, maxAgentStepsDefault: parseInt(e.target.value) || 50 })}
+            onKeyDown={handleKeyDown}
             disabled={saving || loading}
           />
           <p className="text-xs text-muted-foreground">
@@ -79,7 +88,7 @@ export function WorkspaceSection() {
         </div>
         <Button 
           type="button" 
-          onClick={handleSubmit}
+          onClick={handleSave}
           disabled={!dirty || saving || loading} 
           className="mt-2 flex items-center gap-2"
         >
