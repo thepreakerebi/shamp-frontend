@@ -129,28 +129,43 @@ export function useProjects() {
     });
     socket.on("project:created", (project: Project) => {
       store.addProjectToList(project);
+      // Update count when a project is created
+      const currentCount = useProjectsStore.getState().count;
+      store.setCount(currentCount + 1);
     });
     socket.on("project:deleted", ({ _id }: { _id: string }) => {
       store.removeProjectFromList(_id);
       store.removeTrashedProject(_id);
+      // Update count when a project is permanently deleted
+      const currentCount = useProjectsStore.getState().count;
+      store.setCount(Math.max(0, currentCount - 1));
     });
     socket.on("project:trashed", (project: Project) => {
       store.removeProjectFromList(project._id);
       store.addTrashedProject({ ...project, trashed: true });
+      // Update count when a project is moved to trash
+      const currentCount = useProjectsStore.getState().count;
+      store.setCount(Math.max(0, currentCount - 1));
     });
     socket.on("project:updated", (project: Project) => {
       if (project.trashed) {
         store.removeProjectFromList(project._id);
         store.addTrashedProject({ ...project, trashed: true });
+        // Update count when a project is moved to trash
+        const currentCount = useProjectsStore.getState().count;
+        store.setCount(Math.max(0, currentCount - 1));
       } else {
         store.removeTrashedProject(project._id);
         store.updateProjectInList(project);
+        // Update count when a project is restored from trash
+        const currentCount = useProjectsStore.getState().count;
+        store.setCount(currentCount + 1);
       }
     });
     return () => {
       socket.disconnect();
     };
-  }, [token, currentWorkspaceId, store.addProjectToList, store.removeProjectFromList, store.addTrashedProject, store.removeTrashedProject, store.updateProjectInList]);
+  }, [token, currentWorkspaceId, store.addProjectToList, store.removeProjectFromList, store.addTrashedProject, store.removeTrashedProject, store.updateProjectInList, store.setCount]);
 
   // Get a single project by ID
   const getProjectById = async (id: string): Promise<Project> => {
