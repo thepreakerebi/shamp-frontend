@@ -19,14 +19,24 @@ export const dynamic = 'force-dynamic';
 
 export default function SettingsPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  
+  // Check if user is on their own workspace (where they can manage members and subscription)
+  const isOnOwnWorkspace = useMemo(() => {
+    if (!user?.currentWorkspace || !user?.workspaces) return false;
+    
+    // Find the current workspace in the user's workspace list
+    const currentWorkspace = user.workspaces.find(ws => ws._id === user.currentWorkspace?._id);
+    
+    // Show members/subscription tabs if user is the owner or admin of this workspace
+    return currentWorkspace?.isOwner === true || currentWorkspace?.role === 'admin';
+  }, [user]);
 
   const filteredTabs = useMemo(() => {
     return TAB_OPTIONS.filter(t => {
-      if (isAdmin) return true;
+      if (isOnOwnWorkspace) return true;
       return t.key !== "members" && t.key !== "subscription";
     });
-  }, [isAdmin]);
+  }, [isOnOwnWorkspace]);
 
   const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState(filteredTabs[0]?.key || "profile");
@@ -55,10 +65,10 @@ export default function SettingsPage() {
           <section className="flex-1 min-w-0">
             <TabsContent value="profile"><ProfileSection /></TabsContent>
             <TabsContent value="security"><SecuritySection /></TabsContent>
-            {isAdmin && (
+            {isOnOwnWorkspace && (
               <TabsContent value="members"><MembersSection /></TabsContent>
             )}
-            {isAdmin && (
+            {isOnOwnWorkspace && (
               <TabsContent value="subscription"><SubscriptionSection /></TabsContent>
             )}
           </section>
