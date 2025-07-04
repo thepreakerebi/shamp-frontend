@@ -337,18 +337,31 @@ export function useTestRuns() {
 
   // Count successful/failed runs
   const fetchCounts = useCallback(async () => {
-    if (!token || !currentWorkspaceId) return;
-    try {
-      const [successData, failData] = await Promise.all([
-        fetcher("/testruns/count/successful", token, currentWorkspaceId),
-        fetcher("/testruns/count/failed", token, currentWorkspaceId),
-      ]);
-      setSuccessfulCount((successData as { count: number }).count ?? 0);
-      setFailedCount((failData as { count: number }).count ?? 0);
-    } catch {
-      // silent fail for counts
+    if (!token || !currentWorkspaceId) {
+      store.setCountsLoading(false);
+      store.setSuccessfulCount(0);
+      store.setFailedCount(0);
+      return;
     }
-  }, [token, currentWorkspaceId, setSuccessfulCount, setFailedCount]);
+    
+    store.setCountsLoading(true);
+    store.setCountsError(null);
+    
+    try {
+      // Use the optimized combined endpoint
+      const data = await fetcher("/testruns/counts", token, currentWorkspaceId) as { successful: number; failed: number };
+      setSuccessfulCount(data.successful ?? 0);
+      setFailedCount(data.failed ?? 0);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        store.setCountsError(err.message);
+      } else {
+        store.setCountsError("Failed to fetch test run counts");
+      }
+    } finally {
+      store.setCountsLoading(false);
+    }
+  }, [token, currentWorkspaceId, setSuccessfulCount, setFailedCount, store]);
 
   // Fetch trashed test runs
   const fetchTrashedTestRuns = useCallback(async () => {
@@ -653,6 +666,8 @@ export function useTestRuns() {
     trashedTestRuns: store.trashedTestRuns,
     successfulCount: store.successfulCount,
     failedCount: store.failedCount,
+    countsLoading: store.countsLoading,
+    countsError: store.countsError,
     startTestRun,
     stopTestRun,
     pauseTestRun,

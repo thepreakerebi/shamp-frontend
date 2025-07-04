@@ -8,11 +8,15 @@ interface TestRunsState {
   testRunsError: string | null;
   successfulCount: number | null;
   failedCount: number | null;
+  countsLoading: boolean;
+  countsError: string | null;
   setTestRuns: (runs: TestRun[] | null) => void;
   setTestRunsLoading: (loading: boolean) => void;
   setTestRunsError: (error: string | null) => void;
   setSuccessfulCount: (count: number | null) => void;
   setFailedCount: (count: number | null) => void;
+  setCountsLoading: (loading: boolean) => void;
+  setCountsError: (error: string | null) => void;
   updateTestRunInList: (run: TestRun) => void;
   removeTestRunFromList: (id: string) => void;
   addTestRunToList: (run: TestRun) => void;
@@ -30,6 +34,8 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
   testRunsError: null,
   successfulCount: null,
   failedCount: null,
+  countsLoading: false,
+  countsError: null,
   setTestRuns: (incoming) =>
     set((state) => {
       if (!incoming) return { testRuns: null };
@@ -67,6 +73,8 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
   setTestRunsError: (testRunsError) => set({ testRunsError }),
   setSuccessfulCount: (successfulCount) => set({ successfulCount }),
   setFailedCount: (failedCount) => set({ failedCount }),
+  setCountsLoading: (countsLoading) => set({ countsLoading }),
+  setCountsError: (countsError) => set({ countsError }),
   updateTestRunInList: (run) =>
     set((state) => ({
       testRuns: state.testRuns
@@ -107,5 +115,7 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
       testRunsError: null,
       successfulCount: null,
       failedCount: null,
+      countsLoading: false,
+      countsError: null,
     }),
 })); 

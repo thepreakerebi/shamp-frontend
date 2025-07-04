@@ -11,19 +11,7 @@ interface TotalSuccessfulTestRunsCardProps {
 }
 
 export function TotalSuccessfulTestRunsCard({ href }: TotalSuccessfulTestRunsCardProps) {
-  const { successfulCount, fetchSuccessfulCount } = useTestRuns();
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    fetchSuccessfulCount().finally(() => {
-      if (mounted) setLoading(false);
-    });
-    return () => {
-      mounted = false;
-    };
-  }, [fetchSuccessfulCount]);
+  const { successfulCount, countsLoading, countsError } = useTestRuns();
 
   const card = (
     <Card className="w-full md:max-w-sm lg:col-span-5 bg-card/90 p-0">
@@ -36,11 +24,13 @@ export function TotalSuccessfulTestRunsCard({ href }: TotalSuccessfulTestRunsCar
           <h2 className="block text-sm font-medium text-foreground">Successful Runs</h2>
           <h3 className="block text-xs text-muted-foreground">Total successful test runs</h3>
         </section>
+        {countsError && <p className="text-destructive text-xs mt-1">{String(countsError)}</p>}
       </CardContent>
     </Card>
   );
 
-  if (loading && successfulCount === null) return <CountCardSkeleton />;
+  if (countsLoading && successfulCount === null) return <CountCardSkeleton />;
+  
   if (href) {
     return (
       <Link href={href} className="focus:outline-none focus:ring-2 focus:ring-ring rounded-md hover:scale-[1.03] transition-transform">
