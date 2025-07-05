@@ -1,6 +1,6 @@
 "use client";
 import React, { useMemo, useState } from "react";
-import { useTests } from "@/hooks/use-tests";
+import { useTests, canEditTest, canTrashTest } from "@/hooks/use-tests";
 import {
   ColumnDef,
   flexRender,
@@ -33,12 +33,22 @@ interface TableTest {
   _id: string;
   name: string;
   description?: string;
-  project?: { _id: string; name: string } | null;
-  persona?: { _id: string; name: string } | null;
+  project: string;
+  workspace: string;
+  persona?: string;
   successfulRuns?: number;
   failedRuns?: number;
-  createdBy?: { _id?: string; name: string; role: string } | null;
+  createdBy?: { 
+    _id: string; 
+    name: string; 
+    firstName?: string;
+    lastName?: string;
+    email: string;
+  };
   updatedAt?: string;
+  // Additional fields for display
+  projectInfo?: { _id: string; name: string } | null;
+  personaInfo?: { _id: string; name: string } | null;
 }
 
 export function TestsTable() {
@@ -80,19 +90,19 @@ export function TestsTable() {
       },
       {
         id: "project",
-        accessorFn: (row: TableTest) => row.project?.name ?? "",
+        accessorFn: (row: TableTest) => row.projectInfo?.name ?? "",
         header: ({ column }) => <SortableHeader column={column} title="Project" sortKey="project" onSort={handleRemoteSort} />,
         cell: ({ row }) => {
-          const proj = row.original.project;
+          const proj = row.original.projectInfo;
           return proj ? <ProjectBadge name={proj.name} /> : "-";
         },
       },
       {
         id: "persona",
-        accessorFn: (row: TableTest) => row.persona?.name ?? "",
+        accessorFn: (row: TableTest) => row.personaInfo?.name ?? "",
         header: ({ column }) => <SortableHeader column={column} title="Persona" sortKey="persona" onSort={handleRemoteSort} />,
         cell: ({ row }) => {
-          const p = row.original.persona;
+          const p = row.original.personaInfo;
           return p ? <PersonaBadge name={p.name} /> : "-";
         },
       },
@@ -132,14 +142,22 @@ export function TestsTable() {
         id: "actions",
         header: "",
         enableSorting: false,
-        cell: ({ row }) => (
-          <RowActionsDropdown
-            testId={row.original._id}
-            testName={row.original.name}
-            onOpen={() => {}}
-            actions={{ moveTestToTrash, deleteTest, duplicateTest }}
-          />
-        ),
+        cell: ({ row }) => {
+          const test = row.original;
+          const canEdit = canEditTest(test, user);
+          const canTrash = canTrashTest(test, user);
+          
+          return (
+            <RowActionsDropdown
+              testId={row.original._id}
+              testName={row.original.name}
+              onOpen={() => {}}
+              actions={{ moveTestToTrash, deleteTest, duplicateTest }}
+              showEdit={canEdit}
+              showTrash={canTrash}
+            />
+          );
+        },
       },
     ],
     []

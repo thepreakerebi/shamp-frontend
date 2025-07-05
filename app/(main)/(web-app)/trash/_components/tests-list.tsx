@@ -1,6 +1,7 @@
 "use client";
 import { useTests, type Test } from "@/hooks/use-tests";
 import { useProjects } from "@/hooks/use-projects";
+import { useAuth } from "@/lib/auth";
 import React, { useState } from "react";
 import { TrashCardActionsDropdown } from "@/components/ui/trash-card-actions-dropdown";
 import { DeleteTestModal } from "../../tests/_components/delete-test-modal";
@@ -19,6 +20,7 @@ export function TrashedTestsList() {
     refetchTrashed,
   } = useTests();
   const { projects } = useProjects(); // for badge name lookup
+  const { user } = useAuth();
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -42,6 +44,21 @@ export function TrashedTestsList() {
     };
     return arr.sort((a, b) => getTs(b) - getTs(a));
   }, [trashedTests]);
+
+  // Check if user can empty trash
+  const canEmptyTrash = React.useMemo(() => {
+    if (!user) return false;
+    
+    // Admin can empty all trash
+    if (user.currentWorkspaceRole === 'admin') return true;
+    
+    // Members can only empty trash if they have trashed tests they created
+    if (user.currentWorkspaceRole === 'member') {
+      return uniqueTests.some(test => test.createdBy?._id === user._id);
+    }
+    
+    return false;
+  }, [user, uniqueTests]);
 
   const handleRestore = async (test: Test) => {
     try {
@@ -100,7 +117,7 @@ export function TrashedTestsList() {
     <section>
       <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2 px-4">
         <h2 className="text-xl font-semibold">Trashed Tests · {uniqueTests.length}</h2>
-        {uniqueTests.length > 0 && (
+        {uniqueTests.length > 0 && canEmptyTrash && (
           <Button 
             variant="outline" 
             onClick={() => setEmptyTrashOpen(true)}

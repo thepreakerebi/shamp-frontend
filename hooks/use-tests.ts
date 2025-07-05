@@ -13,9 +13,16 @@ export interface Test {
   name: string;
   description?: string;
   project: string;
+  workspace: string; // Which workspace this test belongs to
   persona?: string;
   personaNames?: string[];
-  createdBy?: string;
+  createdBy?: {
+    _id: string;
+    name: string;
+    firstName?: string;
+    lastName?: string;
+    email: string;
+  };
   trashed?: boolean;
   totalRuns?: number;
   browserViewportWidth?: number;
@@ -175,21 +182,94 @@ export function useTests() {
       transports: ["websocket"],
       auth: { token, workspaceId: currentWorkspaceId },
     });
-    const handleUpdate = () => {
-      refetch();
+    
+    const handleTestCreated = (data: { test?: Test; workspace?: string }) => {
+      // Only process events for the current workspace
+      if (data.workspace && data.workspace === currentWorkspaceId) {
+        if (data.test) {
+          store.addTestToList(data.test);
+        }
+        // Update count
+        const currentCount = store.count;
+        store.setCount(currentCount + 1);
+      }
     };
-    socket.on("test:created", handleUpdate);
-    socket.on("test:deleted", handleUpdate);
-    socket.on("test:updated", handleUpdate);
-    socket.on("test:trashed", handleUpdate);
+    
+    const handleTestUpdated = (data: { test?: Test; workspace?: string }) => {
+      // Only process events for the current workspace
+      if (data.workspace && data.workspace === currentWorkspaceId) {
+        if (data.test) {
+          store.updateTestInList(data.test);
+        }
+      }
+    };
+    
+    const handleTestDeleted = (data: { _id?: string; workspace?: string }) => {
+      // Only process events for the current workspace
+      if (data.workspace && data.workspace === currentWorkspaceId) {
+        if (data._id) {
+          store.removeTestFromList(data._id);
+        }
+        // Update count
+        const currentTests = store.tests || [];
+        store.setCount(currentTests.length);
+      }
+    };
+    
+    const handleTestTrashed = (data: { _id?: string; test?: Test; workspace?: string }) => {
+      // Only process events for the current workspace
+      if (data.workspace && data.workspace === currentWorkspaceId) {
+        if (data._id) {
+          store.removeTestFromList(data._id);
+          // Update count
+          const currentTests = store.tests || [];
+          store.setCount(currentTests.length);
+        }
+        if (data.test) {
+          store.addTrashedTest({ ...data.test, trashed: true });
+        }
+      }
+    };
+    
+    const handleTestRestored = (data: { _id?: string; test?: Test; workspace?: string }) => {
+      // Only process events for the current workspace
+      if (data.workspace && data.workspace === currentWorkspaceId) {
+        if (data._id) {
+          store.removeTrashedTest(data._id);
+        }
+        if (data.test) {
+          store.addTestToList({ ...data.test, trashed: false });
+          // Update count
+          const currentTests = store.tests || [];
+          store.setCount(currentTests.length);
+        }
+      }
+    };
+    
+    const handleTrashEmptied = (data: { deletedCount?: number; workspace?: string }) => {
+      // Only process events for the current workspace
+      if (data.workspace && data.workspace === currentWorkspaceId) {
+        store.emptyTrashedTests();
+      }
+    };
+    
+    socket.on("test:created", handleTestCreated);
+    socket.on("test:deleted", handleTestDeleted);
+    socket.on("test:updated", handleTestUpdated);
+    socket.on("test:trashed", handleTestTrashed);
+    socket.on("test:restored", handleTestRestored);
+    socket.on("test:trashEmptied", handleTrashEmptied);
+    
     return () => {
-      socket.off("test:created", handleUpdate);
-      socket.off("test:deleted", handleUpdate);
-      socket.off("test:updated", handleUpdate);
-      socket.off("test:trashed", handleUpdate);
+      socket.off("test:created", handleTestCreated);
+      socket.off("test:deleted", handleTestDeleted);
+      socket.off("test:updated", handleTestUpdated);
+      socket.off("test:trashed", handleTestTrashed);
+      socket.off("test:restored", handleTestRestored);
+      socket.off("test:trashEmptied", handleTrashEmptied);
       socket.disconnect();
     };
-  }, [refetch, token, currentWorkspaceId]);
+  }, [refetch, token, currentWorkspaceId, store]);
 
   // Create a test
   const createTest = async (payload: TestPayload) => {
@@ -206,7 +286,7 @@ export function useTests() {
     });
     if (!res.ok) throw new Error("Failed to create test");
     const test = await res.json();
-    useTestsStore.getState().addTestToList(test);
+    // Let Socket.IO handle the store update
     return test;
   };
 
@@ -242,7 +322,7 @@ export function useTests() {
     });
     if (!res.ok) throw new Error("Failed to update test");
     const test = await res.json();
-    useTestsStore.getState().updateTestInList(test);
+    // Let Socket.IO handle the store update
     return test;
   };
 
@@ -259,7 +339,7 @@ export function useTests() {
       },
     });
     if (!res.ok) throw new Error("Failed to delete test");
-    useTestsStore.getState().removeTestFromList(id);
+    // Let Socket.IO handle the store update
     return res.json();
   };
 
@@ -276,8 +356,7 @@ export function useTests() {
     });
     if (!res.ok) throw new Error("Failed to move test to trash");
     const test = await res.json();
-    useTestsStore.getState().removeTestFromList(id);
-    useTestsStore.getState().addTrashedTest({ ...test, trashed: true });
+    // Let Socket.IO handle the store update
     return test;
   };
 
@@ -294,8 +373,7 @@ export function useTests() {
     });
     if (!res.ok) throw new Error("Failed to restore test from trash");
     const test = await res.json();
-    useTestsStore.getState().removeTrashedTest(id);
-    useTestsStore.getState().addTestToList({ ...test, trashed: false });
+    // Let Socket.IO handle the store update
     return test;
   };
 
@@ -312,7 +390,7 @@ export function useTests() {
     });
     if (!res.ok) throw new Error("Failed to duplicate test");
     const test = await res.json();
-    useTestsStore.getState().addTestToList(test);
+    // Let Socket.IO handle the store update
     return test;
   };
 
@@ -441,7 +519,7 @@ export function useTests() {
     });
     if (!res.ok) throw new Error("Failed to empty test trash");
     const result = await res.json();
-    useTestsStore.getState().emptyTrashedTests();
+    // Let Socket.IO handle the store update
     return result;
   };
 
@@ -469,4 +547,35 @@ export function useTests() {
     emptyTestTrash,
     hasWorkspaceContext: !!currentWorkspaceId,
   };
-} 
+}
+
+// Permission utility functions
+export const canEditTest = (test: Test, user: { _id: string; currentWorkspaceRole?: 'admin' | 'member' | null } | null): boolean => {
+  if (!user) return false;
+  
+  // Admin can edit any test in the workspace
+  if (user.currentWorkspaceRole === 'admin') return true;
+  
+  // Members can only edit tests they created
+  if (user.currentWorkspaceRole === 'member') {
+    return test.createdBy?._id === user._id;
+  }
+  
+  // Default to false if no role or unrecognized role
+  return false;
+};
+
+export const canTrashTest = (test: Test, user: { _id: string; currentWorkspaceRole?: 'admin' | 'member' | null } | null): boolean => {
+  if (!user) return false;
+  
+  // Admin can trash any test in the workspace
+  if (user.currentWorkspaceRole === 'admin') return true;
+  
+  // Members can only trash tests they created
+  if (user.currentWorkspaceRole === 'member') {
+    return test.createdBy?._id === user._id;
+  }
+  
+  // Default to false if no role or unrecognized role
+  return false;
+}; 
