@@ -25,6 +25,7 @@ interface TestRunsState {
   setTrashedTestRuns: (runs: TestRun[] | null) => void;
   emptyTrashedTestRuns: () => void;
   reset: () => void;
+  moveRunToTrash: (run: TestRun) => void;
 }
 
 export const useTestRunsStore = create<TestRunsState>((set) => ({
@@ -101,6 +102,12 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
     set((state) => ({
       trashedTestRuns: state.trashedTestRuns ? [run, ...state.trashedTestRuns] : [run],
     })),
+  moveRunToTrash: (run) =>
+    set((state) => {
+      const filteredActive = state.testRuns ? state.testRuns.filter(r => r._id !== run._id) : null;
+      const newTrash = state.trashedTestRuns ? [run, ...state.trashedTestRuns] : [run];
+      return { testRuns: filteredActive, trashedTestRuns: newTrash };
+    }),
   removeTrashedTestRun: (id) =>
     set((state) => ({
       trashedTestRuns: state.trashedTestRuns ? state.trashedTestRuns.filter((r) => r._id !== id) : null,

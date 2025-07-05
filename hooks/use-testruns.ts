@@ -99,6 +99,7 @@ export function useTestRuns() {
     setTestRunsLoading,
     setTestRunsError,
     setTrashedTestRuns,
+    moveRunToTrash,
   } = store;
 
   // Helper to always get the latest store snapshot inside socket listeners
@@ -153,10 +154,8 @@ export function useTestRuns() {
 
         const existing = getState().testRuns?.find((r) => r._id === _id);
         if (existing) {
-          removeTestRunFromList(_id);
-          addTrashedTestRun({ ...existing, trashed: true });
+          moveRunToTrash({ ...existing, trashed: true } as TestRun);
           removeRunFromTestCache(_id);
-          // Refresh counts when a test run is trashed
           fetchCounts();
         }
       }
