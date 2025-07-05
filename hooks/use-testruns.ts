@@ -177,8 +177,24 @@ export function useTestRuns() {
       const current = getState().testRuns?.find(r => r._id === testRunId);
       if (!current) return;
 
-      // Attempt to get the definitive status from the backend; if the request
-      // fails we at least update browserUseStatus without touching status.
+      // 1) Optimistic update so UI (summary panel & toolbar) reacts immediately.
+      //    We mark browserUseStatus as "stopped" (and status as "cancelled" if
+      //    it was still "running"). This removes control buttons instantly
+      //    while we wait for the authoritative payload.
+      {
+        const optimistic: TestRun = {
+          ...current,
+          browserUseStatus: "stopped",
+          status: current.status === "running" ? "cancelled" : current.status,
+          finishedAt: current.finishedAt ?? new Date().toISOString(),
+        } as TestRun;
+        updateTestRunInList(optimistic);
+        syncRunToTestCache(optimistic);
+      }
+
+      // 2) Fetch definitive status/analysis in the background and merge it in
+      //    once available. This may update status to "succeeded"/"failed" and
+      //    attach extra data, but the critical UI flip has already happened.
       try {
         const res = await fetch(`${API_BASE}/testruns/${testRunId}`, {
           credentials: "include",
@@ -201,10 +217,7 @@ export function useTestRuns() {
         }
       } catch {/* ignore */}
 
-      // Fallback: only update browserUseStatus if backend fetch fails
-      const updated = { ...current, browserUseStatus: 'stopped' } as TestRun;
-      updateTestRunInList(updated);
-      syncRunToTestCache(updated);
+      // If fetch failed we've already applied the optimistic change above.
     });
     socket.on("testRun:paused", async ({ testRunId, workspace }: { testRunId: string; workspace?: string }) => {
       if (workspace && workspace !== currentWorkspaceId) return;
@@ -351,7 +364,7 @@ export function useTestRuns() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [token, currentWorkspaceId, addTestRunToList, removeTestRunFromList, updateTestRunInList, addTrashedTestRun, removeTrashedTestRun]);
+  }, [token, currentWorkspaceId]);
 
   // Fetch all test runs
   const fetchTestRuns = useCallback(async () => {
