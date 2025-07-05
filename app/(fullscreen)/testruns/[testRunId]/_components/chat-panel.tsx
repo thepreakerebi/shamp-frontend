@@ -38,7 +38,18 @@ export function ChatPanel({ run, personaName }: Props) {
     (async () => {
       try {
         const history = await getChatHistory({ testId: run.test, testRunId: run._id });
-        setMessages(history);
+
+        // Backend returns objects with a `text` field instead of `message`.
+        // Define a helper type to represent that shape so we avoid the `any` type.
+        type RawChatMessage = ChatMessage & { text?: string };
+
+        // Normalize history to ensure each entry has a `message` field.
+        const normalized = (history as RawChatMessage[]).map((msg) => ({
+          ...msg,
+          message: msg.message ?? msg.text ?? "",
+        }));
+
+        setMessages(normalized);
       } catch {}
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
