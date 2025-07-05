@@ -474,7 +474,7 @@ export function useTestRuns() {
   const stopTestRun = async (id: string) => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/testruns/${id}/stop`, {
-      method: "POST",
+      method: "PATCH",
       credentials: "include",
       headers: { 
         Authorization: `Bearer ${token}`,
@@ -489,7 +489,7 @@ export function useTestRuns() {
   const pauseTestRun = async (id: string) => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/testruns/${id}/pause`, {
-      method: "POST",
+      method: "PATCH",
       credentials: "include",
       headers: { 
         Authorization: `Bearer ${token}`,
@@ -504,7 +504,7 @@ export function useTestRuns() {
   const resumeTestRun = async (id: string) => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/testruns/${id}/resume`, {
-      method: "POST",
+      method: "PATCH",
       credentials: "include",
       headers: { 
         Authorization: `Bearer ${token}`,
