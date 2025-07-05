@@ -12,6 +12,124 @@ import { ProjectListEmpty } from "./project-list-empty";
 import { CreateProjectModalProvider, useCreateProjectModal } from "../../_components/create-project-modal";
 import { EditProjectModal } from "../../_components/edit-project-modal";
 
+// -------------------- ProjectCard component --------------------
+interface ProjectCardProps {
+  project: Project;
+  canEdit: boolean;
+  canTrash: boolean;
+  showDropdown: boolean;
+  onEdit: (project: Project) => void;
+  onTrash: (project: Project) => void;
+}
+
+const ProjectCard: React.FC<ProjectCardProps> = React.memo(
+  ({ project, canEdit, canTrash, showDropdown, onEdit, onTrash }) => {
+    const router = useRouter();
+
+    // Fallback logic for image: previewImageUrl -> favicon -> placeholder
+    const [imgSrc, setImgSrc] = React.useState(
+      project.previewImageUrl
+        ? project.previewImageUrl
+        : `https://www.google.com/s2/favicons?domain=${encodeURIComponent(project.url ?? "")}&sz=128`
+    );
+    const [triedFavicon, setTriedFavicon] = React.useState(!project.previewImageUrl);
+    const [imageErrored, setImageErrored] = React.useState(false);
+
+    // Refresh image when project URL or preview changes
+    React.useEffect(() => {
+      const initialSrc = project.previewImageUrl
+        ? project.previewImageUrl
+        : `https://www.google.com/s2/favicons?domain=${encodeURIComponent(project.url ?? "")}&sz=128`;
+      setImgSrc(initialSrc);
+      setTriedFavicon(!project.previewImageUrl);
+      setImageErrored(false);
+    }, [project.previewImageUrl, project.url]);
+
+    const handleImageError = React.useCallback(() => {
+      if (imageErrored) return;
+      setImageErrored(true);
+      if (!triedFavicon && project.url) {
+        setImgSrc(`https://www.google.com/s2/favicons?domain=${encodeURIComponent(project.url)}&sz=128`);
+        setTriedFavicon(true);
+      } else {
+        setImgSrc("/placeholder-image.svg");
+      }
+    }, [imageErrored, triedFavicon, project.url]);
+
+    return (
+      <article
+        className="rounded-2xl cursor-pointer overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 h-full group hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+        onClick={() => router.push(`/home/${project._id}`)}
+      >
+        {/* URL Preview */}
+        <div
+          className="relative h-32 w-full bg-muted flex items-center justify-center select-none overflow-hidden"
+          aria-hidden="true"
+        >
+          <Image
+            src={imgSrc}
+            alt={`Preview of ${project.url ?? "no url"}`}
+            className="object-cover w-full h-full transition-all duration-200 group-hover:scale-105"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            priority={false}
+            onError={handleImageError}
+          />
+        </div>
+        
+        {/* Card Content */}
+        <section className="flex flex-col gap-1 flex-1 justify-end p-4">
+          <header className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium truncate text-md text-foreground leading-tight">{project.name}</h3>
+              <p className="text-muted-foreground w-full text-sm truncate">
+                {project.url ? (
+                  <span
+                    className="underline hover:text-secondary transition-colors cursor-pointer"
+                    title={project.url}
+                    onClick={(e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      window.open(project.url, "_blank", "noopener,noreferrer");
+                    }}
+                  >
+                    {project.url}
+                  </span>
+                ) : (
+                  "No URL"
+                )}
+                {` · ${project.testRunsCount ?? 0} test run${(project.testRunsCount ?? 0) === 1 ? "" : "s"}`}
+              </p>
+            </div>
+            {showDropdown && (
+              <nav onClick={(e: React.MouseEvent) => e.stopPropagation()} data-stop-row>
+                <ProjectCardDropdown
+                  onOpen={() => router.push(`/home/${project._id}`)}
+                  onEdit={() => onEdit(project)}
+                  onTrash={() => onTrash(project)}
+                  showEdit={canEdit}
+                  showTrash={canTrash}
+                />
+              </nav>
+            )}
+          </header>
+        </section>
+      </article>
+    );
+  },
+  (prev, next) =>
+    prev.project._id === next.project._id &&
+    prev.project.name === next.project.name &&
+    prev.project.url === next.project.url &&
+    prev.project.previewImageUrl === next.project.previewImageUrl &&
+    prev.project.testRunsCount === next.project.testRunsCount &&
+    prev.canEdit === next.canEdit &&
+    prev.canTrash === next.canTrash &&
+    prev.showDropdown === next.showDropdown
+);
+
+ProjectCard.displayName = "ProjectCard";
+// -------------------- End ProjectCard component --------------------
+
 function ProjectsListInner() {
   const { projects, trashedProjects, projectsLoading, projectsError, moveProjectToTrash } = useProjects();
   const { user } = useAuth();
@@ -32,7 +150,8 @@ function ProjectsListInner() {
 
   // Function to check if user can trash a project
   const canTrashProject = React.useCallback((project: Project) => {
-    if (!user) return false;
+    // Don't show any permissions until user is fully loaded
+    if (!user || !user.currentWorkspaceRole) return false;
     
     // Admin can trash any project in the workspace
     if (user.currentWorkspaceRole === 'admin') return true;
@@ -44,11 +163,12 @@ function ProjectsListInner() {
     
     // Default to false if no role or unrecognized role
     return false;
-  }, [user]);
+  }, [user?._id, user?.currentWorkspaceRole]);
 
   // Function to check if user can edit a project (same logic as trash)
   const canEditProject = React.useCallback((project: Project) => {
-    if (!user) return false;
+    // Don't show any permissions until user is fully loaded
+    if (!user || !user.currentWorkspaceRole) return false;
     
     // Admin can edit any project in the workspace
     if (user.currentWorkspaceRole === 'admin') return true;
@@ -60,125 +180,12 @@ function ProjectsListInner() {
     
     // Default to false if no role or unrecognized role
     return false;
-  }, [user]);
+  }, [user?._id, user?.currentWorkspaceRole]);
 
   // Function to check if dropdown should be shown (user has any actionable options)
   const shouldShowDropdown = React.useCallback((project: Project) => {
     return canEditProject(project) || canTrashProject(project);
   }, [canEditProject, canTrashProject]);
-
-  const ProjectCard = ({ project, canTrash }: { project: Project; canTrash: boolean }) => {
-    const router = useRouter();
-    
-    // Memoize permission calculations with more specific dependencies to prevent flickering
-    const canEdit = React.useMemo(() => canEditProject(project), [
-      project._id, 
-      project.createdBy?._id, 
-      canEditProject
-    ]);
-    const showDropdown = React.useMemo(() => shouldShowDropdown(project), [
-      project._id, 
-      project.createdBy?._id, 
-      shouldShowDropdown
-    ]);
-
-    // Fallback logic for image: previewImageUrl -> favicon -> placeholder
-    const [imgSrc, setImgSrc] = React.useState(
-      project.previewImageUrl
-        ? project.previewImageUrl
-        : `https://www.google.com/s2/favicons?domain=${encodeURIComponent(project.url ?? "")}&sz=128`
-    );
-    const [triedFavicon, setTriedFavicon] = React.useState(!project.previewImageUrl);
-
-    // When project URL or preview image changes (e.g., after editing), refresh the image source.
-    React.useEffect(() => {
-      const initialSrc = project.previewImageUrl
-        ? project.previewImageUrl
-        : `https://www.google.com/s2/favicons?domain=${encodeURIComponent(project.url ?? "")}&sz=128`;
-      setImgSrc(initialSrc);
-      setTriedFavicon(!project.previewImageUrl);
-    }, [project.previewImageUrl, project.url]);
-
-    const handleOpen = React.useCallback(() => {
-      router.push(`/home/${project._id}`);
-    }, [router, project._id]);
-
-    const handleEdit = React.useCallback(() => {
-      setEditingProject(project);
-      setEditModalOpen(true);
-    }, [project]);
-
-    const handleTrash = React.useCallback(() => {
-      setTrashingProject(project);
-      setTrashModalOpen(true);
-    }, [project]);
-
-    return (
-      <article
-        className="rounded-2xl cursor-pointer overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 h-full group hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-        onClick={handleOpen}
-      >
-        {/* URL Preview */}
-        <div
-          className="relative h-32 w-full bg-muted flex items-center justify-center select-none"
-          aria-hidden="true"
-        >
-          <Image
-            src={imgSrc}
-            alt={`Preview of ${project.url ?? "no url"}`}
-            className="object-fill w-full h-full group-hover:brightness-90 transition"
-            fill
-            unoptimized
-            onError={() => {
-              if (!triedFavicon && project.url) {
-                setImgSrc(`https://www.google.com/s2/favicons?domain=${encodeURIComponent(project.url)}&sz=128`);
-                setTriedFavicon(true);
-              } else {
-                setImgSrc("/placeholder-image.svg");
-              }
-            }}
-          />
-        </div>
-        
-        {/* Card Content */}
-        <section className="flex flex-col gap-1 flex-1 justify-end p-4">
-          <header className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium truncate text-md text-foreground leading-tight">{project.name}</h3>
-              <p className="text-muted-foreground w-full text-sm truncate">
-                {project.url ? (
-                  <span
-                    className="underline hover:text-secondary transition-colors cursor-pointer"
-                    title={project.url}
-                    onClick={e => {
-                      e.stopPropagation();
-                      window.open(project.url, '_blank', 'noopener,noreferrer');
-                    }}
-                  >
-                    {project.url}
-                  </span>
-                ) : (
-                  "No URL"
-                )}
-                {` · ${project.testRunsCount ?? 0} test run${(project.testRunsCount ?? 0) === 1 ? "" : "s"}`}
-              </p>
-            </div>
-            {showDropdown && (
-              <nav onClick={(e)=>e.stopPropagation()} data-stop-row>
-                <ProjectCardDropdown
-                  onOpen={handleOpen}
-                  onEdit={handleEdit}
-                  onTrash={handleTrash}
-                  showEdit={canEdit}
-                  showTrash={canTrash}
-                />
-              </nav>
-            )}
-          </header>
-        </section>
-      </article>
-    );
-  };
 
   if (projectsLoading && uniqueProjects.length === 0) return <ProjectListSkeleton count={3} />;
   if (projectsError) return <div className="text-destructive">Error loading projects: {projectsError}</div>;
@@ -209,7 +216,17 @@ function ProjectsListInner() {
           <ProjectCard
             key={project._id}
             project={project}
+            canEdit={canEditProject(project)}
             canTrash={canTrashProject(project)}
+            showDropdown={shouldShowDropdown(project)}
+            onEdit={(p) => {
+              setEditingProject(p);
+              setEditModalOpen(true);
+            }}
+            onTrash={(p) => {
+              setTrashingProject(p);
+              setTrashModalOpen(true);
+            }}
           />
       ))}
     </section>
@@ -239,4 +256,4 @@ export function ProjectsList() {
       <ProjectsListInner />
     </CreateProjectModalProvider>
   );
-} 
+}
