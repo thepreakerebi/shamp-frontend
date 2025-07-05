@@ -273,51 +273,48 @@ export function useTestRuns() {
     });
     socket.on("testRun:finished", async ({ testRunId, workspace }: { testRunId: string; workspace?: string }) => {
       if (workspace && workspace !== currentWorkspaceId) return;
+      const existing = getState().testRuns?.find(r => r._id === testRunId);
+
+      if (existing) {
+        // 1) Optimistic update so UI flips out of "running" state immediately.
+        const optimistic: TestRun = {
+          ...existing,
+          browserUseStatus: "finished",
+          // Keep current status (likely "running") – will be replaced by fetch.
+          finishedAt: existing.finishedAt ?? new Date().toISOString(),
+        } as TestRun;
+        updateTestRunInList(optimistic);
+        syncRunToTestCache(optimistic);
+      }
+
+      // 2) Fetch definitive data
       try {
-        // Fetch the latest status from the backend so we know whether it
-        // ended in "succeeded" or "failed".
         const res = await fetch(`${API_BASE}/testruns/${testRunId}`, {
           credentials: "include",
-          headers: { 
+          headers: {
             Authorization: `Bearer ${token}`,
-            'X-Workspace-ID': currentWorkspaceId
+            "X-Workspace-ID": currentWorkspaceId,
           },
         });
         if (res.ok) {
           const run = (await res.json()) as TestRunStatus;
-          // Map only the fields we keep in the list
-          const existing = getState().testRuns?.find(r => r._id === testRunId);
-          if (existing) {
-            const updated = {
-              ...existing,
-              ...run,
-            } as TestRun;
+          const existingAfterOpt = getState().testRuns?.find((r) => r._id === testRunId);
+          if (existingAfterOpt) {
+            const updated = { ...existingAfterOpt, ...run } as TestRun;
             updateTestRunInList(updated);
             syncRunToTestCache(updated);
           } else {
-            // not in list yet – add with full payload
             addRunToStores(run as unknown as TestRun);
           }
-          
-          // Refresh counts when a test run finishes (succeeded or failed)
-          if (run.status === 'succeeded' || run.status === 'failed') {
+
+          if (run.status === "succeeded" || run.status === "failed") {
             fetchCounts();
           }
-          
           return;
         }
-      } catch {
-        /* swallow */
-      }
-      // Fallback: assume success if we cannot fetch
-      const existing = getState().testRuns?.find(r => r._id === testRunId);
-      if (existing) {
-        const updated = { ...existing, status: "succeeded", browserUseStatus: "finished" } as TestRun;
-        updateTestRunInList(updated);
-        syncRunToTestCache(updated);
-        // Refresh counts on fallback success
-        fetchCounts();
-      }
+      } catch {/* ignore */}
+      // No fetch? We already optimistically set finished flag; counts refresh
+      fetchCounts();
     });
     socket.on(
       "testRun:artifact",
