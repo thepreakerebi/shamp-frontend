@@ -21,18 +21,25 @@ export function SummaryPanel({ run, personaName }: Props) {
   const { deleteTestRun, moveTestRunToTrash, testRuns } = useTestRuns();
   const { user } = useAuth();
 
-  const [showRefresh, setShowRefresh] = React.useState(() => {
-    if (typeof window === "undefined") return true;
-    return !sessionStorage.getItem(`run_refresh_${run._id}`);
-  });
+  // Refresh button visibility – shown only once when status is "stopped" and
+  // the user hasn't already clicked it.
+  const [showRefresh, setShowRefresh] = React.useState(false);
 
-  // Persist dismissal once run id changes
   React.useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!showRefresh) {
+    const key = `run_refresh_${run._id}`;
+    const alreadyDismissed = sessionStorage.getItem(key);
+    // Show button only if status is "stopped" and it hasn't been dismissed yet.
+    setShowRefresh(!alreadyDismissed && run.browserUseStatus === "stopped");
+  }, [run._id, run.browserUseStatus]);
+
+  // Helper to persist dismissal in sessionStorage so it stays hidden on reload.
+  const dismissRefresh = () => {
+    if (typeof window !== "undefined") {
       sessionStorage.setItem(`run_refresh_${run._id}`, "done");
     }
-  }, [run._id, showRefresh]);
+    setShowRefresh(false);
+  };
 
   // Pick latest run data from store if available, but preserve rich fields from initial run
   const liveRun = (testRuns ?? []).find(r => r._id === run._id) as TestRunStatus | undefined;
@@ -205,16 +212,13 @@ export function SummaryPanel({ run, personaName }: Props) {
         <section className="flex items-center gap-2">
           {( ["finished", "stopped"].includes(active.browserUseStatus ?? "") ) && statusBadge(active.status)}
           {browserStatusBadge(active.browserUseStatus)}
-          {active.browserUseStatus === "stopped" && showRefresh && (
+          {showRefresh && (
             <Button
               variant="ghost"
               size="icon"
               aria-label="Refresh"
               onClick={() => {
-                if (typeof window !== "undefined") {
-                  sessionStorage.setItem(`run_refresh_${run._id}`, "done");
-                }
-                setShowRefresh(false);
+                dismissRefresh();
                 if (typeof window !== "undefined") window.location.reload();
               }}
             >
