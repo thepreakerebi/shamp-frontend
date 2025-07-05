@@ -8,7 +8,8 @@ import { useRouter } from "next/navigation";
 import type { TestRunStatus } from "@/hooks/use-testruns";
 import React from "react";
 import { TestRunCardActionsDropdown } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card-actions-dropdown";
-import { useTestRuns } from "@/hooks/use-testruns";
+import { useTestRuns, canTrashTestRun } from "@/hooks/use-testruns";
+import { useAuth } from "@/lib/auth";
 
 interface Props {
   run: TestRunStatus;
@@ -18,6 +19,7 @@ interface Props {
 export function SummaryPanel({ run, personaName }: Props) {
   const router = useRouter();
   const { deleteTestRun, moveTestRunToTrash, testRuns } = useTestRuns();
+  const { user } = useAuth();
 
   const [showRefresh, setShowRefresh] = React.useState(() => {
     if (typeof window === "undefined") return true;
@@ -167,6 +169,11 @@ export function SummaryPanel({ run, personaName }: Props) {
     return undefined;
   })();
 
+  const canTrash = React.useMemo(() => {
+    const fullRun: TestRunStatus = run;
+    return canTrashTestRun(fullRun as unknown as import("@/hooks/use-testruns").TestRun, user);
+  }, [run._id, user?._id, user?.currentWorkspaceRole]);
+
   const handleActionComplete = () => {
     router.push('/test-runs');
   };
@@ -184,13 +191,16 @@ export function SummaryPanel({ run, personaName }: Props) {
             {personaName && <p className="text-xs text-muted-foreground mt-1">{personaName}&rsquo;s run</p>}
           </section>
           {/* Actions dropdown */}
-          <TestRunCardActionsDropdown
-            runId={run._id}
-            runPersonaName={personaName}
-            actions={{ deleteTestRun, moveTestRunToTrash }}
-            showOpenOptions={false}
-            onActionComplete={handleActionComplete}
-          />
+          {canTrash && (
+            <TestRunCardActionsDropdown
+              runId={run._id}
+              runPersonaName={personaName}
+              actions={{ deleteTestRun, moveTestRunToTrash }}
+              showOpenOptions={false}
+              onActionComplete={handleActionComplete}
+              showTrash={canTrash}
+            />
+          )}
         </section>
         <section className="flex items-center gap-2">
           {( ["finished", "stopped"].includes(active.browserUseStatus ?? "") ) && statusBadge(active.status)}
