@@ -20,9 +20,15 @@ export function StartTestRunModal({ open, onOpenChange }: StartTestRunModalProps
   const [openSelect, setOpenSelect] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Fetch latest tests list once whenever the modal opens.
+  // We intentionally omit `refetch` from dependencies because its identity
+  // changes on every render (being recreated inside the `useTests` hook),
+  // which would cause this effect to run in a loop and eventually hit the
+  // "maximum update depth" error.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (open) refetch();
-  }, [open, refetch]);
+  }, [open]);
 
   const handleStart = async () => {
     if (!selected) return;
