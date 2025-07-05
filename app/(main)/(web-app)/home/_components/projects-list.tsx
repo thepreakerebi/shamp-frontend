@@ -70,9 +70,17 @@ function ProjectsListInner() {
   const ProjectCard = ({ project, canTrash }: { project: Project; canTrash: boolean }) => {
     const router = useRouter();
     
-    // Memoize permission calculations to prevent flickering during re-renders
-    const canEdit = React.useMemo(() => canEditProject(project), [project, canEditProject]);
-    const showDropdown = React.useMemo(() => shouldShowDropdown(project), [project, shouldShowDropdown]);
+    // Memoize permission calculations with more specific dependencies to prevent flickering
+    const canEdit = React.useMemo(() => canEditProject(project), [
+      project._id, 
+      project.createdBy?._id, 
+      canEditProject
+    ]);
+    const showDropdown = React.useMemo(() => shouldShowDropdown(project), [
+      project._id, 
+      project.createdBy?._id, 
+      shouldShowDropdown
+    ]);
 
     // Fallback logic for image: previewImageUrl -> favicon -> placeholder
     const [imgSrc, setImgSrc] = React.useState(
@@ -197,9 +205,9 @@ function ProjectsListInner() {
         className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-4 w-full"
       aria-label="Projects list"
     >
-      {uniqueProjects.map((project: Project, idx:number) => (
+      {uniqueProjects.map((project: Project) => (
           <ProjectCard
-            key={`${project._id}-${idx}`}
+            key={project._id}
             project={project}
             canTrash={canTrashProject(project)}
           />
