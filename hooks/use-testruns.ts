@@ -620,7 +620,7 @@ export function useTestRuns() {
     if (params.testRunId) searchParams.set('testRunId', params.testRunId);
     if (params.personaId) searchParams.set('personaId', params.personaId);
     
-    const res = await fetch(`${API_BASE}/testruns/chat?${searchParams.toString()}`, {
+    const res = await fetch(`${API_BASE}/testruns/chat/history?${searchParams.toString()}`, {
       credentials: "include",
       headers: { 
         Authorization: `Bearer ${token}`,
