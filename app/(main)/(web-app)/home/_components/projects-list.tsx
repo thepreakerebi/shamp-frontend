@@ -70,8 +70,9 @@ function ProjectsListInner() {
   const ProjectCard = ({ project, canTrash }: { project: Project; canTrash: boolean }) => {
     const router = useRouter();
     
-    const canEdit = canEditProject(project);
-    const showDropdown = shouldShowDropdown(project);
+    // Memoize permission calculations to prevent flickering during re-renders
+    const canEdit = React.useMemo(() => canEditProject(project), [project, canEditProject]);
+    const showDropdown = React.useMemo(() => shouldShowDropdown(project), [project, shouldShowDropdown]);
 
     // Fallback logic for image: previewImageUrl -> favicon -> placeholder
     const [imgSrc, setImgSrc] = React.useState(
@@ -90,19 +91,19 @@ function ProjectsListInner() {
       setTriedFavicon(!project.previewImageUrl);
     }, [project.previewImageUrl, project.url]);
 
-    const handleOpen = () => {
+    const handleOpen = React.useCallback(() => {
       router.push(`/home/${project._id}`);
-    };
+    }, [router, project._id]);
 
-    const handleEdit = () => {
+    const handleEdit = React.useCallback(() => {
       setEditingProject(project);
       setEditModalOpen(true);
-    };
+    }, [project]);
 
-    const handleTrash = () => {
+    const handleTrash = React.useCallback(() => {
       setTrashingProject(project);
       setTrashModalOpen(true);
-    };
+    }, [project]);
 
     return (
       <article
