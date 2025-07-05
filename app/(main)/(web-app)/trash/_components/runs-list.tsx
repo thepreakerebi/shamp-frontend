@@ -10,6 +10,7 @@ import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_com
 import { Badge } from "@/components/ui/badge";
 import { usePersonas } from "@/hooks/use-personas";
 import { useAuth } from "@/lib/auth";
+import type { Persona } from "@/hooks/use-personas";
 
 type RunWithPersona = TestRun & { personaName?: string };
 
@@ -22,7 +23,7 @@ export function TrashedRunsList() {
     fetchTrashedTestRuns,
   } = useTestRuns();
 
-  const { user } = useAuth();
+  const { user, token, currentWorkspaceId } = useAuth();
 
   const { personas } = usePersonas();
 
@@ -32,16 +33,58 @@ export function TrashedRunsList() {
   const [emptyTrashOpen, setEmptyTrashOpen] = useState(false);
   const [emptyTrashLoading, setEmptyTrashLoading] = useState(false);
 
+  // Build a deduplicated & sorted list of trashed runs once personas may rely on it below
   const uniqueRuns = React.useMemo(() => {
     if (!trashedTestRuns) return [] as TestRun[];
+
     const map = new Map<string, TestRun>();
-    trashedTestRuns.forEach(r => {
-      if (!map.has(r._id)) map.set(r._id, r);
+
+    trashedTestRuns.forEach((r) => {
+      const id = (r as { _id?: string })._id;
+      if (!id) return; // Skip malformed entries
+      if (!map.has(id)) map.set(id, r);
     });
-    // Sort newest first based on ObjectId timestamp
-    const getTs = (id: string) => parseInt(id.substring(0, 8), 16);
-    return Array.from(map.values()).sort((a,b)=> getTs(b._id) - getTs(a._id));
+
+    const getTs = (id?: string) => {
+      if (!id || id.length < 8) return 0;
+      const ts = parseInt(id.substring(0, 8), 16);
+      return isNaN(ts) ? 0 : ts;
+    };
+
+    return Array.from(map.values()).sort((a, b) => getTs(b._id) - getTs(a._id));
   }, [trashedTestRuns]);
+
+  const [extraPersonaNames, setExtraPersonaNames] = React.useState<Record<string, string>>({});
+
+  // Helper to fetch a persona's name when it's missing from both the run payload
+  // and the main personas list.
+  const fetchPersonaName = React.useCallback(async (id: string) => {
+    if (!token || !currentWorkspaceId) return;
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/personas/${id}`, {
+        credentials: "include",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "X-Workspace-ID": currentWorkspaceId,
+        } as Record<string, string>,
+      });
+      if (!res.ok) return;
+      const p: Persona = await res.json();
+      setExtraPersonaNames((prev) => ({ ...prev, [id]: p.name }));
+    } catch {/* ignore */}
+  }, [token, currentWorkspaceId]);
+
+  // Whenever the run list or personas change, ensure we have names for every run.
+  React.useEffect(() => {
+    const idsToFetch = new Set<string>();
+    uniqueRuns.forEach((r) => {
+      const pid = (r as { persona?: string }).persona;
+      if (!pid) return;
+      const nameKnown = (r as { personaName?: string }).personaName || personas?.some(p => p._id === pid) || extraPersonaNames[pid];
+      if (!nameKnown) idsToFetch.add(pid);
+    });
+    idsToFetch.forEach(id => fetchPersonaName(id));
+  }, [uniqueRuns, personas, extraPersonaNames, fetchPersonaName]);
 
   // Check if user can empty trash
   const canEmptyTrash = React.useMemo(() => {
@@ -55,9 +98,12 @@ export function TrashedRunsList() {
 
   const getPersonaName = (run: RunWithPersona): string | undefined => {
     if (run.personaName) return run.personaName;
-    if (run.persona && personas) {
-      const p = personas.find(pr=> pr._id === run.persona);
-      return p?.name;
+    if (run.persona) {
+      // Primary source: loaded personas list
+      const p = personas?.find(pr => pr._id === run.persona);
+      if (p?.name) return p.name;
+      // Secondary source: names fetched ad-hoc
+      return extraPersonaNames[run.persona];
     }
     return undefined;
   };
