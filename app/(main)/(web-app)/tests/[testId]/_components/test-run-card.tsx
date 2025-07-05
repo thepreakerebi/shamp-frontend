@@ -1,5 +1,6 @@
 "use client";
 import { TestRunSummary } from "@/hooks/use-tests";
+import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,8 @@ import { TestRunCardActionsDropdown } from "@/app/(main)/(web-app)/tests/[testId
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useAuth } from "@/lib/auth";
+import { canTrashTestRun } from "@/hooks/use-testruns";
 // import React from "react"; // video badge logic temporarily disabled
 
 type FullRunWithPersona = import("@/hooks/use-testruns").TestRun & { personaName?: string };
@@ -24,6 +27,13 @@ export function TestRunCard({ run }: { run: MinimalRun }) {
     deleteTestRun,
     moveTestRunToTrash,
   } = useTestRuns();
+
+  const { user } = useAuth();
+  const canTrash = React.useMemo(() => {
+    // Cast to full TestRun type for permission check
+    const fullRun = run as unknown as import("@/hooks/use-testruns").TestRun;
+    return canTrashTestRun(fullRun, user);
+  }, [run._id, user?._id, user?.currentWorkspaceRole]);
 
   // Handle navigation
   const handleOpen: React.MouseEventHandler<HTMLDivElement> = () => {
@@ -140,6 +150,7 @@ export function TestRunCard({ run }: { run: MinimalRun }) {
             actions={{ deleteTestRun, moveTestRunToTrash }}
             showOpenOptions={run.status !== 'pending'}
             editPath={editPath}
+            showTrash={canTrash}
           />
         </nav>
       </header>

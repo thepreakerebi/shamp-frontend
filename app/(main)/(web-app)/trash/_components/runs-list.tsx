@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-card-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { usePersonas } from "@/hooks/use-personas";
+import { useAuth } from "@/lib/auth";
 
 type RunWithPersona = TestRun & { personaName?: string };
 
@@ -21,13 +22,15 @@ export function TrashedRunsList() {
     fetchTrashedTestRuns,
   } = useTestRuns();
 
+  const { user } = useAuth();
+
+  const { personas } = usePersonas();
+
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [runToDelete, setRunToDelete] = useState<TestRun | null>(null);
   const [emptyTrashOpen, setEmptyTrashOpen] = useState(false);
   const [emptyTrashLoading, setEmptyTrashLoading] = useState(false);
-
-  const { personas } = usePersonas();
 
   const uniqueRuns = React.useMemo(() => {
     if (!trashedTestRuns) return [] as TestRun[];
@@ -39,6 +42,16 @@ export function TrashedRunsList() {
     const getTs = (id: string) => parseInt(id.substring(0, 8), 16);
     return Array.from(map.values()).sort((a,b)=> getTs(b._id) - getTs(a._id));
   }, [trashedTestRuns]);
+
+  // Check if user can empty trash
+  const canEmptyTrash = React.useMemo(() => {
+    if (!user) return false;
+    if (user.currentWorkspaceRole === 'admin') return true;
+    if (user.currentWorkspaceRole === 'member') {
+      return uniqueRuns.some(run => run.createdBy?._id === user._id);
+    }
+    return false;
+  }, [user, uniqueRuns]);
 
   const getPersonaName = (run: RunWithPersona): string | undefined => {
     if (run.personaName) return run.personaName;
@@ -110,7 +123,7 @@ export function TrashedRunsList() {
     <section>
       <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2 px-4">
         <h2 className="text-xl font-semibold">Trashed Test Runs · {uniqueRuns.length}</h2>
-        {uniqueRuns.length > 0 && (
+        {uniqueRuns.length > 0 && canEmptyTrash && (
           <Button 
             variant="outline" 
             onClick={() => setEmptyTrashOpen(true)}

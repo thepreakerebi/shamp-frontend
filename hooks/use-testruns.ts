@@ -26,6 +26,14 @@ export interface TestRun {
   stepsWithScreenshots?: { step: Record<string, unknown>; screenshot: string | null }[];
   recordings?: Artifact[];
   personaName?: string;
+  workspace: string;
+  createdBy?: {
+    _id: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    email: string;
+  };
   // Add other fields as needed
 }
 
@@ -129,23 +137,32 @@ export function useTestRuns() {
     });
     const socket = socketRef.current;
     // Listen for test run events
-    socket.on("testRun:started", ({ testRun }: { testRun: TestRun }) => {
+    socket.on("testRun:started", ({ testRun, workspace }: { testRun: TestRun; workspace?: string }) => {
+      if (workspace && workspace !== currentWorkspaceId) return;
       addRunToStores(testRun);
     });
-    socket.on("testRun:scheduled", ({ testRun }: { testRun: TestRun }) => {
+    socket.on("testRun:scheduled", ({ testRun, workspace }: { testRun: TestRun; workspace?: string }) => {
+      if (workspace && workspace !== currentWorkspaceId) return;
       addRunToStores(testRun);
     });
-    socket.on("testRun:trashed", ({ _id }: { _id: string }) => {
-      const existing = getState().testRuns?.find(r => r._id === _id);
-      if (existing) {
-        removeTestRunFromList(_id);
-        addTrashedTestRun({ ...existing, trashed: true });
-        removeRunFromTestCache(_id);
-        // Refresh counts when a test run is trashed
-        fetchCounts();
+    socket.on(
+      "testRun:trashed",
+      ({ _id, workspace }: { _id?: string; workspace?: string }) => {
+        if (workspace && workspace !== currentWorkspaceId) return;
+        if (!_id) return; // safeguard for TypeScript – nothing to do without an ID
+
+        const existing = getState().testRuns?.find((r) => r._id === _id);
+        if (existing) {
+          removeTestRunFromList(_id);
+          addTrashedTestRun({ ...existing, trashed: true });
+          removeRunFromTestCache(_id);
+          // Refresh counts when a test run is trashed
+          fetchCounts();
+        }
       }
-    });
-    socket.on("testRun:deleted", (payload: { _id?: string; testRunId?: string }) => {
+    );
+    socket.on("testRun:deleted", (payload: { _id?: string; testRunId?: string; workspace?: string }) => {
+      if (payload.workspace && payload.workspace !== currentWorkspaceId) return;
       const idToRemove = payload.testRunId ?? payload._id;
       if (idToRemove) {
         removeTestRunFromList(idToRemove);
@@ -155,7 +172,8 @@ export function useTestRuns() {
         fetchCounts();
       }
     });
-    socket.on("testRun:stopped", async ({ testRunId }: { testRunId: string }) => {
+    socket.on("testRun:stopped", async ({ testRunId, workspace }: { testRunId: string; workspace?: string }) => {
+      if (workspace && workspace !== currentWorkspaceId) return;
       const current = getState().testRuns?.find(r => r._id === testRunId);
       if (!current) return;
 
@@ -188,7 +206,8 @@ export function useTestRuns() {
       updateTestRunInList(updated);
       syncRunToTestCache(updated);
     });
-    socket.on("testRun:paused", async ({ testRunId }: { testRunId: string }) => {
+    socket.on("testRun:paused", async ({ testRunId, workspace }: { testRunId: string; workspace?: string }) => {
+      if (workspace && workspace !== currentWorkspaceId) return;
       {
         const existing = getState().testRuns?.find(r => r._id === testRunId);
         if (existing) {
@@ -213,7 +232,8 @@ export function useTestRuns() {
         }
       }
     });
-    socket.on("testRun:resumed", async ({ testRunId }: { testRunId: string }) => {
+    socket.on("testRun:resumed", async ({ testRunId, workspace }: { testRunId: string; workspace?: string }) => {
+      if (workspace && workspace !== currentWorkspaceId) return;
       {
         const existing = getState().testRuns?.find(r => r._id === testRunId);
         if (existing) {
@@ -238,7 +258,8 @@ export function useTestRuns() {
         }
       }
     });
-    socket.on("testRun:finished", async ({ testRunId }: { testRunId: string }) => {
+    socket.on("testRun:finished", async ({ testRunId, workspace }: { testRunId: string; workspace?: string }) => {
+      if (workspace && workspace !== currentWorkspaceId) return;
       try {
         // Fetch the latest status from the backend so we know whether it
         // ended in "succeeded" or "failed".
@@ -287,7 +308,8 @@ export function useTestRuns() {
     });
     socket.on(
       "testRun:artifact",
-      ({ testRunId, artifact }: { testRunId: string; artifact: Artifact }) => {
+      ({ testRunId, artifact, workspace }: { testRunId: string; artifact: Artifact; workspace?: string }) => {
+        if (workspace && workspace !== currentWorkspaceId) return;
         const existing = getState().testRuns?.find(r => r._id === testRunId);
         if (existing && !(existing.artifacts || []).some(a => a._id === artifact._id)) {
           const updated: TestRun = {
@@ -317,7 +339,8 @@ export function useTestRuns() {
       }
     );
     socket.on("testRun:chatMessage", () => {});
-    socket.on("testRun:restored", ({ testRun }: { testRun: TestRun }) => {
+    socket.on("testRun:restored", ({ testRun, workspace }: { testRun: TestRun; workspace?: string }) => {
+      if (workspace && workspace !== currentWorkspaceId) return;
       // remove from trash and add to active list
       removeTrashedTestRun(testRun._id);
       addRunToStores(testRun);
@@ -704,4 +727,25 @@ export function useTestRuns() {
     fetchTrashedTestRuns,
     hasWorkspaceContext: !!currentWorkspaceId,
   };
-} 
+}
+
+// ----------------------------------------
+// Permission helpers (module-level)
+// ----------------------------------------
+
+/**
+ * Determine if the current user can trash (or delete) a test run.
+ * Admins can trash any run in the workspace.
+ * Members can only trash runs they created.
+ */
+export const canTrashTestRun = (
+  run: TestRun,
+  user: { _id: string; currentWorkspaceRole?: 'admin' | 'member' | null } | null,
+): boolean => {
+  if (!user) return false;
+  if (user.currentWorkspaceRole === 'admin') return true;
+  if (user.currentWorkspaceRole === 'member') {
+    return run.createdBy?._id === user._id;
+  }
+  return false;
+}; 
