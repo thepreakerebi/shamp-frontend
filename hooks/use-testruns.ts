@@ -381,7 +381,7 @@ export function useTestRuns() {
   const fetchTrashedTestRuns = useCallback(async () => {
     if (!token || !currentWorkspaceId) return;
     try {
-      const data = await fetcher("/testruns/trash", token, currentWorkspaceId) as TestRun[];
+      const data = await fetcher("/testruns/trashed", token, currentWorkspaceId) as TestRun[];
       setTrashedTestRuns(Array.isArray(data) ? data : []);
     } catch {
       // silent fail for trashed runs

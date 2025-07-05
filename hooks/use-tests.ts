@@ -125,7 +125,7 @@ export function useTests() {
     store.setTestsLoading(true);
     store.setTestsError(null);
     try {
-      const data = await fetcher("/tests/trash", token, currentWorkspaceId);
+      const data = await fetcher("/tests/trashed", token, currentWorkspaceId);
       // Handle paginated response - extract tests from data.data array
       const trashedTests = data.data || data;
       store.setTrashedTests(Array.isArray(trashedTests) ? trashedTests : []);
@@ -168,11 +168,13 @@ export function useTests() {
   const refetch = useCallback(() => {
     fetchTests();
     fetchCount();
-  }, [fetchTests, fetchCount]);
+    fetchTrashedTests();
+  }, [fetchTests, fetchCount, fetchTrashedTests]);
 
   useEffect(() => {
     fetchTests();
     fetchCount();
+    fetchTrashedTests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, currentWorkspaceId]);
 
@@ -209,10 +211,10 @@ export function useTests() {
       if (data.workspace && data.workspace === currentWorkspaceId) {
         if (data._id) {
           store.removeTestFromList(data._id);
+          // Update count by decrementing current count
+          const currentCount = store.count;
+          store.setCount(Math.max(0, currentCount - 1));
         }
-        // Update count
-        const currentTests = store.tests || [];
-        store.setCount(currentTests.length);
       }
     };
     
@@ -221,9 +223,9 @@ export function useTests() {
       if (data.workspace && data.workspace === currentWorkspaceId) {
         if (data._id) {
           store.removeTestFromList(data._id);
-          // Update count
-          const currentTests = store.tests || [];
-          store.setCount(currentTests.length);
+          // Update count by decrementing current count
+          const currentCount = store.count;
+          store.setCount(Math.max(0, currentCount - 1));
         }
         if (data.test) {
           store.addTrashedTest({ ...data.test, trashed: true });
@@ -239,9 +241,9 @@ export function useTests() {
         }
         if (data.test) {
           store.addTestToList({ ...data.test, trashed: false });
-          // Update count
-          const currentTests = store.tests || [];
-          store.setCount(currentTests.length);
+          // Update count by incrementing current count
+          const currentCount = store.count;
+          store.setCount(currentCount + 1);
         }
       }
     };

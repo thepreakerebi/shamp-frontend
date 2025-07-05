@@ -7,7 +7,7 @@ import { TestsCardToolbar } from "./tests-card-toolbar";
 import { TestsListEmpty } from "./tests-list-empty";
 
 export function TestsList() {
-  const { tests, trashedTests, testsLoading } = useTests();
+  const { tests, testsLoading } = useTests();
 
   // Scroll-to-top button visibility (mobile only)
   const [showTop, setShowTop] = useState(false);
@@ -21,9 +21,11 @@ export function TestsList() {
 
   const filteredTests: Test[] = React.useMemo(() => {
     if (!tests) return [] as Test[];
-    const trashedIds = new Set((trashedTests ?? []).map(t=>t._id));
-    return tests.filter(t => !trashedIds.has(t._id) && t.trashed !== true);
-  }, [tests, trashedTests]);
+    // Filter out any tests that are marked as trashed
+    // The socket events should already remove trashed tests from the main list,
+    // but this is a safety check for any tests that might have trashed: true
+    return tests.filter(t => t.trashed !== true);
+  }, [tests]);
 
   if (testsLoading && filteredTests.length === 0) {
     return <TestsCardSkeleton count={6} />;
