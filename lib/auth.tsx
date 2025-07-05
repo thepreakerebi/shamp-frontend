@@ -178,6 +178,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [token]);
 
+  // Listen for storage changes (e.g., from TokenHandler setting authToken)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'authToken' && e.newValue !== token) {
+        // Token changed in localStorage, update our state
+        setToken(e.newValue);
+      }
+    };
+
+    // Listen for custom event from TokenHandler
+    const handleTokenChanged = (e: CustomEvent) => {
+      const newToken = e.detail?.token;
+      if (newToken && newToken !== token) {
+        setToken(newToken);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('authTokenChanged', handleTokenChanged as EventListener);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('authTokenChanged', handleTokenChanged as EventListener);
+    };
+  }, [token]);
+
   // Login method
   const login = async (email: string, password: string) => {
     setLoading(true);
@@ -238,8 +263,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch {}
     }
 
-    // Ensure user context is fully updated before proceeding
-    await refresh();
+    setLoading(false);
   };
 
   // Switch workspace

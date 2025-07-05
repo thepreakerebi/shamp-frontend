@@ -1,6 +1,6 @@
 import { useAuth } from "@/lib/auth";
 import type { TestRun } from "@/hooks/use-testruns";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import io from "socket.io-client";
 import { useTestsStore } from "@/lib/store/tests";
 import { useTestRunsStore } from "@/lib/store/testruns";
@@ -88,6 +88,7 @@ const fetcher = (url: string, token: string, workspaceId?: string | null) =>
 export function useTests() {
   const { token, currentWorkspaceId } = useAuth();
   const store = useTestsStore();
+  const previousWorkspaceId = useRef<string | null>(null);
 
   // Fetch tests
   const fetchTests = useCallback(async () => {
@@ -122,21 +123,14 @@ export function useTests() {
       store.setTrashedTests([]);
       return;
     }
-    store.setTestsLoading(true);
-    store.setTestsError(null);
     try {
       const data = await fetcher("/tests/trashed", token, currentWorkspaceId);
       // Handle paginated response - extract tests from data.data array
       const trashedTests = data.data || data;
       store.setTrashedTests(Array.isArray(trashedTests) ? trashedTests : []);
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        store.setTestsError(err.message);
-      } else {
-        store.setTestsError("Failed to fetch trashed tests");
-      }
-    } finally {
-      store.setTestsLoading(false);
+      // Silently handle errors for trashed tests - don't interfere with main error state
+      console.error("Failed to fetch trashed tests:", err);
     }
   }, [token, currentWorkspaceId, store]);
 
@@ -172,6 +166,28 @@ export function useTests() {
   }, [fetchTests, fetchCount, fetchTrashedTests]);
 
   useEffect(() => {
+    if (!token || !currentWorkspaceId) {
+      // When there's no auth context, set loading to false to prevent infinite skeleton
+      store.setTestsLoading(false);
+      store.setCountLoading(false);
+      store.setTests([]);
+      store.setCount(0);
+      return;
+    }
+    
+    // Check if workspace has changed
+    if (previousWorkspaceId.current && previousWorkspaceId.current !== currentWorkspaceId) {
+      // Clear store data when workspace changes
+      store.setTests(null);
+      store.setTrashedTests(null);
+      store.setCount(0);
+      store.setCountLoading(true);
+      store.setTestsLoading(true);
+    }
+    
+    // Update the ref to current workspace
+    previousWorkspaceId.current = currentWorkspaceId;
+    
     fetchTests();
     fetchCount();
     fetchTrashedTests();
