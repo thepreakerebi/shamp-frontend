@@ -145,7 +145,9 @@ export default function ScheduleRunPage() {
           // Optimistically update stores so UI refreshes immediately
           addTestRunToList(runWithPersona);
           const prev = useTestsStore.getState().getTestRunsForTest(testId) || [];
-          useTestsStore.getState().setTestRunsForTest(testId, [runWithPersona, ...prev]);
+          // Avoid duplicate entries when optimistically updating the per-test runs list
+          const deduped = [runWithPersona, ...prev.filter(r=>r._id !== runWithPersona._id)];
+          useTestsStore.getState().setTestRunsForTest(testId, deduped);
         }
         toast.success("Test run scheduled");
         router.push(`/tests/${testId}?tab=runs`);
