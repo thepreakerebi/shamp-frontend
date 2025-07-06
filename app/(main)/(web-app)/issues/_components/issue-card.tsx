@@ -6,6 +6,7 @@ import { CheckCircle2, AlertCircle, Trash2, CheckCircle, XCircle, Copy } from "l
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useIssues } from "@/hooks/use-issues";
+import { useAuth } from "@/lib/auth";
 import { useState, useEffect } from "react";
 import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
@@ -16,6 +17,7 @@ interface IssueCardProps {
 
 export function IssueCard({ issue }: IssueCardProps) {
   const { resolveIssue, deleteIssue } = useIssues();
+  const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [optimisticResolved, setOptimisticResolved] = useState(issue.resolved);
@@ -200,27 +202,29 @@ export function IssueCard({ issue }: IssueCardProps) {
             <Copy className="size-3.5 text-blue-500" />
           </Button>
 
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon" disabled={submitting || deleting} className="h-7 w-7">
-                <Trash2 className="size-3.5 text-red-500" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete issue?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete this issue? This action cannot be undone and will permanently remove the issue from your workspace.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <Button variant="outline" disabled={deleting}>Cancel</Button>
-                <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-                  {deleting ? "Deleting..." : "Delete"}
+          {user?.currentWorkspaceRole === 'admin' && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon" disabled={submitting || deleting} className="h-7 w-7">
+                  <Trash2 className="size-3.5 text-red-500" />
                 </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete issue?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this issue? This action cannot be undone and will permanently remove the issue from your workspace.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <Button variant="outline" disabled={deleting}>Cancel</Button>
+                  <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+                    {deleting ? "Deleting..." : "Delete"}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </section>
       </section>
     </Card>
