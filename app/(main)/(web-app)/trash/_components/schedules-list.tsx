@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProjectBadge } from "@/components/ui/project-badge";
 import { PersonaBadge } from "@/components/ui/persona-badge";
 import { format } from "date-fns";
+import { useAuth } from "@/lib/auth";
 
 export function TrashedSchedulesList() {
   const {
@@ -22,6 +23,8 @@ export function TrashedSchedulesList() {
     emptyTestScheduleTrash,
     fetchTrashedSchedules,
   } = useTestSchedules();
+
+  const { user } = useAuth();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
@@ -45,6 +48,16 @@ export function TrashedSchedulesList() {
     };
     return arr.sort((a,b)=> getTs(b) - getTs(a));
   }, [trashedSchedules]);
+
+  const canEmptyTrash = React.useMemo(() => {
+    if (!user) return false;
+    if (user.currentWorkspaceRole === 'admin') return uniqueSchedules.length > 0;
+    const hasOwn = uniqueSchedules.some(s => {
+      const creator = (s as unknown as { createdBy?: string }).createdBy;
+      return creator === user._id;
+    });
+    return hasOwn;
+  }, [user?._id, user?.currentWorkspaceRole, uniqueSchedules]);
 
   const handleRestore = async (schedule: TestSchedule) => {
     try {
@@ -99,7 +112,7 @@ export function TrashedSchedulesList() {
     <section>
       <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2 px-4">
         <h2 className="text-xl font-semibold">Trashed Schedules · {uniqueSchedules.length}</h2>
-        {uniqueSchedules.length > 0 && (
+        {canEmptyTrash && (
           <Button 
             variant="outline" 
             onClick={() => setEmptyTrashOpen(true)}
