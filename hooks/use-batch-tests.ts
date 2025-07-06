@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useAuth } from "@/lib/auth";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import io from "socket.io-client";
 import { useBatchTestsStore } from "@/lib/store/batchTests";
 import { useTestRunsStore } from "@/lib/store/testruns";
@@ -22,6 +23,7 @@ export interface BatchTest {
   trashed?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  workspace?: string;
 }
 
 export interface BatchTestAnalysis {
@@ -61,6 +63,8 @@ export function useBatchTests() {
     emptyTrashedBatchTests,
   } = useBatchTestsStore();
   const { addTestRunToList } = useTestRunsStore();
+
+  const previousWorkspaceId = useRef<string | null>(null);
 
   const fetchBatchTests = useCallback(async () => {
     if (!token || !currentWorkspaceId) {
@@ -102,10 +106,23 @@ export function useBatchTests() {
   }, [token, currentWorkspaceId, setTrashedBatchTests, setBatchTestsLoading]);
 
   useEffect(() => {
-    if (!token || !currentWorkspaceId) return;
+    if (!token || !currentWorkspaceId) {
+      setBatchTests([]);
+      setTrashedBatchTests([]);
+      setBatchTestsLoading(false);
+      return;
+    }
+
+    if (previousWorkspaceId.current && previousWorkspaceId.current !== currentWorkspaceId) {
+      setBatchTests(null);
+      setTrashedBatchTests(null);
+      setBatchTestsLoading(true);
+    }
+    previousWorkspaceId.current = currentWorkspaceId;
+
     fetchBatchTests();
     fetchTrashedBatchTests();
-  }, [token, currentWorkspaceId, fetchBatchTests, fetchTrashedBatchTests]);
+  }, [token, currentWorkspaceId, fetchBatchTests, fetchTrashedBatchTests, setBatchTests, setTrashedBatchTests, setBatchTestsLoading]);
 
   useEffect(() => {
     if (!token || !currentWorkspaceId) return;
@@ -113,52 +130,62 @@ export function useBatchTests() {
       transports: ["websocket"],
       auth: { token, workspaceId: currentWorkspaceId },
     });
-    const handleUpdate = () => {
-      fetchBatchTests();
+
+    const createdHandler = (data: BatchTest & { workspace?: string }) => {
+      if (data.workspace && data.workspace === currentWorkspaceId) {
+        addBatchTestToList(data);
+      }
     };
 
-    // For created / deleted / generic updates just refetch active list.
-    socket.on("batchTest:created", handleUpdate);
-    socket.on("batchTest:deleted", handleUpdate);
-    socket.on("batchTest:statusUpdated", handleUpdate);
-
-    // Generic handler - merge and rely on updateBatchTestInList logic
-    const mergeHandler = (bt: BatchTest) => {
-      updateBatchTestInList(bt);
+    const deletedHandler = (data: { _id?: string; workspace?: string }) => {
+      if (data.workspace && data.workspace === currentWorkspaceId && data._id) {
+        removeBatchTestFromList(data._id);
+      }
     };
 
+    const statusUpdatedHandler = (data: { _id?: string; status?: string; workspace?: string }) => {
+      if (data.workspace && data.workspace === currentWorkspaceId && data._id) {
+        updateBatchTestInList({ _id: data._id, status: data.status } as BatchTest);
+      }
+    };
+
+    const mergeHandler = (bt: BatchTest & { workspace?: string }) => {
+      if (bt.workspace && bt.workspace === currentWorkspaceId) {
+        updateBatchTestInList(bt);
+      }
+    };
+
+    socket.on("batchTest:created", createdHandler);
+    socket.on("batchTest:deleted", deletedHandler);
+    socket.on("batchTest:statusUpdated", statusUpdatedHandler);
     socket.on("batchTest:updated", mergeHandler);
     socket.on("batchTest:trashed", mergeHandler);
 
-    // Handle analysis updates separately to merge latest analysis into store
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server payload lacks type details
-    socket.on("batchTest:analysisUpdated", (payload: { _id: string; latestAnalysis: any }) => {
-      // Get the current batch test from store to merge properly
+    socket.on("batchTest:analysisUpdated", (payload: { _id: string; latestAnalysis: any; workspace?: string }) => {
+      if (payload.workspace && payload.workspace !== currentWorkspaceId) return;
       const currentBatch = useBatchTestsStore.getState().batchTests?.find(bt => bt._id === payload._id);
       if (currentBatch) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const currentAnalysis = (currentBatch as any).analysis || [];
-        // Add the new analysis to the beginning of the array (newest first)
         const updatedAnalysis = [payload.latestAnalysis, ...currentAnalysis];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         updateBatchTestInList({ _id: payload._id, analysis: updatedAnalysis } as any);
       } else {
-        // If we don't have the batch test in store, just set the analysis array with the latest
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         updateBatchTestInList({ _id: payload._id, analysis: [payload.latestAnalysis] } as any);
       }
     });
 
     return () => {
-      socket.off("batchTest:created", handleUpdate);
-      socket.off("batchTest:deleted", handleUpdate);
-      socket.off("batchTest:statusUpdated", handleUpdate);
+      socket.off("batchTest:created", createdHandler);
+      socket.off("batchTest:deleted", deletedHandler);
+      socket.off("batchTest:statusUpdated", statusUpdatedHandler);
       socket.off("batchTest:updated", mergeHandler);
       socket.off("batchTest:trashed", mergeHandler);
       socket.off("batchTest:analysisUpdated");
       socket.disconnect();
     };
-  }, [fetchBatchTests, token, currentWorkspaceId]);
+  }, [token, currentWorkspaceId, addBatchTestToList, removeBatchTestFromList, updateBatchTestInList]);
 
   const getBatchTestById = async (id: string): Promise<BatchTest> => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
@@ -325,13 +352,11 @@ export function useBatchTests() {
     if (!res.ok) throw new Error("Failed to fetch batch test runs");
     const runs = (await res.json()) as TestRun[];
 
-    // Sort newest-first using ObjectId timestamp
     const getTimestamp = (id: string) => parseInt(id.substring(0, 8), 16) * 1000;
     const sorted = [...runs].sort((a, b) => getTimestamp(b._id) - getTimestamp(a._id));
 
     setTestRunsForBatchTest(batchTestId, sorted);
 
-    // Merge into global TestRuns store so other views benefit
     sorted.forEach(run => addTestRunToList(run));
 
     return sorted;

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import React, { useState } from "react";
 import { MoveBatchTestToTrashModal } from "./move-batch-test-to-trash-modal";
 import { DeleteBatchTestModal } from "./delete-batch-test-modal";
+import { useAuth } from "@/lib/auth";
 
 interface ActionFns {
   moveToTrash: (id: string) => Promise<unknown>;
@@ -31,11 +32,16 @@ export function BatchTestCardActionsDropdown({
 }) {
   const router = useRouter();
   const { moveToTrash, deleteBatchTest } = actions;
+  const { user } = useAuth();
 
   const [trashOpen, setTrashOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [trashLoading, setTrashLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  if (user?.currentWorkspaceRole !== 'admin') {
+    return null;
+  }
 
   const handleOpen = () => {
     if (onOpen) onOpen();
