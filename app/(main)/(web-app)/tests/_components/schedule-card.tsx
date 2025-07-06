@@ -9,10 +9,12 @@ import { useTestSchedules } from "@/hooks/use-test-schedules";
 import { TestSchedule } from "@/lib/store/testSchedules";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
+import { useAuth } from "@/lib/auth";
 
 export function ScheduleCard({ schedule }: { schedule: TestSchedule }) {
   const router = useRouter();
   const { moveScheduleToTrash, deleteSchedule } = useTestSchedules();
+  const { user } = useAuth();
 
   const handleOpen: React.MouseEventHandler<HTMLDivElement> = () => {
     router.push(`/tests/${schedule.testId}`);
@@ -37,14 +39,16 @@ export function ScheduleCard({ schedule }: { schedule: TestSchedule }) {
             <p className="text-sm text-muted-foreground line-clamp-2" title={schedule.testDescription}>{schedule.testDescription}</p>
           )}
         </section>
-        <nav onClick={(e)=>e.stopPropagation()} data-stop-row>
-          <ScheduleRowActionsDropdown
-            scheduleId={schedule._id}
-            testName={schedule.testName}
-            actions={{ moveScheduleToTrash, deleteSchedule }}
-            currentRule={schedule.recurrenceRule}
-          />
-        </nav>
+        {user?.currentWorkspaceRole === 'admin' && (
+          <nav onClick={(e)=>e.stopPropagation()} data-stop-row>
+            <ScheduleRowActionsDropdown
+              scheduleId={schedule._id}
+              testName={schedule.testName}
+              actions={{ moveScheduleToTrash, deleteSchedule }}
+              currentRule={schedule.recurrenceRule}
+            />
+          </nav>
+        )}
       </header>
       <Separator />
 

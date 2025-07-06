@@ -10,6 +10,7 @@ export interface TestSchedule {
   nextRun: string;
   recurrenceRule?: string;
   trashed?: boolean;
+  workspace?: string;
 }
 
 interface TestSchedulesState {
@@ -31,6 +32,7 @@ interface TestSchedulesState {
   removeTrashedSchedule: (id: string) => void;
   addScheduleToList: (s: TestSchedule) => void;
   emptyTrashedSchedules: () => void;
+  reset: () => void;
 }
 
 export const useTestSchedulesStore = create<TestSchedulesState>((set) => ({
@@ -79,4 +81,12 @@ export const useTestSchedulesStore = create<TestSchedulesState>((set) => ({
       };
     }),
   emptyTrashedSchedules: () => set({ trashedSchedules: null }),
+  reset: () => set({
+    schedules: null,
+    schedulesLoading: true,
+    schedulesError: null,
+    trashedSchedules: null,
+    trashedSchedulesLoading: true,
+    trashedSchedulesError: null,
+  }),
 })); 
