@@ -77,7 +77,7 @@ export function ScheduleRowActionsDropdown({ scheduleId, testName, currentRule, 
         title="Move schedule to trash"
         description={`Are you sure you want to move the schedule for \"${testName ?? 'this test'}\" to trash?`}
         confirmLabel="Move to trash"
-        confirmVariant="destructive"
+        confirmVariant="default"
         loading={trashLoading}
         onConfirm={confirmTrash}
       />
