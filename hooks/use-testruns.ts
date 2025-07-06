@@ -26,6 +26,7 @@ export interface TestRun {
   stepsWithScreenshots?: { step: Record<string, unknown>; screenshot: string | null }[];
   recordings?: Artifact[];
   personaName?: string;
+  personaAvatarUrl?: string;
   workspace: string;
   createdBy?: {
     _id: string;

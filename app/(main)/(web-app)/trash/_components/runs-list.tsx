@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { usePersonas } from "@/hooks/use-personas";
 import { useAuth } from "@/lib/auth";
 import type { Persona } from "@/hooks/use-personas";
+import { usePersonasStore } from "@/lib/store/personas";
 
 type RunWithPersona = TestRun & { personaName?: string };
 
@@ -26,6 +27,8 @@ export function TrashedRunsList() {
   const { user, token, currentWorkspaceId } = useAuth();
 
   const { personas } = usePersonas();
+  const personasStorePersonas = usePersonasStore(state => state.personas);
+  const addPersonaToList = usePersonasStore(state => state.addPersonaToList);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
@@ -70,9 +73,11 @@ export function TrashedRunsList() {
       });
       if (!res.ok) return;
       const p: Persona = await res.json();
+      // cache avatar and full persona in global store for future cards
+      addPersonaToList(p);
       setExtraPersonaNames((prev) => ({ ...prev, [id]: p.name }));
     } catch {/* ignore */}
-  }, [token, currentWorkspaceId]);
+  }, [token, currentWorkspaceId, addPersonaToList]);
 
   // Whenever the run list or personas change, ensure we have names for every run.
   React.useEffect(() => {
@@ -100,7 +105,7 @@ export function TrashedRunsList() {
     if (run.personaName) return run.personaName;
     if (run.persona) {
       // Primary source: loaded personas list
-      const p = personas?.find(pr => pr._id === run.persona);
+      const p = (personasStorePersonas ?? personas)?.find(pr => pr._id === run.persona);
       if (p?.name) return p.name;
       // Secondary source: names fetched ad-hoc
       return extraPersonaNames[run.persona];
@@ -195,8 +200,18 @@ export function TrashedRunsList() {
           return (
           <article key={run._id} className="rounded-3xl border dark:border-0 bg-card/80 p-4 flex flex-col gap-3">
             <header className="flex items-start gap-3">
-              <figure className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl font-bold shrink-0" aria-hidden="true">
-                {(getPersonaName(rp)?.[0] ?? "R").toUpperCase()}
+              <figure className="w-10 h-10 rounded-xl overflow-hidden bg-muted flex items-center justify-center text-xl font-bold shrink-0" aria-hidden="true">
+                {(() => {
+                  const pid = rp.persona as string | undefined;
+                  const avatarUrl = pid ? (personasStorePersonas ?? personas)?.find(p=>p._id===pid)?.avatarUrl : undefined;
+                  if (avatarUrl) {
+                    return (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={avatarUrl} alt={getPersonaName(rp) ?? "Persona avatar"} className="w-full h-full object-cover" />
+                    );
+                  }
+                  return (getPersonaName(rp)?.[0] ?? "R").toUpperCase();
+                })()}
               </figure>
               <section className="flex-1 min-w-0">
                 <h3 className="font-semibold leading-tight truncate" title={getPersonaName(rp) ?? run._id}>{getPersonaName(rp) ?? run._id}</h3>

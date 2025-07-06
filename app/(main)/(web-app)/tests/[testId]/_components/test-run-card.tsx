@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useAuth } from "@/lib/auth";
 import { canTrashTestRun } from "@/hooks/use-testruns";
+import { usePersonasStore } from "@/lib/store/personas";
 // import React from "react"; // video badge logic temporarily disabled
 
 type FullRunWithPersona = import("@/hooks/use-testruns").TestRun & { personaName?: string };
@@ -28,7 +29,39 @@ export function TestRunCard({ run }: { run: MinimalRun }) {
     moveTestRunToTrash,
   } = useTestRuns();
 
-  const { user } = useAuth();
+  // Look up persona avatar URL (backend may also provide it directly on the run)
+  const personaAvatarUrlFromStore = usePersonasStore(
+    (state) => state.personas?.find((p) => p._id === (run as { persona?: string }).persona)?.avatarUrl,
+  );
+  const avatarUrl = (run as { personaAvatarUrl?: string }).personaAvatarUrl || personaAvatarUrlFromStore;
+
+  // Store updater to add persona when fetched on-demand
+  const addPersonaToList = usePersonasStore(state => state.addPersonaToList);
+
+  const { user, token, currentWorkspaceId } = useAuth();
+
+  // On first render, if avatar is missing but we know persona ID, fetch it once
+  React.useEffect(() => {
+    const personaId = (run as { persona?: string }).persona;
+    if (avatarUrl || !personaId || !token || !currentWorkspaceId) return;
+    (async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/personas/${personaId}`, {
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Workspace-ID": currentWorkspaceId,
+          } as Record<string, string>,
+        });
+        if (!res.ok) return;
+        const persona = await res.json();
+        addPersonaToList(persona);
+      } catch {/* ignore */}
+    })();
+    // We only want to run this when avatarUrl is falsey initially
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [avatarUrl, token, currentWorkspaceId, addPersonaToList]);
+
   const canTrash = React.useMemo(() => {
     // Cast to full TestRun type for permission check
     const fullRun = run as unknown as import("@/hooks/use-testruns").TestRun;
@@ -124,11 +157,21 @@ export function TestRunCard({ run }: { run: MinimalRun }) {
     >
       {/* Header */}
       <header className="flex items-start gap-3">
+        {/* Persona avatar */}
         <figure
-          className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl font-bold shrink-0"
+          className="w-10 h-10 rounded-xl overflow-hidden bg-muted flex items-center justify-center text-xl font-bold shrink-0"
           aria-hidden="true"
         >
-          {run.personaName?.[0]?.toUpperCase() || "P"}
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={avatarUrl}
+              alt={run.personaName ?? "Persona avatar"}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            run.personaName?.[0]?.toUpperCase() || "P"
+          )}
         </figure>
         <section className="flex-1 min-w-0">
           <h3 className="font-semibold leading-tight truncate" title={run.personaName}>
