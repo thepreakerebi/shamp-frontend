@@ -117,6 +117,13 @@ export function TrashedBatchTestsList() {
     return undefined;
   };
 
+  const getCreatorId = (b: BatchTest): string | undefined => {
+    if (!b) return undefined;
+    if (typeof b.createdBy === 'string') return b.createdBy;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (b.createdBy as any)?._id;
+  };
+
   return (
     <section>
       <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2 px-4">
@@ -173,12 +180,14 @@ export function TrashedBatchTestsList() {
                     </p>
                   )}
                 </section>
-                <nav onClick={e => e.stopPropagation()} data-stop-row>
-                  <TrashCardActionsDropdown
-                    onRestore={() => handleRestore(batch)}
-                    onDelete={() => promptDelete(batch)}
-                  />
-                </nav>
+                { (user?.currentWorkspaceRole === 'admin' || getCreatorId(batch) === user?._id) && (
+                  <nav onClick={e => e.stopPropagation()} data-stop-row>
+                    <TrashCardActionsDropdown
+                      onRestore={() => handleRestore(batch)}
+                      onDelete={() => promptDelete(batch)}
+                    />
+                  </nav>
+                )}
               </header>
 
               <section className="flex items-center gap-2 mt-auto">

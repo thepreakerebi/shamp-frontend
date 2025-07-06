@@ -165,6 +165,12 @@ export function TrashedRunsList() {
     return <Badge variant="secondary" className={`px-1.5 py-0 text-xs ${cls}`}>{status}</Badge>;
   };
 
+  const getCreatorId = (r: TestRun): string | undefined => {
+    if (typeof r.createdBy === 'string') return r.createdBy;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (r.createdBy as any)?._id;
+  };
+
   return (
     <section>
       <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2 px-4">
@@ -200,9 +206,11 @@ export function TrashedRunsList() {
                 </div>
                 
               </section>
-              <nav onClick={e=>e.stopPropagation()} data-stop-row>
-                <TrashCardActionsDropdown onRestore={() => handleRestore(run)} onDelete={() => promptDelete(run)} />
-              </nav>
+              {(user?.currentWorkspaceRole === 'admin' || getCreatorId(run) === user?._id) && (
+                <nav onClick={e=>e.stopPropagation()} data-stop-row>
+                  <TrashCardActionsDropdown onRestore={() => handleRestore(run)} onDelete={() => promptDelete(run)} />
+                </nav>
+              )}
             </header>
           </article>
         );})}

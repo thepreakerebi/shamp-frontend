@@ -142,9 +142,11 @@ export function TrashedTestsList() {
                   <h3 className="font-semibold leading-tight truncate" title={test.name}>{test.name}</h3>
                   {test.description && <p className="text-sm text-muted-foreground line-clamp-2" title={test.description}>{test.description}</p>}
                 </section>
-                <nav onClick={(e)=>e.stopPropagation()} data-stop-row>
-                  <TrashCardActionsDropdown onRestore={() => handleRestore(test)} onDelete={() => promptDelete(test)} />
-                </nav>
+                {(user?.currentWorkspaceRole === 'admin' || test.createdBy?._id === user?._id) && (
+                  <nav onClick={(e)=>e.stopPropagation()} data-stop-row>
+                    <TrashCardActionsDropdown onRestore={() => handleRestore(test)} onDelete={() => promptDelete(test)} />
+                  </nav>
+                )}
               </header>
 
               <section className="flex flex-wrap items-center gap-2 mt-auto">

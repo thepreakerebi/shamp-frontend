@@ -165,10 +165,12 @@ export function TrashedProjectsList() {
                 <h3 className="text-muted-foreground w-full text-sm truncate">
                   {project.url || "No URL"}
                 </h3>
-                <TrashCardActionsDropdown
-                  onRestore={() => handleRestore(project)}
-                  onDelete={() => handleDeletePrompt(project)}
-                />
+                {(user?.currentWorkspaceRole === 'admin' || project.createdBy?._id === user?._id) && (
+                  <TrashCardActionsDropdown
+                    onRestore={() => handleRestore(project)}
+                    onDelete={() => handleDeletePrompt(project)}
+                  />
+                )}
               </footer>
             </section>
           </article>
