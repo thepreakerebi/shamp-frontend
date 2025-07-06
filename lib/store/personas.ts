@@ -45,13 +45,26 @@ export const usePersonasStore = create<PersonasState>((set) => ({
       personas: state.personas ? state.personas.filter((p) => p._id !== id) : null,
     })),
   addPersonaToList: (persona) =>
-    set((state) => ({
-      personas: state.personas ? [persona, ...state.personas] : [persona],
-    })),
+    set((state) => {
+      if (state.personas && state.personas.some((p) => p._id === persona._id)) {
+        // If already exists, replace it (might be newer data)
+        return {
+          personas: state.personas.map((p) => (p._id === persona._id ? persona : p)),
+        };
+      }
+      return {
+        personas: state.personas ? [persona, ...state.personas] : [persona],
+      };
+    }),
   addPersonasToList: (personas) =>
-    set((state) => ({
-      personas: state.personas ? [...personas, ...state.personas] : personas,
-    })),
+    set((state) => {
+      const existingIds = new Set(state.personas?.map((p) => p._id) || []);
+      const uniqueNew = personas.filter((p) => !existingIds.has(p._id));
+      if (uniqueNew.length === 0) return state;
+      return {
+        personas: state.personas ? [...uniqueNew, ...state.personas] : uniqueNew,
+      };
+    }),
   reset: () =>
     set({
       personas: null,
