@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import io from "socket.io-client";
 import { useNotificationsStore, Notification } from "@/lib/store/notifications";
 import { useAuth } from "@/lib/auth";
@@ -18,18 +18,21 @@ const fetcher = (url: string, token: string, workspaceId?: string | null) =>
     return res.json();
   });
 
-export function useNotifications(enabled: boolean = true) {
+export function useNotifications({ enabled = true, scope = 'current' }: { enabled?: boolean; scope?: 'current' | 'all' } = {}) {
   const { token, currentWorkspaceId } = useAuth();
   const store = useNotificationsStore();
+  const prevKey = useRef<string>('');
+  const effectiveWorkspaceId = scope === 'all' ? null : currentWorkspaceId;
 
   // Initial fetch
   useEffect(() => {
-    if (!enabled || !token || !currentWorkspaceId) return;
+    if (!enabled || !token || (scope === 'current' && !currentWorkspaceId)) return;
     (async () => {
       store.setNotificationsLoading(true);
       store.setNotificationsError(null);
       try {
-        const data = await fetcher("/notifications", token, currentWorkspaceId);
+        const endpoint = scope === 'all' ? "/notifications?workspace=all" : "/notifications";
+        const data = await fetcher(endpoint, token, effectiveWorkspaceId);
         store.setNotifications(Array.isArray(data) ? data : []);
       } catch (err: unknown) {
         if (err instanceof Error) store.setNotificationsError(err.message);
@@ -38,62 +41,80 @@ export function useNotifications(enabled: boolean = true) {
         store.setNotificationsLoading(false);
       }
     })();
-  }, [token, currentWorkspaceId, enabled]);
+  }, [token, currentWorkspaceId, enabled, scope]);
 
-  // Socket real‐time updates
+  // Store reset when key changes
+  const key = scope === 'all' ? 'all' : currentWorkspaceId ?? '';
+  if (prevKey.current !== key) {
+    store.setNotifications(null);
+  }
+  prevKey.current = key;
+
+  // Socket real-time updates
   useEffect(() => {
-    if (!enabled || !token || !currentWorkspaceId) return;
-    const socket = io(SOCKET_URL, {
-      transports: ["websocket"],
-      auth: { token, workspaceId: currentWorkspaceId },
+    if (!enabled || !token || (scope === 'current' && !currentWorkspaceId)) return;
+    const socketAuth: { token: string; workspaceId?: string } = { token };
+    if (effectiveWorkspaceId) socketAuth.workspaceId = effectiveWorkspaceId;
+    const socket = io(SOCKET_URL, { transports: ["websocket"], auth: socketAuth });
+
+    const createdHandler = (notif: Notification & { workspace?: string }) => {
+      if (scope === 'all') {
+        store.addNotification(notif);
+      } else if (!notif.workspace || notif.workspace === currentWorkspaceId) {
+        store.addNotification(notif);
+      }
+    };
+
+    socket.on("notification:created", createdHandler);
+
+    socket.on("notifications:markAllRead", ({ workspace }: { workspace?: string }) => {
+      if (scope === 'all' || !workspace || workspace === currentWorkspaceId) {
+        store.markAllReadLocally();
+      }
     });
 
-    socket.on("notification:created", (notif: Notification) => {
-      store.addNotification(notif);
-    });
-
-    socket.on("notifications:markAllRead", () => {
-      store.markAllReadLocally();
-    });
-
-    socket.on("notifications:cleared", () => {
-      store.clearAllLocally();
+    socket.on("notifications:cleared", ({ workspace }: { workspace?: string }) => {
+      if (scope === 'all' || !workspace || workspace === currentWorkspaceId) {
+        store.clearAllLocally();
+      }
     });
 
     return () => {
-      socket.off("notification:created", () => {});
-      socket.off("notifications:markAllRead", () => {});
-      socket.off("notifications:cleared", () => {});
+      socket.off("notification:created", createdHandler);
+      socket.off("notifications:markAllRead");
+      socket.off("notifications:cleared");
       socket.disconnect();
     };
-  }, [token, currentWorkspaceId, enabled]);
+  }, [token, currentWorkspaceId, enabled, scope]);
 
   // API mutations
   const markAllAsRead = useCallback(async () => {
-    if (!token || !currentWorkspaceId) return;
-    await fetch(`${API_BASE}/notifications/mark-all-read`, {
+    if (!token || (scope === 'current' && !currentWorkspaceId)) return;
+    const endpoint = scope === 'all' ? `/notifications/mark-all-read?workspace=all` : `/notifications/mark-all-read`;
+    await fetch(`${API_BASE}${endpoint}`, {
       method: "PUT",
       credentials: "include",
       headers: { 
         Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
+        ...(effectiveWorkspaceId ? { 'X-Workspace-ID': effectiveWorkspaceId } : {})
       },
     });
     store.markAllReadLocally();
-  }, [token, currentWorkspaceId]);
+  }, [token, currentWorkspaceId, scope]);
 
   const clearAll = useCallback(async () => {
-    if (!token || !currentWorkspaceId) return;
-    await fetch(`${API_BASE}/notifications/clear-all`, {
+    if (!token || (scope === 'current' && !currentWorkspaceId)) return;
+    const endpoint = scope === 'all' ? `/notifications/clear-all?workspace=all` : `/notifications/clear-all`;
+    await fetch(`${API_BASE}${endpoint}`, {
       method: "DELETE",
       credentials: "include",
       headers: { 
         Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
+        ...(effectiveWorkspaceId ? { 'X-Workspace-ID': effectiveWorkspaceId } : {})
       },
     });
     store.clearAllLocally();
-  }, [token, currentWorkspaceId]);
+  }, [token, currentWorkspaceId, scope]);
 
   return {
     notifications: store.notifications,
