@@ -141,9 +141,11 @@ export function TrashedSchedulesList() {
                     <p className="text-sm text-muted-foreground line-clamp-2" title={sch.testDescription}>{sch.testDescription}</p>
                   )}
                 </section>
-                <nav onClick={e=>e.stopPropagation()} data-stop-row>
-                  <TrashCardActionsDropdown onRestore={() => handleRestore(sch)} onDelete={() => promptDelete(sch)} />
-                </nav>
+                { (user?.currentWorkspaceRole === 'admin' || (sch as unknown as { createdBy?: string }).createdBy === user?._id) && (
+                  <nav onClick={e=>e.stopPropagation()} data-stop-row>
+                    <TrashCardActionsDropdown onRestore={() => handleRestore(sch)} onDelete={() => promptDelete(sch)} />
+                  </nav>
+                )}
               </header>
 
               {/* Badges */}

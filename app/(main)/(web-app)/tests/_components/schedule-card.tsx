@@ -39,7 +39,7 @@ export function ScheduleCard({ schedule }: { schedule: TestSchedule }) {
             <p className="text-sm text-muted-foreground line-clamp-2" title={schedule.testDescription}>{schedule.testDescription}</p>
           )}
         </section>
-        {user?.currentWorkspaceRole === 'admin' && (
+        {(user?.currentWorkspaceRole === 'admin' || user?._id === schedule.createdBy) && (
           <nav onClick={(e)=>e.stopPropagation()} data-stop-row>
             <ScheduleRowActionsDropdown
               scheduleId={schedule._id}

@@ -11,6 +11,7 @@ export interface TestSchedule {
   recurrenceRule?: string;
   trashed?: boolean;
   workspace?: string;
+  createdBy?: string;
 }
 
 interface TestSchedulesState {
