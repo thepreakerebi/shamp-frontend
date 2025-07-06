@@ -37,6 +37,12 @@ export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, acti
     loading: boolean;
   }>({ type: null, loading: false });
 
+  // Determine if there is at least one actionable menu item
+  const hasActions = (showOpenOptions && true) || !!editPath || showTrash;
+  if (!hasActions) {
+    return null;
+  }
+
   const handleOpen = () => {
     if (onOpen) onOpen();
     try { sessionStorage.setItem(`videoViewed:${runId}`, '1'); } catch {}

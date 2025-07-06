@@ -110,8 +110,11 @@ export function TestRunCard({ run }: { run: MinimalRun }) {
     } catch {}
   };
 
-  const runWithTest = run as unknown as { test?: string };
-  const editPath = run.status === 'pending' && runWithTest.test ? `/tests/${runWithTest.test}/schedule-run/${run._id}` : undefined;
+  const runWithTest = run as unknown as { test?: string; createdBy?: string };
+  const canEditSchedule = run.status === 'pending' && (
+    user?.currentWorkspaceRole === 'admin' || runWithTest.createdBy === user?._id
+  );
+  const editPath = canEditSchedule && runWithTest.test ? `/tests/${runWithTest.test}/schedule-run/${run._id}` : undefined;
 
   return (
     <section
