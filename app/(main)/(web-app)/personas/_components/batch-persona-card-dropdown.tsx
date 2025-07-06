@@ -9,6 +9,7 @@ import {
 import { EllipsisVerticalIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
 
 interface BatchPersonaCardDropdownProps {
   onOpen?: () => void;
@@ -19,6 +20,13 @@ interface BatchPersonaCardDropdownProps {
 
 export function BatchPersonaCardDropdown({ onOpen, onDelete, onRename, batchPersonaId }: BatchPersonaCardDropdownProps) {
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Hide dropdown for non-admins (members)
+  if (user?.currentWorkspaceRole !== 'admin') {
+    return null;
+  }
+
   const handleOpen = () => {
     if (onOpen) onOpen();
     if (batchPersonaId) {
