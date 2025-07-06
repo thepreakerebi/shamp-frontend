@@ -1,5 +1,5 @@
 import { useAuth } from "@/lib/auth";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import io from "socket.io-client";
 import { usePersonasStore } from "@/lib/store/personas";
 
@@ -18,6 +18,7 @@ export interface Persona {
   gender?: string;
   createdBy?: User | string;
   avatarUrl?: string;
+  workspace?: string;
   // Add other fields as needed
 }
 
@@ -54,6 +55,7 @@ const fetcher = (url: string, token: string, workspaceId?: string | null) =>
 export function usePersonas() {
   const { token, currentWorkspaceId } = useAuth();
   const store = usePersonasStore();
+  const previousWorkspaceId = useRef<string | null>(null);
 
   const fetchPersonas = useCallback(async () => {
     if (!token || !currentWorkspaceId) {
@@ -106,7 +108,24 @@ export function usePersonas() {
   }, [fetchPersonas, fetchCount]);
 
   useEffect(() => {
-    if (!token || !currentWorkspaceId) return;
+    if (!token || !currentWorkspaceId) {
+      store.setPersonasLoading(false);
+      store.setCountLoading(false);
+      store.setPersonas([]);
+      store.setCount(0);
+      return;
+    }
+
+    // Clear store if switched workspace
+    if (previousWorkspaceId.current && previousWorkspaceId.current !== currentWorkspaceId) {
+      store.setPersonas(null);
+      store.setCount(0);
+      store.setPersonasLoading(true);
+      store.setCountLoading(true);
+    }
+
+    previousWorkspaceId.current = currentWorkspaceId;
+
     fetchPersonas();
     fetchCount();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -118,19 +137,40 @@ export function usePersonas() {
       transports: ["websocket"],
       auth: { token, workspaceId: currentWorkspaceId },
     });
-    const handleUpdate = () => {
-      refetch();
+
+    const handleCreated = (data: Persona & { workspace?: string }) => {
+      if (data.workspace && data.workspace === currentWorkspaceId) {
+        store.addPersonaToList(data);
+        // Increment count optimistically
+        store.setCount(store.count + 1);
+      }
     };
-    socket.on("persona:created", handleUpdate);
-    socket.on("persona:deleted", handleUpdate);
-    socket.on("persona:updated", handleUpdate);
+
+    const handleUpdated = (data: Persona & { workspace?: string }) => {
+      if (data.workspace && data.workspace === currentWorkspaceId) {
+        store.updatePersonaInList(data);
+      }
+    };
+
+    const handleDeleted = (data: { _id?: string; workspace?: string }) => {
+      if (data.workspace && data.workspace === currentWorkspaceId && data._id) {
+        store.removePersonaFromList(data._id);
+        // Decrement count safely
+        store.setCount(Math.max(0, store.count - 1));
+      }
+    };
+
+    socket.on("persona:created", handleCreated);
+    socket.on("persona:updated", handleUpdated);
+    socket.on("persona:deleted", handleDeleted);
+
     return () => {
-      socket.off("persona:created", handleUpdate);
-      socket.off("persona:deleted", handleUpdate);
-      socket.off("persona:updated", handleUpdate);
+      socket.off("persona:created", handleCreated);
+      socket.off("persona:updated", handleUpdated);
+      socket.off("persona:deleted", handleDeleted);
       socket.disconnect();
     };
-  }, [refetch, token, currentWorkspaceId]);
+  }, [token, currentWorkspaceId, store]);
 
   // Get a single persona by ID
   const getPersonaById = async (id: string): Promise<Persona> => {

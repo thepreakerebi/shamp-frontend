@@ -10,6 +10,8 @@ interface BatchPersonasState {
   setBatchPersonasError: (error: string | null) => void;
   reset: () => void;
   updateBatchPersonaInList: (batch: BatchPersona) => void;
+  addBatchPersonaToList: (batch: BatchPersona) => void;
+  removeBatchPersonaFromList: (id: string) => void;
 }
 
 export const useBatchPersonasStore = create<BatchPersonasState>((set) => ({
@@ -24,6 +26,14 @@ export const useBatchPersonasStore = create<BatchPersonasState>((set) => ({
       batchPersonas: state.batchPersonas
         ? state.batchPersonas.map((b) => (b._id === batch._id ? batch : b))
         : [batch],
+    })),
+  addBatchPersonaToList: (batch) =>
+    set((state) => ({
+      batchPersonas: state.batchPersonas ? [batch, ...state.batchPersonas] : [batch],
+    })),
+  removeBatchPersonaFromList: (id) =>
+    set((state) => ({
+      batchPersonas: state.batchPersonas ? state.batchPersonas.filter((b) => b._id !== id) : null,
     })),
   reset: () => set({
     batchPersonas: null,
