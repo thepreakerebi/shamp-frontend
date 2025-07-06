@@ -1,5 +1,5 @@
 import { useAuth } from "@/lib/auth";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import io from "socket.io-client";
 import { useIssuesStore, Issue } from "@/lib/store/issues";
 
@@ -21,9 +21,16 @@ const fetcher = (url: string, token: string, workspaceId?: string | null) =>
 export function useIssues(enabled: boolean = true) {
   const { token, currentWorkspaceId } = useAuth();
   const store = useIssuesStore();
+  const prevWorkspaceId = useRef<string | null>(null);
 
   // Initial fetch
   useEffect(() => {
+    // Reset store when switching workspace
+    if (prevWorkspaceId.current && prevWorkspaceId.current !== currentWorkspaceId) {
+      store.reset();
+    }
+    prevWorkspaceId.current = currentWorkspaceId;
+
     if (!enabled) return;
     if (!token || !currentWorkspaceId) return;
     (async () => {
@@ -56,21 +63,32 @@ export function useIssues(enabled: boolean = true) {
       } catch {}
     };
 
-    socket.on("issue:created", (issue: Issue) => {
-      store.addIssue(issue);
-    });
-    socket.on("issue:updated", (issue: Issue) => {
-      store.updateIssue(issue);
-    });
-    socket.on("issue:deleted", ({ _id }: { _id: string }) => {
-      store.deleteIssue(_id);
-    });
+    const createdHandler = (issue: Issue & { workspace?: string }) => {
+      if (!issue.workspace || issue.workspace === currentWorkspaceId) {
+        store.addIssue(issue);
+      }
+    };
+    const updatedHandler = (issue: Issue & { workspace?: string }) => {
+      if (!issue.workspace || issue.workspace === currentWorkspaceId) {
+        store.updateIssue(issue);
+      }
+    };
+    const deletedHandler = ({ _id, workspace }: { _id?: string; workspace?: string }) => {
+      if (!_id) return;
+      if (!workspace || workspace === currentWorkspaceId) {
+        store.deleteIssue(_id);
+      }
+    };
+
+    socket.on("issue:created", createdHandler);
+    socket.on("issue:updated", updatedHandler);
+    socket.on("issue:deleted", deletedHandler);
     socket.on("issues:updated", handleRefresh);
 
     return () => {
-      socket.off("issue:created");
-      socket.off("issue:updated");
-      socket.off("issue:deleted");
+      socket.off("issue:created", createdHandler);
+      socket.off("issue:updated", updatedHandler);
+      socket.off("issue:deleted", deletedHandler);
       socket.off("issues:updated", handleRefresh);
       socket.disconnect();
     };
