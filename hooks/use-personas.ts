@@ -160,14 +160,23 @@ export function usePersonas() {
       }
     };
 
+    const handleBatchCreated = (data: { workspace?: string }) => {
+      if (data.workspace && data.workspace === currentWorkspaceId) {
+        // After a batch create, refresh full list to ensure we didn't miss any personas
+        refetch();
+      }
+    };
+
     socket.on("persona:created", handleCreated);
     socket.on("persona:updated", handleUpdated);
     socket.on("persona:deleted", handleDeleted);
+    socket.on("batchPersona:created", handleBatchCreated);
 
     return () => {
       socket.off("persona:created", handleCreated);
       socket.off("persona:updated", handleUpdated);
       socket.off("persona:deleted", handleDeleted);
+      socket.off("batchPersona:created", handleBatchCreated);
       socket.disconnect();
     };
   }, [token, currentWorkspaceId, store]);
