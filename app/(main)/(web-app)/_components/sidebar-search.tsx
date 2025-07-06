@@ -45,7 +45,13 @@ export function SidebarSearchDropdown() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, currentWorkspaceId } = useAuth();
+
+  // Ensure results cleared when workspace changes
+  useEffect(() => {
+    setResults([]);
+    setDropdownOpen(false);
+  }, [currentWorkspaceId]);
 
   // Debounced fetch
   useEffect(() => {
@@ -65,7 +71,10 @@ export function SidebarSearchDropdown() {
         const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
         const res = await fetch(`${API_BASE}/search/names?q=${encodeURIComponent(query)}&limit=8`, {
           credentials: "include",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            ...(currentWorkspaceId ? { 'X-Workspace-ID': currentWorkspaceId } : {})
+          },
         });
         if (!res.ok) throw new Error("Search failed");
         const data = await res.json();
@@ -97,7 +106,7 @@ export function SidebarSearchDropdown() {
     }, 300);
 
     return () => clearTimeout(handler);
-  }, [query, token]);
+  }, [query, token, currentWorkspaceId]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
