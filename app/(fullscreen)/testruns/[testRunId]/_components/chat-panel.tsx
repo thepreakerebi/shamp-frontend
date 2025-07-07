@@ -139,8 +139,9 @@ export function ChatPanel({ run, personaName }: Props) {
   return (
     <aside className="flex flex-col h-full overflow-hidden border-l">
       {/* Header */}
-      <header className="p-4 border-b">
-        <h2 className="font-semibold text-lg">Chat with {personaName || "Persona"}</h2>
+      <header className="p-4 border-b flex items-center gap-2">
+        {PersonaAvatar}
+        <h2 className="font-semibold text-lg truncate">Chat with {personaName || "Persona"}</h2>
       </header>
 
       {/* Messages */}
