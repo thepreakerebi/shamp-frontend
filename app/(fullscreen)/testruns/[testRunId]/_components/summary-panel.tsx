@@ -23,23 +23,18 @@ export function SummaryPanel({ run, personaName }: Props) {
 
   // Refresh button visibility – shown only once when status is "stopped" and
   // the user hasn't already clicked it.
-  const [showRefresh, setShowRefresh] = React.useState(false);
+  const [showRefresh, setShowRefresh] = React.useState(() => {
+    if (typeof window === "undefined") return true;
+    return !sessionStorage.getItem(`run_refresh_${run._id}`);
+  });
 
+  // Persist dismissal whenever the button is hidden (user clicked) for this run
   React.useEffect(() => {
     if (typeof window === "undefined") return;
-    const key = `run_refresh_${run._id}`;
-    const alreadyDismissed = sessionStorage.getItem(key);
-    // Show button only if status is "stopped" and it hasn't been dismissed yet.
-    setShowRefresh(!alreadyDismissed && run.browserUseStatus === "stopped");
-  }, [run._id, run.browserUseStatus]);
-
-  // Helper to persist dismissal in sessionStorage so it stays hidden on reload.
-  const dismissRefresh = () => {
-    if (typeof window !== "undefined") {
+    if (!showRefresh) {
       sessionStorage.setItem(`run_refresh_${run._id}`, "done");
     }
-    setShowRefresh(false);
-  };
+  }, [run._id, showRefresh]);
 
   // Pick latest run data from store if available, but preserve rich fields from initial run
   const liveRun = (testRuns ?? []).find(r => r._id === run._id) as TestRunStatus | undefined;
@@ -210,15 +205,15 @@ export function SummaryPanel({ run, personaName }: Props) {
           )}
         </section>
         <section className="flex items-center gap-2">
-          {(active.browserUseStatus === "stopped") && statusBadge(active.status)}
+          {( ["finished", "stopped"].includes(active.browserUseStatus ?? "") ) && statusBadge(active.status)}
           {browserStatusBadge(active.browserUseStatus)}
-          {(showRefresh && active.browserUseStatus === "stopped") && (
+          {active.browserUseStatus === "stopped" && showRefresh && (
             <Button
               variant="ghost"
               size="icon"
               aria-label="Refresh"
               onClick={() => {
-                dismissRefresh();
+                setShowRefresh(false);
                 if (typeof window !== "undefined") window.location.reload();
               }}
             >

@@ -178,15 +178,13 @@ export function useTestRuns() {
       if (!current) return;
 
       // 1) Optimistic update so UI (summary panel & toolbar) reacts immediately.
-      //    We mark browserUseStatus as "stopped" (and status as "cancelled" if
-      //    it was still "running"). This removes control buttons instantly
-      //    while we wait for the authoritative payload.
+      //    We only mark browserUseStatus as "stopped" and leave the test-run
+      //    status untouched. This mirrors the behaviour on the main branch and
+      //    avoids the brief placeholder "cancelled" state in the UI.
       {
         const optimistic: TestRun = {
           ...current,
           browserUseStatus: "stopped",
-          status: current.status === "running" ? "cancelled" : current.status,
-          finishedAt: current.finishedAt ?? new Date().toISOString(),
         } as TestRun;
         updateTestRunInList(optimistic);
         syncRunToTestCache(optimistic);
