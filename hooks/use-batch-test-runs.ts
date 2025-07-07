@@ -51,6 +51,15 @@ export function useBatchTestRuns() {
     const runs: unknown[] = Array.isArray(data.testRuns) ? data.testRuns : [];
     runs.forEach(r => addTestRunToList(r as TestRun));
 
+    // Cache runs per-batch so DetailsSection and TestRunsSection update in real-time
+    const { setTestRunsForBatchTest } = useBatchTestsStore.getState();
+    if (runs.length) {
+      setTestRunsForBatchTest(batchTestId, [
+        ...(useBatchTestsStore.getState().batchTestRuns[batchTestId] ?? []),
+        ...(runs as TestRun[]),
+      ]);
+    }
+
     // If backend returns batchTest object, merge it into the global list so
     // clients relying on rich fields (project, test, batchPersona) keep them.
     if (data.batchTest) {
@@ -73,6 +82,14 @@ export function useBatchTestRuns() {
     const data = await res.json();
     const runs: unknown[] = Array.isArray(data.testRuns) ? data.testRuns : [];
     runs.forEach(r => updateTestRunInList(r as TestRun));
+
+    const { setTestRunsForBatchTest } = useBatchTestsStore.getState();
+    if (runs.length) {
+      setTestRunsForBatchTest(id, [
+        ...(useBatchTestsStore.getState().batchTestRuns[id] ?? []),
+        ...(runs as TestRun[]),
+      ]);
+    }
 
     if (data.batchTest) {
       useBatchTestsStore.getState().updateBatchTestInList(data.batchTest);
