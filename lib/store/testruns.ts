@@ -53,9 +53,23 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
         }
       });
 
-      // Deduplicate by _id (incoming takes precedence)
+      // Deduplicate by _id (merge incoming with existing, preserving analysis/browserUseOutput)
       const map = new Map<string, typeof combined[number]>();
-      combined.forEach(run => map.set(run._id, run));
+      combined.forEach(run => {
+        const existing = state.testRuns?.find(r => r._id === run._id);
+        if (existing) {
+          const prev = existing as import("@/hooks/use-testruns").TestRunStatus;
+          const next = run as import("@/hooks/use-testruns").TestRunStatus;
+          map.set(run._id, {
+            ...prev,
+            ...next,
+            analysis: next.analysis ?? prev.analysis,
+            browserUseOutput: next.browserUseOutput ?? prev.browserUseOutput,
+          } as import("@/hooks/use-testruns").TestRunStatus);
+        } else {
+          map.set(run._id, run);
+        }
+      });
 
       // Sort by creation time inferred from Mongo ObjectId (newest first)
       const getTs = (id: string) => {
@@ -79,7 +93,17 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
   updateTestRunInList: (run) =>
     set((state) => ({
       testRuns: state.testRuns
-        ? state.testRuns.map((r) => (r._id === run._id ? run : r))
+        ? state.testRuns.map((r) => {
+            if (r._id !== run._id) return r;
+            const prev = r as import("@/hooks/use-testruns").TestRunStatus;
+            const next = run as import("@/hooks/use-testruns").TestRunStatus;
+            return {
+              ...prev,
+              ...next,
+              analysis: next.analysis ?? prev.analysis,
+              browserUseOutput: next.browserUseOutput ?? prev.browserUseOutput,
+            };
+          })
         : [run],
     })),
   removeTestRunFromList: (id) =>
@@ -91,7 +115,17 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
       const exists = state.testRuns?.some(r => r._id === run._id);
       if (exists) {
         return {
-          testRuns: state.testRuns?.map(r => (r._id === run._id ? run : r)) || [run],
+          testRuns: state.testRuns?.map(r => {
+            if (r._id !== run._id) return r;
+            const prev = r as import("@/hooks/use-testruns").TestRunStatus;
+            const next = run as import("@/hooks/use-testruns").TestRunStatus;
+            return {
+              ...prev,
+              ...next,
+              analysis: next.analysis ?? prev.analysis,
+              browserUseOutput: next.browserUseOutput ?? prev.browserUseOutput,
+            };
+          }) || [run],
         };
       }
       return {

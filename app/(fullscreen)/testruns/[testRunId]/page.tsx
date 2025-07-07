@@ -102,7 +102,15 @@ export default function TestRunCanvasPage() {
     const prevRecLen = run.recordings?.length ?? 0;
     if (stepsLen !== prevStepsLen || recLen !== prevRecLen) {
       buildNodes(liveRun);
-      setRun(liveRun);
+      setRun(prev => {
+        if (!prev) return liveRun;
+        return {
+          ...prev,
+          ...liveRun,
+          analysis: liveRun.analysis ?? prev.analysis,
+          browserUseOutput: liveRun.browserUseOutput ?? prev.browserUseOutput,
+        } as TestRunStatus;
+      });
     }
   }, [liveRun?.stepsWithScreenshots?.length, liveRun?.recordings?.length]);
 
