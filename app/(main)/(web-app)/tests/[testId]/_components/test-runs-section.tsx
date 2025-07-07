@@ -17,7 +17,9 @@ export default function TestRunsSection({ test }: { test: Test }) {
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ result: 'any', run: 'any', persona: 'any' });
 
-  // Initial fetch and cache setup
+  // Fetch runs once per test id change; we intentionally omit store/actions from deps to
+  // avoid infinite loops triggered by state updates (socket events). eslint rule disabled.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!test?._id) return;
     let mounted = true;
@@ -47,7 +49,7 @@ export default function TestRunsSection({ test }: { test: Test }) {
     return () => {
       mounted = false;
     };
-  }, [test?._id, getTestRunsForTest, addTestRunToList, testsStore]);
+  }, [test?._id]);
 
   // Sync with store changes: handle updates, additions, and deletions
   useEffect(() => {
