@@ -10,6 +10,7 @@ import React from "react";
 import { TestRunCardActionsDropdown } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card-actions-dropdown";
 import { useTestRuns, canTrashTestRun } from "@/hooks/use-testruns";
 import { useAuth } from "@/lib/auth";
+import { SummaryDetailsSkeleton } from "./summary-panel-content-skeleton";
 
 interface Props {
   run: TestRunStatus;
@@ -225,87 +226,93 @@ export function SummaryPanel({ run, personaName }: Props) {
 
       {/* Scrollable content */}
       <section className="flex-1 overflow-auto p-4 space-y-6">
-        {narration && (
-          <section>
-            <h3 className="font-semibold mb-1">Narration</h3>
-            <p className="whitespace-pre-line text-sm text-muted-foreground">{narration}</p>
-          </section>
-        )}
-        {summary && (
-          <section>
-            <h3 className="font-semibold mb-1">Run Summary</h3>
-            <p className="whitespace-pre-line text-sm text-muted-foreground">{summary}</p>
-          </section>
-        )}
-        {analysisSummary && (
-          <section>
-            <h3 className="font-semibold mb-1">Analysis Summary</h3>
-            <p className="whitespace-pre-line text-sm text-muted-foreground">{analysisSummary}</p>
-          </section>
-        )}
-        {personaAlignment && (
-          <section>
-            <h3 className="font-semibold mb-1">Persona Alignment</h3>
-            <p className="whitespace-pre-line text-sm text-muted-foreground">{personaAlignment}</p>
-          </section>
-        )}
-        {active.analysis && (
-          <section className="space-y-4">
-            <h3 className="font-semibold">AI Analysis</h3>
-            {Object.entries(active.analysis).map(([key, value]) => {
-              // Skip empty values
-              if (value === undefined || value === null) return null;
+        {active.browserUseStatus === "finished" && !narration && !summary && !analysisSummary ? (
+          <SummaryDetailsSkeleton />
+        ) : (
+          <>
+            {narration && (
+              <section>
+                <h3 className="font-semibold mb-1">Narration</h3>
+                <p className="whitespace-pre-line text-sm text-muted-foreground">{narration}</p>
+              </section>
+            )}
+            {summary && (
+              <section>
+                <h3 className="font-semibold mb-1">Run Summary</h3>
+                <p className="whitespace-pre-line text-sm text-muted-foreground">{summary}</p>
+              </section>
+            )}
+            {analysisSummary && (
+              <section>
+                <h3 className="font-semibold mb-1">Analysis Summary</h3>
+                <p className="whitespace-pre-line text-sm text-muted-foreground">{analysisSummary}</p>
+              </section>
+            )}
+            {personaAlignment && (
+              <section>
+                <h3 className="font-semibold mb-1">Persona Alignment</h3>
+                <p className="whitespace-pre-line text-sm text-muted-foreground">{personaAlignment}</p>
+              </section>
+            )}
+            {active.analysis && (
+              <section className="space-y-4">
+                <h3 className="font-semibold">AI Analysis</h3>
+                {Object.entries(active.analysis).map(([key, value]) => {
+                  // Skip empty values
+                  if (value === undefined || value === null) return null;
 
-              // Exclude keys we show elsewhere or user does not want
-              const excludedKeys = [
-                "summary",
-                "personaAlignment",
-                "persona_alignment",
-                "helpRequests",
-                "help_requests",
-                "backtracks",
-                "goalsAchieved",
-                "goals_achieved",
-                "errorsDetected",
-                "errors_detected",
-                "stepsCount",
-                "steps_count",
-              ];
-              if (excludedKeys.includes(key)) return null;
+                  // Exclude keys we show elsewhere or user does not want
+                  const excludedKeys = [
+                    "summary",
+                    "personaAlignment",
+                    "persona_alignment",
+                    "helpRequests",
+                    "help_requests",
+                    "backtracks",
+                    "goalsAchieved",
+                    "goals_achieved",
+                    "errorsDetected",
+                    "errors_detected",
+                    "stepsCount",
+                    "steps_count",
+                  ];
+                  if (excludedKeys.includes(key)) return null;
 
-              if (Array.isArray(value)) {
-                if (value.length === 0) return null;
-                return (
-                  <section key={key}>
-                    <h4 className="font-medium capitalize mb-1">{key}</h4>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      {value.map((v, i) => (
-                        <li key={i}>{String(v)}</li>
-                      ))}
-                    </ul>
-                  </section>
-                );
-              }
+                  if (Array.isArray(value)) {
+                    if (value.length === 0) return null;
+                    return (
+                      <section key={key}>
+                        <h4 className="font-medium capitalize mb-1">{key}</h4>
+                        <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                          {value.map((v, i) => (
+                            <li key={i}>{String(v)}</li>
+                          ))}
+                        </ul>
+                      </section>
+                    );
+                  }
 
-              if (typeof value === "string") {
-                if (value.trim() === "") return null;
-                return (
-                  <section key={key}>
-                    <p className="text-sm text-muted-foreground"><span className="font-medium capitalize">{key}: </span>{value}</p>
-                  </section>
-                );
-              }
+                  if (typeof value === "string") {
+                    if (value.trim() === "") return null;
+                    return (
+                      <section key={key}>
+                        <p className="text-sm text-muted-foreground"><span className="font-medium capitalize">{key}: </span>{value}</p>
+                      </section>
+                    );
+                  }
 
-              if (typeof value === "number") {
-                return (
-                  <section key={key}>
-                    <p className="text-sm text-muted-foreground"><span className="font-medium capitalize">{key}: </span>{value}</p>
-                  </section>
-                );
-              }
-              return null;
-            })}
-          </section>
+                  if (typeof value === "number") {
+                    return (
+                      <section key={key}>
+                        <p className="text-sm text-muted-foreground"><span className="font-medium capitalize">{key}: </span>{value}</p>
+                      </section>
+                    );
+                  }
+                  return null;
+                })}
+              </section>
+            )}
+          </>
         )}
       </section>
 
