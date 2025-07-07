@@ -578,12 +578,21 @@ export function useTestRuns() {
     }
     const status = await res.json();
     
-    // Update the run in the store if it's there
+    // Merge fetched data into the global store so later socket updates start
+    // from the rich version (with analysis). If the run isn't in the list yet
+    // we add it; otherwise we merge but keep any existing analysis if the
+    // payload doesn't include it.
     const existing = getState().testRuns?.find(r => r._id === id);
     if (existing) {
-      const updated = { ...existing, ...status } as TestRun;
+      const updated = {
+        ...existing,
+        ...status,
+        analysis: (status as TestRunStatus).analysis ?? (existing as TestRunStatus).analysis,
+      } as TestRun;
       updateTestRunInList(updated);
       syncRunToTestCache(updated);
+    } else {
+      addRunToStores(status as unknown as TestRun);
     }
     
     return status;
