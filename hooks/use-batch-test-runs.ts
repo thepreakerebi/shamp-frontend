@@ -54,11 +54,30 @@ export function useBatchTestRuns() {
     // Cache runs per-batch so DetailsSection and TestRunsSection update in real-time
     const { setTestRunsForBatchTest } = useBatchTestsStore.getState();
     if (runs.length) {
-      setTestRunsForBatchTest(batchTestId, [
-        ...(useBatchTestsStore.getState().batchTestRuns[batchTestId] ?? []),
-        ...(runs as TestRun[]),
-      ]);
+      const existing = useBatchTestsStore.getState().batchTestRuns[batchTestId] ?? [];
+      const merged = [...existing, ...(runs as TestRun[])];
+      const dedup = Array.from(new Map(merged.map(r => [ (r as { _id: string })._id, r ])).values());
+      setTestRunsForBatchTest(batchTestId, dedup as TestRun[]);
     }
+
+    // Background-refresh full run list so we don't miss earlier runs
+    (async () => {
+      try {
+        const resFull = await fetch(`${API_BASE}/batchtests/${batchTestId}/testruns`, {
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'X-Workspace-ID': currentWorkspaceId,
+          },
+        });
+        if (resFull.ok) {
+          const fullRuns = (await resFull.json()) as TestRun[];
+          const dedupFull = Array.from(new Map(fullRuns.map(r => [ (r as { _id: string })._id, r ])).values());
+          setTestRunsForBatchTest(batchTestId, dedupFull as TestRun[]);
+          dedupFull.forEach(r => addTestRunToList(r as TestRun));
+        }
+      } catch {/* ignore */}
+    })();
 
     // If backend returns batchTest object, merge it into the global list so
     // clients relying on rich fields (project, test, batchPersona) keep them.
@@ -85,10 +104,10 @@ export function useBatchTestRuns() {
 
     const { setTestRunsForBatchTest } = useBatchTestsStore.getState();
     if (runs.length) {
-      setTestRunsForBatchTest(id, [
-        ...(useBatchTestsStore.getState().batchTestRuns[id] ?? []),
-        ...(runs as TestRun[]),
-      ]);
+      const existing = useBatchTestsStore.getState().batchTestRuns[id] ?? [];
+      const merged = [...existing, ...(runs as TestRun[])];
+      const dedup = Array.from(new Map(merged.map(r => [ (r as { _id: string })._id, r ])).values());
+      setTestRunsForBatchTest(id, dedup as TestRun[]);
     }
 
     if (data.batchTest) {

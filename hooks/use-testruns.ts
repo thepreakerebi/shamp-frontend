@@ -3,6 +3,7 @@ import { useEffect, useCallback, useRef } from "react";
 import io from "socket.io-client";
 import { useTestRunsStore } from "@/lib/store/testruns";
 import { useTestsStore } from "@/lib/store/tests";
+import { useBatchTestsStore } from "@/lib/store/batchTests";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
@@ -125,6 +126,17 @@ export function useTestRuns() {
   const addRunToStores = (run: TestRun) => {
     addTestRunToList(run);
     syncRunToTestCache(run);
+    // Also sync into any cached batch-test run lists where this run already exists
+    const batchStore = useBatchTestsStore.getState();
+    const { batchTestRuns, setTestRunsForBatchTest } = batchStore;
+    Object.entries(batchTestRuns).forEach(([batchId, runs]) => {
+      const idx = runs.findIndex(r => r._id === run._id);
+      if (idx !== -1) {
+        const updated = [...runs];
+        updated[idx] = run;
+        setTestRunsForBatchTest(batchId, updated);
+      }
+    });
   };
 
   // Real-time updates (initialize socket only once)
@@ -157,6 +169,19 @@ export function useTestRuns() {
         if (existing) {
           moveRunToTrash({ ...existing, trashed: true } as TestRun);
           removeRunFromTestCache(_id);
+
+          // Remove trashed run from any batch-test run lists
+          {
+            const batchStore = useBatchTestsStore.getState();
+            const { batchTestRuns, setTestRunsForBatchTest } = batchStore;
+            Object.entries(batchTestRuns).forEach(([batchId, runs]) => {
+              if (runs.some(r => r._id === _id)) {
+                const filtered = runs.filter(r => r._id !== _id);
+                setTestRunsForBatchTest(batchId, filtered);
+              }
+            });
+          }
+
           fetchCounts();
         }
       }
@@ -168,6 +193,17 @@ export function useTestRuns() {
         removeTestRunFromList(idToRemove);
         removeTrashedTestRun(idToRemove);
         removeRunFromTestCache(idToRemove);
+        // Remove from any cached batch-test run lists so counts stay accurate
+        {
+          const batchStore = useBatchTestsStore.getState();
+          const { batchTestRuns, setTestRunsForBatchTest } = batchStore;
+          Object.entries(batchTestRuns).forEach(([batchId, runs]) => {
+            if (runs.some(r => r._id === idToRemove)) {
+              const filtered = runs.filter(r => r._id !== idToRemove);
+              setTestRunsForBatchTest(batchId, filtered);
+            }
+          });
+        }
         // Refresh counts when a test run is deleted
         fetchCounts();
       }
@@ -188,6 +224,19 @@ export function useTestRuns() {
         } as TestRun;
         updateTestRunInList(optimistic);
         syncRunToTestCache(optimistic);
+        // Propagate optimistic update into batch-test caches if present
+        {
+          const batchStore = useBatchTestsStore.getState();
+          const { batchTestRuns, setTestRunsForBatchTest } = batchStore;
+          Object.entries(batchTestRuns).forEach(([batchId, runs]) => {
+            const idx = runs.findIndex(r => r._id === testRunId);
+            if (idx !== -1) {
+              const updated = [...runs];
+              updated[idx] = optimistic;
+              setTestRunsForBatchTest(batchId, updated);
+            }
+          });
+        }
       }
 
       // 2) Fetch definitive status/analysis in the background and merge it in
@@ -211,11 +260,12 @@ export function useTestRuns() {
           } as TestRun;
           updateTestRunInList(updated);
           syncRunToTestCache(updated);
+          // Batch-test run caches will pick up this run on the next explicit fetch.
           return;
         }
       } catch {/* ignore */}
-
-      // If fetch failed we've already applied the optimistic change above.
+      // No fetch? We already optimistically set finished flag; counts refresh
+      fetchCounts();
     });
     socket.on("testRun:paused", async ({ testRunId, workspace }: { testRunId: string; workspace?: string }) => {
       if (workspace && workspace !== currentWorkspaceId) return;
@@ -225,6 +275,18 @@ export function useTestRuns() {
           const updated = { ...existing, status: 'paused', browserUseStatus: 'paused' } as TestRun;
           updateTestRunInList(updated);
           syncRunToTestCache(updated);
+          {
+            const batchStore = useBatchTestsStore.getState();
+            const { batchTestRuns, setTestRunsForBatchTest } = batchStore;
+            Object.entries(batchTestRuns).forEach(([batchId, runs]) => {
+              const idx = runs.findIndex(r => r._id === testRunId);
+              if (idx !== -1) {
+                const updatedArr = [...runs];
+                updatedArr[idx] = updated;
+                setTestRunsForBatchTest(batchId, updatedArr);
+              }
+            });
+          }
         } else {
           // not in list yet – fetch lightweight status and add
           try {
@@ -251,6 +313,18 @@ export function useTestRuns() {
           const updated = { ...existing, status: 'running', browserUseStatus: 'running' } as TestRun;
           updateTestRunInList(updated);
           syncRunToTestCache(updated);
+          {
+            const batchStore = useBatchTestsStore.getState();
+            const { batchTestRuns, setTestRunsForBatchTest } = batchStore;
+            Object.entries(batchTestRuns).forEach(([batchId, runs]) => {
+              const idx = runs.findIndex(r => r._id === testRunId);
+              if (idx !== -1) {
+                const updatedArr = [...runs];
+                updatedArr[idx] = updated;
+                setTestRunsForBatchTest(batchId, updatedArr);
+              }
+            });
+          }
         } else {
           // not in list yet – fetch lightweight status and add
           try {
@@ -283,6 +357,19 @@ export function useTestRuns() {
         } as TestRun;
         updateTestRunInList(optimistic);
         syncRunToTestCache(optimistic);
+        // Propagate optimistic update into batch-test caches if present
+        {
+          const batchStore = useBatchTestsStore.getState();
+          const { batchTestRuns, setTestRunsForBatchTest } = batchStore;
+          Object.entries(batchTestRuns).forEach(([batchId, runs]) => {
+            const idx = runs.findIndex(r => r._id === testRunId);
+            if (idx !== -1) {
+              const updated = [...runs];
+              updated[idx] = optimistic;
+              setTestRunsForBatchTest(batchId, updated);
+            }
+          });
+        }
       }
 
       // 2) Fetch definitive data
@@ -301,14 +388,9 @@ export function useTestRuns() {
             const updated = { ...existingAfterOpt, ...run } as TestRun;
             updateTestRunInList(updated);
             syncRunToTestCache(updated);
-          } else {
-            addRunToStores(run as unknown as TestRun);
+            // Batch-test run caches will refresh later; skip direct insertion.
+            return;
           }
-
-          if (run.status === "succeeded" || run.status === "failed") {
-            fetchCounts();
-          }
-          return;
         }
       } catch {/* ignore */}
       // No fetch? We already optimistically set finished flag; counts refresh

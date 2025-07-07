@@ -61,6 +61,8 @@ export function useBatchTests() {
     trashedBatchTests,
     setTrashedBatchTests,
     emptyTrashedBatchTests,
+    getTestRunsForBatchTest: getCachedRuns,
+    setTestRunsForBatchTest,
   } = useBatchTestsStore();
   const { addTestRunToList } = useTestRunsStore();
 
@@ -336,8 +338,7 @@ export function useBatchTests() {
   ): Promise<TestRun[]> => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
 
-    const { getTestRunsForBatchTest: getCached, setTestRunsForBatchTest } = useBatchTestsStore.getState();
-    const cached = getCached(batchTestId);
+    const cached = getCachedRuns(batchTestId);
     if (cached && !forceRefresh) {
       return cached as unknown as TestRun[];
     }
@@ -355,7 +356,14 @@ export function useBatchTests() {
     const getTimestamp = (id: string) => parseInt(id.substring(0, 8), 16) * 1000;
     const sorted = [...runs].sort((a, b) => getTimestamp(b._id) - getTimestamp(a._id));
 
-    setTestRunsForBatchTest(batchTestId, sorted);
+    const existing = getCachedRuns(batchTestId);
+    if (existing) {
+      const merged = [...existing, ...sorted];
+      const dedup = Array.from(new Map(merged.map(r => [ (r as { _id: string })._id, r ])).values()) as TestRun[];
+      setTestRunsForBatchTest(batchTestId, dedup);
+    } else {
+      setTestRunsForBatchTest(batchTestId, sorted);
+    }
 
     sorted.forEach(run => addTestRunToList(run));
 
