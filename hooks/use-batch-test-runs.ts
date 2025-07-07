@@ -43,7 +43,7 @@ export function useBatchTestRuns() {
           Authorization: `Bearer ${token}`,
           'X-Workspace-ID': currentWorkspaceId
         },
-        body: JSON.stringify({ batchTestId }),
+        body: JSON.stringify({ batchTestId: batchTestId.toString() }),
       });
       if (!res.ok) throw new Error("Failed to start batch test runs");
     const data = await res.json();
@@ -53,7 +53,7 @@ export function useBatchTestRuns() {
   };
 
   const postAction = async (id: string, action: "pause" | "resume" | "stop") => {
-    const res = await fetch(`${API_BASE}/batchtestruns/${id}/${action}`, {
+    const res = await fetch(`${API_BASE}/batchtestruns/${id.toString()}/${action}`, {
         method: "POST",
         credentials: "include",
         headers: { 
@@ -61,18 +61,22 @@ export function useBatchTestRuns() {
           'X-Workspace-ID': currentWorkspaceId
         },
       });
-    if (!res.ok) throw new Error(`Failed to ${action} batch test runs`);
+    if (!res.ok) throw new Error("Failed to post action");
     const data = await res.json();
     const runs: unknown[] = Array.isArray(data.testRuns) ? data.testRuns : [];
     runs.forEach(r => updateTestRunInList(r as TestRun));
-    return data;
+    return data as BatchTestActionResult;
   };
+
+  const pauseBatchTestRuns = (id: string) => postAction(id, "pause");
+  const resumeBatchTestRuns = (id: string) => postAction(id, "resume");
+  const stopBatchTestRuns = (id: string) => postAction(id, "stop");
 
   return {
     startBatchTestRuns,
-    pauseBatchTestRuns: (id: string) => postAction(id, "pause"),
-    resumeBatchTestRuns: (id: string) => postAction(id, "resume"),
-    stopBatchTestRuns: (id: string) => postAction(id, "stop"),
+    pauseBatchTestRuns,
+    resumeBatchTestRuns,
+    stopBatchTestRuns,
     hasWorkspaceContext: !!currentWorkspaceId,
   } as const;
-} 
+}
