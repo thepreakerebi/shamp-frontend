@@ -1,5 +1,6 @@
 import { useAuth } from "@/lib/auth";
 import { useTestRunsStore } from "@/lib/store/testruns";
+import { useBatchTestsStore } from "@/lib/store/batchTests";
 import type { TestRun } from "@/hooks/use-testruns";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
@@ -49,6 +50,13 @@ export function useBatchTestRuns() {
     const data = await res.json();
     const runs: unknown[] = Array.isArray(data.testRuns) ? data.testRuns : [];
     runs.forEach(r => addTestRunToList(r as TestRun));
+
+    // If backend returns batchTest object, merge it into the global list so
+    // clients relying on rich fields (project, test, batchPersona) keep them.
+    if (data.batchTest) {
+      useBatchTestsStore.getState().updateBatchTestInList(data.batchTest);
+    }
+
     return data;
   };
 
@@ -65,6 +73,11 @@ export function useBatchTestRuns() {
     const data = await res.json();
     const runs: unknown[] = Array.isArray(data.testRuns) ? data.testRuns : [];
     runs.forEach(r => updateTestRunInList(r as TestRun));
+
+    if (data.batchTest) {
+      useBatchTestsStore.getState().updateBatchTestInList(data.batchTest);
+    }
+
     return data as BatchTestActionResult;
   };
 
