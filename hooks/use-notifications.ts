@@ -52,6 +52,12 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
     }
   }, [key]);
 
+  // Track latest workspace for runtime comparison
+  const workspaceIdRef = useRef<string | null>(currentWorkspaceId ?? null);
+  useEffect(() => {
+    workspaceIdRef.current = currentWorkspaceId ?? null;
+  }, [currentWorkspaceId]);
+
   // Socket real-time updates
   useEffect(() => {
     if (!enabled || !token || (scope === 'current' && !currentWorkspaceId)) return;
@@ -60,9 +66,13 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
     const socket = io(SOCKET_URL, { transports: ["websocket"], auth: socketAuth });
 
     const createdHandler = (notif: Notification & { workspace?: string }) => {
+      const currentWs = workspaceIdRef.current;
       if (scope === 'all') {
         store.addNotification(notif);
-      } else if (!notif.workspace || notif.workspace === currentWorkspaceId) {
+      } else if (!notif.workspace) {
+        // Ignore notifications lacking workspace to avoid cross-spill
+        return;
+      } else if (notif.workspace === currentWs) {
         store.addNotification(notif);
       }
     };
