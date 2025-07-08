@@ -34,7 +34,7 @@ export function Notifications() {
           <Bell className="size-4" />
           {!notificationsLoading && unreadCount > 0 && (
             <span
-              className="absolute -top-0.5 -right-0.5 block h-2 w-2 rounded-full bg-destructive"
+              className="absolute top-1 right-0.5 block h-2 w-2 rounded-full bg-destructive"
             >
               <span className="sr-only">New notifications</span>
             </span>

@@ -122,16 +122,18 @@ function NotificationRow({ notification }: NotificationRowProps) {
   const handleClick = () => {
     let path: string | null = null;
     switch (notification.type) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       case "testRunStopped": {
         const id = (notification.data as any).testRunId as string | undefined;
-        if (id) path = `/testruns/${id}`; // will match (fullscreen) route
+        if (id) {
+          window.open(`/testruns/${id}`, "_blank");
+          return;
+        }
         break;
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       case "batchTestCompleted": {
         const id = (notification.data as any).batchTestId as string | undefined;
-        if (id) path = `/tests/batch/${id}`;
+        if (id) path = `/tests/batch/${id}?tab=runs`;
         break;
       }
       case "scheduleRunUpcoming": {
