@@ -43,12 +43,14 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
     })();
   }, [token, currentWorkspaceId, enabled, scope]);
 
-  // Store reset when key changes
+  // Reset store when workspace scope changes to avoid showing stale notifications
   const key = scope === 'all' ? 'all' : currentWorkspaceId ?? '';
-  if (prevKey.current !== key) {
-    store.setNotifications(null);
-  }
-  prevKey.current = key;
+  useEffect(() => {
+    if (prevKey.current !== key) {
+      store.setNotifications(null);
+      prevKey.current = key;
+    }
+  }, [key]);
 
   // Socket real-time updates
   useEffect(() => {
