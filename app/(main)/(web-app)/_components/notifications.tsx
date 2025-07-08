@@ -1,5 +1,5 @@
 import { Bell } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+// Removed numeric badge; using dot indicator instead
 import { useNotifications } from "@/hooks/use-notifications";
 import {
   CustomDropdownMenu,
@@ -33,12 +33,11 @@ export function Notifications() {
         >
           <Bell className="size-4" />
           {!notificationsLoading && unreadCount > 0 && (
-            <Badge
-              className="absolute -top-1 -right-1 bg-destructive text-white px-1 py-0.5 text-xs"
-              variant="destructive"
+            <span
+              className="absolute -top-0.5 -right-0.5 block h-2 w-2 rounded-full bg-destructive"
             >
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </Badge>
+              <span className="sr-only">New notifications</span>
+            </span>
           )}
         </button>
       </CustomDropdownMenuTrigger>
