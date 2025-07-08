@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/custom-dropdown-menu";
 
 export function WorkspaceSwitcher() {
-  const { user, switchWorkspace, currentWorkspaceId, workspaceAdmin } = useAuth();
+  const { user, switchWorkspace, currentWorkspaceId } = useAuth();
 
   if (!user || !user.workspaces || user.workspaces.length === 0) {
     return (
@@ -31,7 +31,7 @@ export function WorkspaceSwitcher() {
     if (isOwner) {
       return 'Your workspace';
     }
-    return `${workspaceAdmin?.firstName || 'Admin'}'s workspace`;
+    return currentWorkspace?.name || 'Workspace';
   };
 
   // Handle workspace selection
