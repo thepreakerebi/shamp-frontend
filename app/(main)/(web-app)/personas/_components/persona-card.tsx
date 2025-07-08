@@ -19,7 +19,7 @@ export function PersonaCard({ persona, onEdit, onOpen, onDelete }: PersonaCardPr
       role="button"
       tabIndex={0}
       onClick={() => router.push(`/personas/${persona._id}`)}
-      className="flex cursor-pointer items-center gap-4 p-4 bg-card rounded-2xl border border-border hover:bg-muted/60 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-secondary"
+      className="flex cursor-pointer items-center gap-4 p-4 bg-card rounded-2xl border border-border dark:border-0 hover:bg-muted/60 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-secondary"
     >
       <section className="flex-shrink-0">
         {persona.avatarUrl ? (

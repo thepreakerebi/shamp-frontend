@@ -45,10 +45,10 @@ export default function NotificationsDropdown() {
 
   return (
     <aside className="flex flex-col gap-2 w-[400px] max-h-[600px] text-sm">
-      <CustomDropdownMenuSeparator />
+      {/* <CustomDropdownMenuSeparator /> */}
 
       {/* Tabs + Actions */}
-      <header className="flex items-center justify-between px-2 gap-4">
+      <header className="flex items-center justify-between p-2 pt-3 gap-4">
         <nav className="flex gap-2">
           <Button
             variant={tab === "all" ? "default" : "outline"}
