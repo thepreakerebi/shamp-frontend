@@ -140,17 +140,20 @@ export function EditPersonaModal({ open, setOpen, persona, onSuccess }: EditPers
             }}
           >
             <section>
-              <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
+              <label htmlFor="name" className="block text-sm font-medium">Name</label>
+              <span className="block text-xs text-muted-foreground mb-1">Give your persona a short, descriptive name (e.g. &quot;Liam Smith&quot;).</span>
               <Input id="name" name="name" value={form.name} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.name} aria-describedby={fieldErrors.name ? 'name-error' : undefined} required />
               {fieldErrors.name && <div id="name-error" className="text-destructive text-xs mt-1">{fieldErrors.name}</div>}
             </section>
             <section>
-              <label htmlFor="description" className="block text-sm font-medium mb-1">Description</label>
+              <label htmlFor="description" className="block text-sm font-medium">Description</label>
+              <span className="block text-xs text-muted-foreground mb-1">Briefly explain who this persona is and what drives them (1–2 sentences).</span>
               <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.description} aria-describedby={fieldErrors.description ? 'description-error' : undefined} required />
               {fieldErrors.description && <div id="description-error" className="text-destructive text-xs mt-1">{fieldErrors.description}</div>}
             </section>
             <section>
-              <label htmlFor="background" className="block text-sm font-medium mb-1">Background <span className="text-muted-foreground">(optional)</span></label>
+              <label htmlFor="background" className="block text-sm font-medium">Background <span className="text-muted-foreground">(optional)</span></label>
+              <span className="block text-xs text-muted-foreground mb-1">Include demographic or professional context that shapes their perspective.</span>
               <Textarea id="background" name="background" value={form.background} onChange={handleChange} disabled={loading} />
             </section>
             <section>

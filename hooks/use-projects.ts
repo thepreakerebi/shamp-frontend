@@ -264,7 +264,8 @@ export function useProjects() {
     });
     if (!res.ok) throw new Error("Failed to update project");
     const project = await res.json();
-    // Don't manually update store - let Socket.IO events handle it
+    // Optimistically update store for immediate UI feedback; socket will reconcile if needed
+    store.updateProjectInList(project);
     return project;
   };
 

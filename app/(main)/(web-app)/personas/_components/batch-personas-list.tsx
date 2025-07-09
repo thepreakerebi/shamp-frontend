@@ -107,6 +107,6 @@ export function BatchPersonasList() {
         setOpen={setRenameOpen}
         batchPersona={renamingBatchPersona}
       />
-    </>
+      </>
   );
 } 

@@ -4,10 +4,10 @@ import { useParams } from "next/navigation";
 import { usePersonasStore } from "@/lib/store/personas";
 import Image from "next/image";
 import { PersonaCardDropdown } from "../_components/persona-card-dropdown";
-import { EditPersonaModal } from "../_components/edit-persona-modal";
 import { DeletePersonaModal } from "../_components/delete-persona-modal";
 import { PersonaDetailsSkeleton } from "./_components/persona-details-skeleton";
 import PersonaNotFound from "./not-found";
+import { useRouter } from "next/navigation";
 
 export default function PersonaPage() {
   const { personaId } = useParams();
@@ -15,9 +15,10 @@ export default function PersonaPage() {
   const personasError = usePersonasStore((s) => s.personasError);
   const persona = personas?.find((p) => p._id === personaId) || null;
 
-  const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading] = useState(false);
+
+  const router = useRouter();
 
   // Show skeleton while store is not yet populated
   if (personas === null) {
@@ -68,7 +69,7 @@ export default function PersonaPage() {
         <section className="flex-shrink-0">
           <PersonaCardDropdown
             showOpen={false}
-            onEdit={() => setEditOpen(true)}
+            onEdit={() => router.push(`/personas/${persona._id}/edit`)}
             onDelete={() => setDeleteOpen(true)}
           />
         </section>
@@ -155,8 +156,7 @@ export default function PersonaPage() {
         </section>
       )}
 
-      {/* Modals */}
-      <EditPersonaModal open={editOpen} setOpen={setEditOpen} persona={persona} />
+      {/* Delete Persona Modal */}
       <DeletePersonaModal open={deleteOpen} setOpen={setDeleteOpen} persona={persona} onConfirm={() => {}} loading={deleteLoading} />
     </main>
   );
