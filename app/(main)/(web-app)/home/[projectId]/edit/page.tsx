@@ -129,7 +129,7 @@ export default function EditProjectPage() {
   };
 
   return (
-    <main className="p-4 w-full max-w-[600px] mx-auto space-y-6">
+    <main className="p-4 w-full max-w-[500px] mx-auto space-y-6">
       <h1 className="text-2xl font-semibold">Edit Project</h1>
       <form
           onSubmit={handleSubmit}
