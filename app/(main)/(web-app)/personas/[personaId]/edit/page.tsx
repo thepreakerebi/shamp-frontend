@@ -5,7 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus, Trash } from "lucide-react";
+import { Plus, Trash } from "lucide-react";
+import { EditPersonaFormSkeleton } from "./_components/edit-persona-form-skeleton";
 import { usePersonas } from "@/hooks/use-personas";
 import { toast } from "sonner";
 
@@ -54,11 +55,7 @@ export default function EditPersonaPage() {
   }, [personaId]);
 
   if (!initialLoaded) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="animate-spin" />
-      </div>
-    );
+    return <EditPersonaFormSkeleton />;
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
