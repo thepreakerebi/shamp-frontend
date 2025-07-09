@@ -61,21 +61,25 @@ export function OnboardingChecklist() {
             <ChecklistItem
               done={hasProject}
               label="Create your first project"
+              enabled={true}
               onClick={() => router.push('/home/create')}
             />
             <ChecklistItem
               done={hasPersona}
               label="Create a persona"
+              enabled={hasProject}
               onClick={() => router.push('/personas/create')}
             />
             <ChecklistItem
               done={hasTest}
               label="Create a test"
+              enabled={hasPersona}
               onClick={() => router.push('/tests/create')}
             />
             <ChecklistItem
               done={hasRun}
               label="Start a test run"
+              enabled={hasTest}
               onClick={() => setRunModalOpen(true)}
             />
           </ul>
@@ -90,19 +94,22 @@ export function OnboardingChecklist() {
 interface ChecklistItemProps {
   done: boolean;
   label: string;
+  enabled?: boolean;
   onClick?: () => void;
 }
 
-function ChecklistItem({ done, label, onClick }: ChecklistItemProps) {
+function ChecklistItem({ done, label, enabled = true, onClick }: ChecklistItemProps) {
   return (
     <li>
       <button
         type="button"
-        disabled={done}
-        onClick={onClick}
+        disabled={done || !enabled}
+        onClick={enabled && !done ? onClick : undefined}
         className={cn(
-          "w-full flex items-center gap-2 text-left",
-          done ? "text-muted-foreground cursor-default" : "hover:bg-accent/50 rounded-md p-1"
+          "w-full flex items-center gap-2 text-left rounded-md p-1",
+          done && "text-muted-foreground cursor-default",
+          !done && enabled && "hover:bg-accent/50",
+          !done && !enabled && "text-muted-foreground cursor-default"
         )}
       >
         {done ? (
