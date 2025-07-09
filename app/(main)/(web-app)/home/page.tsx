@@ -7,6 +7,7 @@ import { TotalSuccessfulTestRunsCard } from "./_components/total-successful-test
 import { TotalFailedTestRunsCard } from "./_components/total-failed-test-runs-card";
 import { TotalPersonasCard } from "./_components/total-personas-card";
 import { ProjectsList } from '@/app/(main)/(web-app)/home/_components/projects-list';
+import { OnboardingChecklist } from "./_components/onboarding-checklist";
 
 export default function HomePage() {
   useEffect(() => {
@@ -33,6 +34,9 @@ export default function HomePage() {
       <section className="w-full">
         <ProjectsList />
       </section>
+
+      {/* Floating onboarding checklist */}
+      <OnboardingChecklist />
     </main>
   );
 }
