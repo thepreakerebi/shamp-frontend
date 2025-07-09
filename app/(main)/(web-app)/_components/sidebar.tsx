@@ -17,7 +17,7 @@ import { useAuth } from '@/lib/auth';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Notifications } from "./notifications";
 import { ThemeSwitcher } from "./theme-switcher";
-import { CreateTestButton } from "./create-test-button";
+import { CreateSidebarDropdownButton } from "./create-sidebar-dropdown-button";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
@@ -117,7 +117,7 @@ export function AppSidebar() {
           ) : (
             <WorkspaceSwitcher />
           )}
-          <CreateTestButton />
+          <CreateSidebarDropdownButton />
           {/* <CreateProjectButton /> */}
         </section>
         {/* Search input */}
