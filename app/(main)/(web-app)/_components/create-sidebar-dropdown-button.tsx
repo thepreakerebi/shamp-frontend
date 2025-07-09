@@ -22,7 +22,7 @@ export function CreateSidebarDropdownButton() {
       <CustomDropdownMenu>
         <CustomDropdownMenuTrigger asChild>
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             className="w-full flex items-center gap-2 justify-start"
           >
