@@ -1,4 +1,30 @@
+import React from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+
+export function SummaryDetailsSkeleton() {
+  return (
+    <section className="space-y-6">
+      {/* Narration skeleton */}
+      <section>
+        <Skeleton className="h-5 w-32 mb-1" />
+        <Skeleton className="h-4 w-full max-w-md mb-1" />
+        <Skeleton className="h-4 w-2/3" />
+      </section>
+      {/* Run Summary skeleton */}
+      <section>
+        <Skeleton className="h-5 w-32 mb-1" />
+        <Skeleton className="h-4 w-full max-w-md mb-1" />
+        <Skeleton className="h-4 w-1/2" />
+      </section>
+      {/* Analysis Summary skeleton */}
+      <section>
+        <Skeleton className="h-5 w-40 mb-1" />
+        <Skeleton className="h-4 w-full max-w-md mb-1" />
+        <Skeleton className="h-4 w-1/3" />
+      </section>
+    </section>
+  );
+}
 
 export default function SummaryPanelContentSkeleton() {
   return (

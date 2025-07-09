@@ -13,6 +13,7 @@ export interface Issue {
   contextConfusion: string[];
   resolved: boolean;
   createdAt: string;
+  workspace?: string;
 }
 
 interface IssuesState {

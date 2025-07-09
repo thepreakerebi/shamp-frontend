@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { SidebarSearchDropdown } from "./sidebar-search";
+import { WorkspaceSwitcher } from "./workspace-switcher";
 
 const items = [
   {
@@ -70,7 +71,7 @@ function getInitials(firstName?: string, lastName?: string, email?: string) {
 }
 
 export function AppSidebar() {
-  const { user, logout, loading, workspaceAdmin } = useAuth();
+  const { user, logout, loading } = useAuth();
   const pathname = usePathname();
   return (
     <Sidebar>
@@ -110,16 +111,11 @@ export function AppSidebar() {
           {loading ? <Skeleton className="size-8 rounded-full" /> : <Notifications />}
         </section>
         {/* Create buttons */}
-        <section className="flex flex-col gap-2 mt-3">
+        <section className="flex flex-col gap-4 mt-3">
           {loading ? (
             <Skeleton className="h-4 w-32 mb-2" />
           ) : (
-            <p className="text-sm text-muted-foreground font-medium mb-2">
-              {user?.role === 'admin' && !user?.invitedBy 
-                ? 'Your workspace' 
-                : `${workspaceAdmin?.firstName || 'Admin'}'s workspace`
-              }
-            </p>
+            <WorkspaceSwitcher />
           )}
           <CreateTestButton />
           {/* <CreateProjectButton /> */}

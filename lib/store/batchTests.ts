@@ -44,6 +44,16 @@ export const useBatchTestsStore = create<BatchTestsState>((set, get) => ({
           merged.test = prev.test;
         }
 
+        // Prefer richer "project" object if incoming only has id string
+        if (typeof next.project === "string" && typeof prev.project === "object") {
+          merged.project = prev.project;
+        }
+
+        // Prefer richer "batchPersona" object if incoming only has id string
+        if (typeof next.batchPersona === "string" && typeof prev.batchPersona === "object") {
+          merged.batchPersona = prev.batchPersona;
+        }
+
         // Preserve run statistics when backend omits them (undefined)
         if (next.testrunsCount === undefined && prev.testrunsCount !== undefined) {
           merged.testrunsCount = prev.testrunsCount;

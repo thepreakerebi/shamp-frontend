@@ -9,6 +9,7 @@ import {
 import { EllipsisVerticalIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
 
 interface PersonaCardDropdownProps {
   onOpen?: () => void;
@@ -20,6 +21,13 @@ interface PersonaCardDropdownProps {
 
 export function PersonaCardDropdown({ onOpen, onEdit, onDelete, showOpen = true, personaId }: PersonaCardDropdownProps) {
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Hide dropdown entirely for non-admins (members)
+  if (user?.currentWorkspaceRole !== 'admin') {
+    return null;
+  }
+
   const handleOpen = () => {
     if (onOpen) onOpen();
     if (personaId) {

@@ -5,7 +5,7 @@ import { PersonaBadge } from "@/components/ui/persona-badge";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import React from "react";
-import { Test, useTests } from "@/hooks/use-tests";
+import { Test, useTests, canEditTest, canTrashTest } from "@/hooks/use-tests";
 import { useTestRunsStore } from "@/lib/store/testruns";
 import { useTestRuns } from "@/hooks/use-testruns";
 import { RowActionsDropdown } from "./row-actions-dropdown";
@@ -17,6 +17,23 @@ export function TestCard({ test, projectId }: { test: Test; projectId?: string }
   const router = useRouter();
   const { moveTestToTrash, deleteTest, duplicateTest } = useTests();
   const { user } = useAuth();
+  
+  // Memoize permission calculations with specific dependencies to prevent flickering
+  const canEdit = React.useMemo(() => canEditTest(test, user), [
+    test._id, 
+    test.createdBy?._id, 
+    user?._id,
+    user?.currentWorkspaceRole
+  ]);
+  
+  const canTrash = React.useMemo(() => canTrashTest(test, user), [
+    test._id, 
+    test.createdBy?._id, 
+    user?._id,
+    user?.currentWorkspaceRole
+  ]);
+  
+  const showDropdown = React.useMemo(() => canEdit || canTrash, [canEdit, canTrash]);
   // Initialize real-time socket listeners (no values needed here)
   useTestRuns();
   // successfulRuns and failedRuns may be undefined on type Test, fallback to 0
@@ -98,14 +115,18 @@ export function TestCard({ test, projectId }: { test: Test; projectId?: string }
             </p>
           )}
         </section>
-        <nav onClick={(e)=>e.stopPropagation()} data-stop-row>
-        <RowActionsDropdown
-          testId={test._id}
-          testName={test.name}
-          actions={{ moveTestToTrash, deleteTest, duplicateTest }}
-          showRun={false}
-        />
-      </nav>
+        {showDropdown && (
+          <nav onClick={(e)=>e.stopPropagation()} data-stop-row>
+            <RowActionsDropdown
+              testId={test._id}
+              testName={test.name}
+              actions={{ moveTestToTrash, deleteTest, duplicateTest }}
+              showRun={false}
+              showEdit={canEdit}
+              showTrash={canTrash}
+            />
+          </nav>
+        )}
       </header>
       <Separator />
 

@@ -1,5 +1,5 @@
 import { useAuth } from "@/lib/auth";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import io from "socket.io-client";
 import { useProjectsStore } from "@/lib/store/projects";
 import { useTestRunsStore } from "@/lib/store/testruns";
@@ -20,38 +20,48 @@ export interface Project {
   lastTestRunAt?: string | null;
   previewImageUrl?: string;
   trashed?: boolean;
+  createdBy?: {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  };
   // Add other fields as needed
 }
 
-type ProjectPayload = {
+export interface ProjectPayload {
   name: string;
   description?: string;
   url?: string;
   authCredentials?: Record<string, string>;
   paymentCredentials?: Record<string, string>;
-};
+}
 
-const fetcher = (url: string, token: string) =>
+const fetcher = (url: string, token: string, workspaceId?: string | null) =>
   fetch(`${API_BASE}${url}`, {
     credentials: "include",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { 
+      Authorization: `Bearer ${token}`,
+      ...(workspaceId ? { 'X-Workspace-ID': workspaceId } : {})
+    },
   }).then(res => {
     if (!res.ok) throw new Error("Failed to fetch");
     return res.json();
   });
 
 export function useProjects() {
-  const { token } = useAuth();
+  const { token, currentWorkspaceId } = useAuth();
   const store = useProjectsStore();
+  const previousWorkspaceId = useRef<string | null>(null);
 
-  // Fetch all projects
+  // Fetch projects
   const fetchProjects = useCallback(async () => {
-    if (!token) return;
+    if (!token || !currentWorkspaceId) return;
     store.setProjectsLoading(true);
     store.setProjectsError(null);
     try {
-      const data = await fetcher("/projects", token);
-      store.setProjects(Array.isArray(data) ? data.filter((p: Project) => p.trashed !== true) : data);
+      const data = await fetcher("/projects", token, currentWorkspaceId);
+      store.setProjects(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
         store.setProjectsError(err.message);
@@ -61,15 +71,34 @@ export function useProjects() {
     } finally {
       store.setProjectsLoading(false);
     }
-  }, [token, store]);
+  }, [token, currentWorkspaceId, store]);
+
+  // Fetch count
+  const fetchCount = useCallback(async () => {
+    if (!token || !currentWorkspaceId) return;
+    store.setCountLoading(true);
+    store.setCountError(null);
+    try {
+      const data = await fetcher("/projects/count", token, currentWorkspaceId);
+      store.setCount(typeof data.count === "number" ? data.count : 0);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        store.setCountError(err.message);
+      } else {
+        store.setCountError("Failed to fetch count");
+      }
+    } finally {
+      store.setCountLoading(false);
+    }
+  }, [token, currentWorkspaceId, store]);
 
   // Fetch trashed projects
   const fetchTrashedProjects = useCallback(async () => {
-    if (!token) return;
+    if (!token || !currentWorkspaceId) return;
     store.setTrashedProjectsLoading(true);
     store.setTrashedProjectsError(null);
     try {
-      const data = await fetcher("/projects/trashed", token);
+      const data = await fetcher("/projects/trashed", token, currentWorkspaceId);
       store.setTrashedProjects(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -80,26 +109,7 @@ export function useProjects() {
     } finally {
       store.setTrashedProjectsLoading(false);
     }
-  }, [token, store]);
-
-  // Fetch project count
-  const fetchCount = useCallback(async () => {
-    if (!token) return;
-    store.setCountLoading(true);
-    store.setCountError(null);
-    try {
-      const data = await fetcher("/projects/count", token);
-      store.setCount(data.count ?? 0);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        store.setCountError(err.message);
-      } else {
-        store.setCountError("Failed to fetch project count");
-      }
-    } finally {
-      store.setCountLoading(false);
-    }
-  }, [token, store]);
+  }, [token, currentWorkspaceId, store]);
 
   // Refetch all
   const refetch = useCallback(() => {
@@ -111,50 +121,108 @@ export function useProjects() {
   const refetchTrashed = fetchTrashedProjects;
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !currentWorkspaceId) return;
+    
+    // Check if workspace has changed
+    if (previousWorkspaceId.current && previousWorkspaceId.current !== currentWorkspaceId) {
+      // Clear store data when workspace changes
+      store.setProjects(null);
+      store.setTrashedProjects(null);
+      store.setCount(0);
+      store.setCountLoading(true);
+      store.setProjectsLoading(true);
+      store.setTrashedProjectsLoading(true);
+    }
+    
+    // Update the ref to current workspace
+    previousWorkspaceId.current = currentWorkspaceId;
+    
     fetchProjects();
     fetchCount();
     fetchTrashedProjects();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, currentWorkspaceId]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !currentWorkspaceId) return;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
-      auth: { token },
+      auth: { token, workspaceId: currentWorkspaceId },
     });
-    socket.on("project:created", (project: Project) => {
-      store.addProjectToList(project);
+    socket.on("project:created", (data: Project & { workspace?: string }) => {
+      // Only process events for the current workspace
+      if (data.workspace === currentWorkspaceId) {
+        store.addProjectToList(data);
+        // Calculate count based on actual projects in store
+        const { projects } = useProjectsStore.getState();
+        const newCount = Array.isArray(projects) ? projects.length : 0;
+        store.setCount(newCount);
+      }
     });
-    socket.on("project:deleted", ({ _id }: { _id: string }) => {
-      store.removeProjectFromList(_id);
-      store.removeTrashedProject(_id);
+    socket.on("project:deleted", (data: { _id: string; workspace?: string }) => {
+      // Only process events for the current workspace
+      if (data.workspace === currentWorkspaceId) {
+        store.removeProjectFromList(data._id);
+        store.removeTrashedProject(data._id);
+        // Calculate count based on actual projects in store
+        const { projects } = useProjectsStore.getState();
+        const newCount = Array.isArray(projects) ? projects.length : 0;
+        store.setCount(newCount);
+      }
     });
-    socket.on("project:trashed", (project: Project) => {
-      store.removeProjectFromList(project._id);
-      store.addTrashedProject({ ...project, trashed: true });
+    socket.on("project:trashed", (data: Project & { workspace?: string }) => {
+      // Only process events for the current workspace
+      if (data.workspace === currentWorkspaceId) {
+        store.removeProjectFromList(data._id);
+        store.addTrashedProject({ ...data, trashed: true });
+        // Calculate count based on actual projects in store after removal
+        const { projects } = useProjectsStore.getState();
+        const newCount = Array.isArray(projects) ? projects.length : 0;
+        store.setCount(newCount);
+      }
     });
-    socket.on("project:updated", (project: Project) => {
-      if (project.trashed) {
-        store.removeProjectFromList(project._id);
-        store.addTrashedProject({ ...project, trashed: true });
-      } else {
-        store.removeTrashedProject(project._id);
-        store.updateProjectInList(project);
+    socket.on("project:updated", (data: Project & { workspace?: string }) => {
+      // Only process events for the current workspace
+      if (data.workspace === currentWorkspaceId) {
+        if (data.trashed) {
+          store.removeProjectFromList(data._id);
+          store.addTrashedProject({ ...data, trashed: true });
+          // Calculate count based on actual projects in store after removal
+          const { projects } = useProjectsStore.getState();
+          const newCount = Array.isArray(projects) ? projects.length : 0;
+          store.setCount(newCount);
+        } else {
+          store.removeTrashedProject(data._id);
+          store.updateProjectInList(data);
+          // Calculate count based on actual projects in store after addition
+          const { projects } = useProjectsStore.getState();
+          const newCount = Array.isArray(projects) ? projects.length : 0;
+          store.setCount(newCount);
+        }
+      }
+    });
+    socket.on("project:trashEmptied", (data: { deletedCount: number; workspace?: string }) => {
+      // Only process events for the current workspace
+      if (data.workspace === currentWorkspaceId) {
+        // Clear all trashed projects since they were permanently deleted
+        store.setTrashedProjects([]);
+        // Count should not be affected since trashed projects don't count towards active count
       }
     });
     return () => {
       socket.disconnect();
     };
-  }, [token, store.addProjectToList, store.removeProjectFromList, store.addTrashedProject, store.removeTrashedProject, store.updateProjectInList]);
+  }, [token, currentWorkspaceId]);
 
   // Get a single project by ID
   const getProjectById = async (id: string): Promise<Project> => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/projects/${id}`, {
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     if (!res.ok) throw new Error("Failed to fetch project");
     const project = await res.json();
@@ -164,103 +232,102 @@ export function useProjects() {
 
   // Create a project
   const createProject = async (payload: ProjectPayload) => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/projects`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
       },
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to create project");
     const project = await res.json();
-    store.addProjectToList(project);
+    // Don't manually update store - let Socket.IO events handle it
     return project;
   };
 
   // Update a project
-  const updateProject = async (id: string, payload: ProjectPayload) => {
-    if (!token) throw new Error("Not authenticated");
+  const updateProject = async (id: string, payload: Partial<ProjectPayload>) => {
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/projects/${id}`, {
       method: "PATCH",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
       },
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to update project");
-    const projectResp: Project = await res.json();
-
-    // Backend omits decrypted credentials in the response for security. To keep the UI in sync
-    // after editing credentials, merge the credentials that were just submitted (if provided)
-    // into the project object before updating the store.
-    const mergedProject: Project = {
-      ...projectResp,
-      ...(payload.authCredentials !== undefined && { authCredentials: payload.authCredentials }),
-      ...(payload.paymentCredentials !== undefined && { paymentCredentials: payload.paymentCredentials }),
-    } as Project;
-
-    store.updateProjectInList(mergedProject);
-    return mergedProject;
-  };
-
-  // Delete a project
-  const deleteProject = async (id: string, deleteTests?: boolean) => {
-    if (!token) throw new Error("Not authenticated");
-    const url = new URL(`${API_BASE}/projects/${id}`);
-    if (deleteTests) {
-      url.searchParams.set('deleteTests', 'true');
-    }
-    const res = await fetch(url.toString(), {
-      method: "DELETE",
-      credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) throw new Error("Failed to delete project");
-    store.removeProjectFromList(id);
-    return res.json();
-  };
-
-  // Move a project to trash
-  const moveProjectToTrash = async (id: string) => {
-    if (!token) throw new Error("Not authenticated");
-    const res = await fetch(`${API_BASE}/projects/${id}/trash`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) throw new Error("Failed to move project to trash");
     const project = await res.json();
-    store.removeProjectFromList(id);
-    store.addTrashedProject({ ...project, trashed: true });
+    // Don't manually update store - let Socket.IO events handle it
     return project;
   };
 
-  // Restore a project from trash
+  // Delete a project
+  const deleteProject = async (id: string, deleteTests = false) => {
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    const url = `${API_BASE}/projects/${id}${deleteTests ? `?deleteTests=true` : ''}`;
+    const res = await fetch(url, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
+    });
+    if (!res.ok) throw new Error("Failed to delete project");
+    // Don't manually update store - let Socket.IO events handle it
+    return res.json();
+  };
+
+  // Move project to trash
+  const moveProjectToTrash = async (id: string) => {
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    const res = await fetch(`${API_BASE}/projects/${id}/trash`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
+    });
+    if (!res.ok) throw new Error("Failed to move project to trash");
+    const project = await res.json();
+    // Don't manually update store - let Socket.IO events handle it
+    return project;
+  };
+
+  // Restore project from trash
   const restoreProjectFromTrash = async (id: string) => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/projects/${id}/restore`, {
       method: "PATCH",
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     if (!res.ok) throw new Error("Failed to restore project from trash");
     const project = await res.json();
-    store.removeTrashedProject(id);
-    store.addProjectToList(project);
+    // Don't manually update store - let Socket.IO events handle it
     return project;
   };
 
   // Get all tests for a project
   const getProjectTests = async (projectId: string) => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/projects/${projectId}/tests`, {
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     if (!res.ok) throw new Error("Failed to fetch project tests");
     return res.json();
@@ -271,7 +338,7 @@ export function useProjects() {
     projectId: string,
     forceRefresh = false
   ): Promise<TestRun[]> => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
 
     const { getTestRunsForProject, setTestRunsForProject } = useProjectsStore.getState();
     const cached = getTestRunsForProject(projectId);
@@ -281,7 +348,10 @@ export function useProjects() {
 
     const res = await fetch(`${API_BASE}/projects/${projectId}/testruns`, {
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     if (!res.ok) throw new Error("Failed to fetch project testruns");
     const runs = (await res.json()) as TestRun[];
@@ -301,7 +371,7 @@ export function useProjects() {
 
   // Empty trash - permanently delete all trashed projects
   const emptyProjectTrash = async (deleteTests?: boolean) => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const url = new URL(`${API_BASE}/projects/trash/empty`);
     if (deleteTests) {
       url.searchParams.set('deleteTests', 'true');
@@ -309,7 +379,10 @@ export function useProjects() {
     const res = await fetch(url.toString(), {
       method: "DELETE",
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     if (!res.ok) throw new Error("Failed to empty project trash");
     const result = await res.json();
@@ -338,5 +411,6 @@ export function useProjects() {
     getProjectTests,
     getProjectTestruns,
     emptyProjectTrash,
+    hasWorkspaceContext: !!currentWorkspaceId,
   };
 } 

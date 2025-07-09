@@ -35,26 +35,40 @@ export default function TestRunCanvasPage() {
   // Map run.stepsWithScreenshots to React Flow nodes
   const buildNodes = (run: TestRunStatus) => {
     const steps = (run.stepsWithScreenshots ?? []).slice(1); // skip first step
-    const baseX = 0;
-    const spacing = 320; // px between nodes horizontally
-    const built: Node[] = steps.map((s, idx) => ({
-      id: `step-${idx}`,
-      type: "step",
-      position: { x: baseX + idx * spacing, y: 0 },
-      data: {
-        screenshot: s.screenshot,
-        description: (s.step as Record<string, unknown>)?.evaluation_previous_goal as string ?? "",
-        nextGoal: (s.step as Record<string, unknown>)?.next_goal as string ?? "",
-      },
-    }));
 
-    // Compute center X based on step nodes
-    const centerX = built.length
-      ? built[0].position.x + ((built[built.length - 1].position.x - built[0].position.x) / 2)
-      : 0;
+    // Grid layout: 5 columns per row
+    const COLS = 5;
+    const COL_SPACING = 320; // px horizontally
+    const ROW_SPACING = 360; // px vertically between step rows
 
-    // Add recording node below with gap, centered
-    const recPosY = 800;
+    const built: Node[] = steps.map((s, idx) => {
+      const col = idx % COLS;
+      const row = Math.floor(idx / COLS);
+      return {
+        id: `step-${idx}`,
+        type: "step",
+        position: { x: col * COL_SPACING, y: row * ROW_SPACING },
+        data: {
+          screenshot: s.screenshot,
+          description: (s.step as Record<string, unknown>)?.evaluation_previous_goal as string ?? "",
+          nextGoal: (s.step as Record<string, unknown>)?.next_goal as string ?? "",
+        },
+      } as Node;
+    });
+
+    // Determine bounding box of steps to center recording node
+    let centerX = 0;
+    if (built.length) {
+      const xs = built.map(n => n.position.x);
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      centerX = minX + (maxX - minX) / 2;
+    }
+
+    // Recording node Y: one extra row below last step row plus margin
+    const totalRows = Math.ceil(built.length / COLS);
+    const recPosY = totalRows * ROW_SPACING + 200;
+
     const recNode: Node = {
       id: "recording",
       type: "recording",
@@ -102,7 +116,15 @@ export default function TestRunCanvasPage() {
     const prevRecLen = run.recordings?.length ?? 0;
     if (stepsLen !== prevStepsLen || recLen !== prevRecLen) {
       buildNodes(liveRun);
-      setRun(liveRun);
+      setRun(prev => {
+        if (!prev) return liveRun;
+        return {
+          ...prev,
+          ...liveRun,
+          analysis: liveRun.analysis ?? prev.analysis,
+          browserUseOutput: liveRun.browserUseOutput ?? prev.browserUseOutput,
+        } as TestRunStatus;
+      });
     }
   }, [liveRun?.stepsWithScreenshots?.length, liveRun?.recordings?.length]);
 

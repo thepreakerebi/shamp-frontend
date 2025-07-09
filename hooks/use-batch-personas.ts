@@ -11,6 +11,7 @@ export interface Persona {
   name: string;
   description: string;
   // Add other persona fields as needed
+  workspace?: string;
 }
 
 export interface BatchPersona {
@@ -23,6 +24,7 @@ export interface BatchPersona {
   additionalContext?: string;
   personas: string[] | Persona[];
   createdBy?: string;
+  workspace?: string; // Which workspace this batch persona belongs to
   // Add other fields as needed
 }
 
@@ -36,28 +38,31 @@ type BatchPersonaPayload = {
   additionalContext?: string;
 };
 
-const fetcher = (url: string, token: string) =>
+const fetcher = (url: string, token: string, workspaceId?: string | null) =>
   fetch(`${API_BASE}${url}`, {
     credentials: "include",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { 
+      Authorization: `Bearer ${token}`,
+      ...(workspaceId ? { 'X-Workspace-ID': workspaceId } : {})
+    },
   }).then(res => {
     if (!res.ok) throw new Error("Failed to fetch");
     return res.json();
   });
 
 export function useBatchPersonas(enabled: boolean = true) {
-  const { token } = useAuth();
+  const { token, currentWorkspaceId } = useAuth();
   const store = useBatchPersonasStore();
 
   useEffect(() => {
     if (!enabled) return;
-    if (!token) return;
+    if (!token || !currentWorkspaceId) return;
     // Inline the fetch logic to avoid dependency on fetchBatchPersonas
     (async () => {
     store.setBatchPersonasLoading(true);
     store.setBatchPersonasError(null);
     try {
-      const data = await fetcher("/batchpersonas", token);
+      const data = await fetcher("/batchpersonas", token, currentWorkspaceId);
       store.setBatchPersonas(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -69,63 +74,68 @@ export function useBatchPersonas(enabled: boolean = true) {
       store.setBatchPersonasLoading(false);
     }
     })();
-  }, [token, enabled]);
+  }, [token, currentWorkspaceId, enabled]);
 
   useEffect(() => {
     if (!enabled) return;
-    if (!token) return;
+    if (!token || !currentWorkspaceId) return;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
-      auth: { token },
+      auth: { token, workspaceId: currentWorkspaceId },
     });
-    // Inline the fetch logic for socket events
-    const handleUpdate = async () => {
-      store.setBatchPersonasLoading(true);
-      store.setBatchPersonasError(null);
-      try {
-        const data = await fetcher("/batchpersonas", token);
-        store.setBatchPersonas(Array.isArray(data) ? data : []);
-      } catch (err: unknown) {
-        if (err instanceof Error) {
-          store.setBatchPersonasError(err.message);
-        } else {
-          store.setBatchPersonasError("Failed to fetch batch personas");
-        }
-      } finally {
-        store.setBatchPersonasLoading(false);
+
+    const handleCreated = (data: BatchPersona & { workspace?: string }) => {
+      if (data.workspace && data.workspace === currentWorkspaceId) {
+        store.addBatchPersonaToList(data);
       }
     };
-    socket.on("batchPersona:created", handleUpdate);
-    socket.on("batchPersona:deleted", handleUpdate);
-    socket.on("batchPersona:updated", (updated: BatchPersona) => {
-      store.updateBatchPersonaInList(updated);
-    });
+
+    const handleDeleted = (data: { _id?: string; workspace?: string }) => {
+      if (data.workspace && data.workspace === currentWorkspaceId && data._id) {
+        store.removeBatchPersonaFromList(data._id);
+      }
+    };
+
+    const handleUpdated = (data: BatchPersona & { workspace?: string }) => {
+      if (data.workspace && data.workspace === currentWorkspaceId) {
+        store.updateBatchPersonaInList(data);
+      }
+    };
+
+    socket.on("batchPersona:created", handleCreated);
+    socket.on("batchPersona:deleted", handleDeleted);
+    socket.on("batchPersona:updated", handleUpdated);
+
     return () => {
-      socket.off("batchPersona:created", handleUpdate);
-      socket.off("batchPersona:deleted", handleUpdate);
-      socket.off("batchPersona:updated", () => {});
+      socket.off("batchPersona:created", handleCreated);
+      socket.off("batchPersona:deleted", handleDeleted);
+      socket.off("batchPersona:updated", handleUpdated);
       socket.disconnect();
     };
-  }, [token, enabled]);
+  }, [token, currentWorkspaceId, enabled, store]);
 
   const getBatchPersonaById = async (id: string): Promise<BatchPersona> => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/batchpersonas/${id}`, {
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     if (!res.ok) throw new Error("Failed to fetch batch persona");
     return res.json();
   };
 
   const createBatchPersona = async (payload: BatchPersonaPayload) => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/batchpersonas`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
       },
       body: JSON.stringify(payload),
     });
@@ -134,24 +144,28 @@ export function useBatchPersonas(enabled: boolean = true) {
   };
 
   const deleteBatchPersona = async (id: string) => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/batchpersonas/${id}`, {
       method: "DELETE",
       credentials: "include",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     if (!res.ok) throw new Error("Failed to delete batch persona");
     return res.json();
   };
 
   const updateBatchPersonaName = async (id: string, name: string): Promise<BatchPersona> => {
-    if (!token) throw new Error("Not authenticated");
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/batchpersonas/${id}`, {
       method: "PATCH",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
       },
       body: JSON.stringify({ name }),
     });
@@ -169,5 +183,6 @@ export function useBatchPersonas(enabled: boolean = true) {
     createBatchPersona,
     deleteBatchPersona,
     updateBatchPersonaName,
+    hasWorkspaceContext: !!currentWorkspaceId,
   };
 } 

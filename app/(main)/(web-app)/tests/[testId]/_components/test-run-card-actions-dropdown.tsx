@@ -23,11 +23,12 @@ interface Props {
   onOpen?: () => void;
   actions: ActionsFns;
   showOpenOptions?: boolean;
+  showTrash?: boolean;
   onActionComplete?: () => void;
   editPath?: string;
 }
 
-export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, actions, showOpenOptions = true, onActionComplete, editPath }: Props) {
+export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, actions, showOpenOptions = true, showTrash = true, onActionComplete, editPath }: Props) {
   const router = useRouter();
   const { deleteTestRun, moveTestRunToTrash } = actions;
 
@@ -35,6 +36,12 @@ export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, acti
     type: "delete" | "trash" | null;
     loading: boolean;
   }>({ type: null, loading: false });
+
+  // Determine if there is at least one actionable menu item
+  const hasActions = (showOpenOptions && true) || !!editPath || showTrash;
+  if (!hasActions) {
+    return null;
+  }
 
   const handleOpen = () => {
     if (onOpen) onOpen();
@@ -96,8 +103,8 @@ export function TestRunCardActionsDropdown({ runId, runPersonaName, onOpen, acti
           {editPath && (
             <CustomDropdownMenuItem data-stop-row onSelect={handleEdit}>Edit schedule</CustomDropdownMenuItem>
           )}
-          <CustomDropdownMenuItem data-stop-row onSelect={handleMoveToTrash}>Move to trash</CustomDropdownMenuItem>
-          <CustomDropdownMenuItem variant="destructive" data-stop-row onSelect={handleDelete}>Delete</CustomDropdownMenuItem>
+          {showTrash && <CustomDropdownMenuItem data-stop-row onSelect={handleMoveToTrash}>Move to trash</CustomDropdownMenuItem>}
+          {showTrash && <CustomDropdownMenuItem variant="destructive" data-stop-row onSelect={handleDelete}>Delete</CustomDropdownMenuItem>}
         </CustomDropdownMenuContent>
       </CustomDropdownMenu>
 

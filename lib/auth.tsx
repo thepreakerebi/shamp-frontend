@@ -10,24 +10,46 @@ export interface User {
   email?: string;
   profilePicture?: string;
   provider?: string;
-  invitedBy?: string;
-  extraFields?: Record<string, unknown>;
+  emailVerified?: boolean;
+  defaultWorkspace?: {
+    _id: string;
+    name: string;
+  };
+  // New workspace context fields from getCurrentUser
+  currentWorkspace?: {
+    _id: string;
+    name: string;
+    ownerId: string;
+  } | null;
+  currentWorkspaceRole?: 'admin' | 'member' | null;
+  workspaces?: Array<{
+    _id: string;
+    name: string;
+    role: 'admin' | 'member';
+    isOwner: boolean;
+    joinedAt: string;
+  }>;
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
+  switchingWorkspace: boolean;
+  currentWorkspaceId: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   signup: (data: SignupData) => Promise<void>;
   refresh: () => Promise<void>;
   getUser: () => Promise<User | null>;
   updateProfile: (changes: { firstName?: string; lastName?: string }) => Promise<void>;
+  switchWorkspace: (workspaceId: string) => void;
   workspaceSettings: WorkspaceSettings | null;
   workspaceAdmin: WorkspaceAdmin | null;
-  updateMaxAgentSteps: (value: number) => Promise<void>;
+  updateWorkspace: (data: { name?: string; description?: string; maxAgentStepsDefault?: number }) => Promise<void>;
   acceptInvite: (data: { token: string; firstName: string; lastName: string; password: string; profilePicture?: string }) => Promise<void>;
+  joinWorkspace: (token: string) => Promise<void>;
+  seamlessJoinWorkspace: (inviteToken: string) => Promise<{ message: string; workspaceName?: string; inviterName?: string; } | void>;
 }
 
 interface SignupData {
@@ -67,14 +89,28 @@ export function useAuth() {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
-async function fetchWithToken(url: string, token: string | null, options: RequestInit = {}) {
+async function fetchWithToken(url: string, token: string | null, workspaceId?: string | null, options: RequestInit = {}) {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  // Add existing headers from options if they are properly typed
+  if (options.headers) {
+    const existingHeaders = options.headers as Record<string, string>;
+    Object.assign(headers, existingHeaders);
+  }
+  
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  
+  if (workspaceId) {
+    headers['X-Workspace-ID'] = workspaceId;
+  }
+
   return fetch(url, {
     ...options,
-    headers: {
-      ...(options.headers || {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      'Content-Type': 'application/json',
-    },
+    headers,
     credentials: 'include',
   });
 }
@@ -84,43 +120,87 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(
     typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
   );
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(
+    typeof window !== 'undefined' ? localStorage.getItem('currentWorkspaceId') : null
+  );
   const [loading, setLoading] = useState(true);
   const [workspaceSettings, setWorkspaceSettings] = useState<WorkspaceSettings | null>(null);
   const [workspaceAdmin, setWorkspaceAdmin] = useState<WorkspaceAdmin | null>(null);
+  const [switchingWorkspace, setSwitchingWorkspace] = useState(false);
 
   // On mount, try to fetch user if token exists
   useEffect(() => {
     if (token) {
-      fetchWithToken(`${API_BASE}/users/me`, token)
+      fetchWithToken(`${API_BASE}/users/me`, token, currentWorkspaceId)
         .then(async (res) => {
           if (res.ok) {
-            const data = await res.json();
-            setUser(data);
-            // fetch workspace settings and admin info in parallel
-            try {
-              const [wsRes, adminRes] = await Promise.all([
-                fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, token),
-                fetchWithToken(`${API_BASE}/users/workspace/admin`, token)
-              ]);
+            const userData = await res.json();
+            setUser(userData);
+            
+            // Set current workspace if not set or if user doesn't have access to current workspace
+            if (!currentWorkspaceId || !userData.workspaces?.find((ws: { _id: string }) => ws._id === currentWorkspaceId)) {
+              const newWorkspaceId = userData.currentWorkspace?._id || userData.defaultWorkspace?._id || userData.workspaces?.[0]?._id;
+              if (newWorkspaceId) {
+                setCurrentWorkspaceId(newWorkspaceId);
+                localStorage.setItem('currentWorkspaceId', newWorkspaceId);
+              }
+            }
+            
+            // fetch workspace settings and admin info in parallel if we have workspace context
+            if (currentWorkspaceId || userData.currentWorkspace?._id) {
+              const workspaceIdToUse = currentWorkspaceId || userData.currentWorkspace?._id;
+              try {
+                const [wsRes, adminRes] = await Promise.all([
+                  fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, token, workspaceIdToUse),
+                  fetchWithToken(`${API_BASE}/users/workspace/admin`, token, workspaceIdToUse)
+                ]);
               if (wsRes.ok) {
                 const wsData = await wsRes.json();
                 setWorkspaceSettings(wsData);
               }
-              if (adminRes.ok) {
-                const adminData = await adminRes.json();
-                setWorkspaceAdmin(adminData);
-              }
+                if (adminRes.ok) {
+                  const adminData = await adminRes.json();
+                  setWorkspaceAdmin(adminData);
+                }
             } catch {}
+            }
           } else {
             setUser(null);
             setToken(null);
+            setCurrentWorkspaceId(null);
             localStorage.removeItem('authToken');
+            localStorage.removeItem('currentWorkspaceId');
           }
         })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
+  }, [token]);
+
+  // Listen for storage changes (e.g., from TokenHandler setting authToken)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'authToken' && e.newValue !== token) {
+        // Token changed in localStorage, update our state
+        setToken(e.newValue);
+      }
+    };
+
+    // Listen for custom event from TokenHandler
+    const handleTokenChanged = (e: CustomEvent) => {
+      const newToken = e.detail?.token;
+      if (newToken && newToken !== token) {
+        setToken(newToken);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('authTokenChanged', handleTokenChanged as EventListener);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('authTokenChanged', handleTokenChanged as EventListener);
+    };
   }, [token]);
 
   // Login method
@@ -150,7 +230,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     localStorage.setItem('authToken', authToken);
     setToken(authToken);
-    // Fetch user info
+    
+    // Fetch user info to get workspace context
     const userRes = await fetchWithToken(`${API_BASE}/users/me`, authToken);
     if (!userRes.ok) {
       setLoading(false);
@@ -158,21 +239,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     const userData = await userRes.json();
     setUser(userData);
-    try {
-      const [wsRes, adminRes] = await Promise.all([
-        fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken),
-        fetchWithToken(`${API_BASE}/users/workspace/admin`, authToken)
-      ]);
+    
+    // Set initial workspace
+    const initialWorkspaceId = userData.currentWorkspace?._id || userData.defaultWorkspace?._id || userData.workspaces?.[0]?._id;
+    if (initialWorkspaceId) {
+      setCurrentWorkspaceId(initialWorkspaceId);
+      localStorage.setItem('currentWorkspaceId', initialWorkspaceId);
+      
+      // Fetch workspace-specific data
+      try {
+        const [wsRes, adminRes] = await Promise.all([
+          fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken, initialWorkspaceId),
+          fetchWithToken(`${API_BASE}/users/workspace/admin`, authToken, initialWorkspaceId)
+        ]);
       if (wsRes.ok) {
         const wsData = await wsRes.json();
         setWorkspaceSettings(wsData);
       }
-      if (adminRes.ok) {
-        const adminData = await adminRes.json();
-        setWorkspaceAdmin(adminData);
-      }
-    } catch {}
+        if (adminRes.ok) {
+          const adminData = await adminRes.json();
+          setWorkspaceAdmin(adminData);
+        }
+      } catch {}
+    }
+
     setLoading(false);
+  };
+
+  // Switch workspace
+  const switchWorkspace = (workspaceId: string) => {
+    setCurrentWorkspaceId(workspaceId);
+    localStorage.setItem('currentWorkspaceId', workspaceId);
+    
+    // Set loading state briefly before refresh
+    setLoading(true);
+    setSwitchingWorkspace(true);
+    
+    // Trigger page refresh to load with new workspace context
+    if (typeof window !== 'undefined') {
+      // Small delay to allow loading state to show
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    }
   };
 
   // Signup method
@@ -194,7 +303,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Update profile (first & last name)
   const updateProfile = async (changes: { firstName?: string; lastName?: string }) => {
     if (!token || !user) throw new Error("Not authenticated");
-    const res = await fetchWithToken(`${API_BASE}/users/${user._id}`, token, {
+    const res = await fetchWithToken(`${API_BASE}/users/${user._id}`, token, currentWorkspaceId, {
       method: 'PUT',
       body: JSON.stringify(changes),
     });
@@ -202,10 +311,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw new Error((await res.json()).error || 'Failed to update profile');
     }
     const updated = await res.json();
-    setUser(updated);
+    setUser(prev => ({ ...prev, ...updated }));
     
-    // If this is an admin (root user), also update workspaceAdmin to reflect changes in sidebar
-    if (user.role === 'admin' && !user.invitedBy) {
+    // If this is a workspace admin, also update workspaceAdmin to reflect changes in sidebar
+    if (user.currentWorkspaceRole === 'admin') {
       setWorkspaceAdmin(prev => ({
         ...prev,
         firstName: updated.firstName,
@@ -214,26 +323,163 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Update workspace settings
+  const updateWorkspace = async (data: { name?: string; description?: string; maxAgentStepsDefault?: number }) => {
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    
+    const res = await fetchWithToken(`${API_BASE}/users/workspace`, token, currentWorkspaceId, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Failed to update workspace');
+    }
+    const workspaceData = await res.json();
+    
+    // Update workspace settings if maxAgentStepsDefault was changed
+    if (data.maxAgentStepsDefault !== undefined) {
+      setWorkspaceSettings(prev => ({
+        ...prev,
+        maxAgentStepsDefault: workspaceData.maxAgentStepsDefault
+      }));
+    }
+    
+    // Update user state directly with new workspace name if it was changed
+    if (data.name !== undefined && user && user.currentWorkspace) {
+      setUser(prev => {
+        if (!prev || !prev.currentWorkspace) return prev;
+        
+        return {
+          ...prev,
+          currentWorkspace: {
+            ...prev.currentWorkspace,
+            name: workspaceData.name
+          },
+          workspaces: prev.workspaces?.map(ws => 
+            ws._id === currentWorkspaceId ? { ...ws, name: workspaceData.name } : ws
+          ) || prev.workspaces
+        };
+      });
+    }
+    
+    return workspaceData;
+  };
+
+  // Join workspace via invite (for existing users)
+  const joinWorkspace = async (inviteToken: string) => {
+    if (!token) throw new Error("Not authenticated");
+    const res = await fetch(`${API_BASE}/users/join-workspace`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ token: inviteToken }),
+    });
+    if (!res.ok) {
+      throw new Error((await res.json()).error || 'Failed to join workspace');
+    }
+    const data = await res.json();
+    
+    // Refresh user data to get updated workspace list
+    await refresh();
+    
+    return data;
+  };
+
+  // Seamless join workspace via invite without prior authentication
+  const seamlessJoinWorkspace = async (inviteToken: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/users/seamless-join-workspace`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: inviteToken }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to join workspace');
+      }
+
+      const data = await res.json();
+      const authToken: string | undefined = data.token;
+      if (!authToken) throw new Error('No auth token returned');
+
+      // Extract workspaceId from invite token so we can switch context right away
+      let workspaceIdFromToken: string | undefined;
+      try {
+        const [, payload] = inviteToken.split('.') as [string,string?];
+        if (payload) {
+          const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+          workspaceIdFromToken = decoded?.workspaceId;
+        }
+      } catch {}
+
+      // Store token and update state
+      localStorage.setItem('authToken', authToken);
+      setToken(authToken);
+
+      if (workspaceIdFromToken) {
+        setCurrentWorkspaceId(workspaceIdFromToken);
+        localStorage.setItem('currentWorkspaceId', workspaceIdFromToken);
+      }
+
+      // Fetch full user info to populate context and workspace details
+      const userRes = await fetchWithToken(`${API_BASE}/users/me`, authToken);
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        setUser(userData);
+
+        // Determine initial workspace ID, prefer the workspace we just joined
+        const wsId = workspaceIdFromToken || userData.currentWorkspace?._id || userData.defaultWorkspace?._id || userData.workspaces?.[0]?._id;
+        if (wsId) {
+          setCurrentWorkspaceId(wsId);
+          localStorage.setItem('currentWorkspaceId', wsId);
+          
+          // Fetch workspace specific settings & admin info
+          try {
+            const [wsRes, adminRes] = await Promise.all([
+              fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken, wsId),
+              fetchWithToken(`${API_BASE}/users/workspace/admin`, authToken, wsId),
+            ]);
+            if (wsRes.ok) setWorkspaceSettings(await wsRes.json());
+            if (adminRes.ok) setWorkspaceAdmin(await adminRes.json());
+          } catch {}
+        }
+      }
+
+      return data;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Logout method
   const logout = () => {
     setUser(null);
     setToken(null);
+    setCurrentWorkspaceId(null);
     setWorkspaceSettings(null);
     setWorkspaceAdmin(null);
     localStorage.removeItem('authToken');
+    localStorage.removeItem('currentWorkspaceId');
   };
 
   // Refresh session (re-fetch user info)
   const refresh = async () => {
     if (!token) return;
     setLoading(true);
-    const res = await fetchWithToken(`${API_BASE}/users/me`, token);
+    const res = await fetchWithToken(`${API_BASE}/users/me`, token, currentWorkspaceId);
     if (res.ok) {
       setUser(await res.json());
     } else {
       setUser(null);
       setToken(null);
+      setCurrentWorkspaceId(null);
       localStorage.removeItem('authToken');
+      localStorage.removeItem('currentWorkspaceId');
     }
     setLoading(false);
   };
@@ -241,22 +487,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Get current user info from backend
   const getUser = async () => {
     if (!token) return null;
-    const res = await fetchWithToken(`${API_BASE}/users/me`, token);
+    const res = await fetchWithToken(`${API_BASE}/users/me`, token, currentWorkspaceId);
     if (!res.ok) return null;
     return res.json();
-  };
-
-  // Update workspace max agent steps (admin only)
-  const updateMaxAgentSteps = async (value: number) => {
-    if (!token) throw new Error("Not authenticated");
-    if (value < 50 || value > 150) throw new Error("Value must be between 50 and 150");
-    const res = await fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, token, {
-      method: 'PUT',
-      body: JSON.stringify({ maxAgentStepsDefault: value }),
-    });
-    if (!res.ok) throw new Error((await res.json()).error || 'Failed to update setting');
-    const data = await res.json();
-    setWorkspaceSettings(data);
   };
 
   // Accept invite
@@ -280,24 +513,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('authToken', authToken);
     setToken(authToken);
     setUser(data.user);
-    // fetch workspace settings and admin info
-    try {
-      const [wsRes, adminRes] = await Promise.all([
-        fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken),
-        fetchWithToken(`${API_BASE}/users/workspace/admin`, authToken)
-      ]);
+    
+    // Set initial workspace from user data
+    const initialWorkspaceId = data.user.currentWorkspace?._id || data.user.defaultWorkspace?._id || data.user.workspaces?.[0]?._id;
+    if (initialWorkspaceId) {
+      setCurrentWorkspaceId(initialWorkspaceId);
+      localStorage.setItem('currentWorkspaceId', initialWorkspaceId);
+      
+      // fetch workspace settings and admin info
+      try {
+        const [wsRes, adminRes] = await Promise.all([
+          fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken, initialWorkspaceId),
+          fetchWithToken(`${API_BASE}/users/workspace/admin`, authToken, initialWorkspaceId)
+        ]);
       if (wsRes.ok) {
         setWorkspaceSettings(await wsRes.json());
       }
-      if (adminRes.ok) {
-        setWorkspaceAdmin(await adminRes.json());
-      }
-    } catch {}
-    setLoading(false);
+        if (adminRes.ok) {
+          setWorkspaceAdmin(await adminRes.json());
+        }
+      } catch {}
+    }
+
+    // Ensure user context is fully updated before proceeding
+    await refresh();
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, signup, refresh, getUser, updateProfile, workspaceSettings, workspaceAdmin, updateMaxAgentSteps, acceptInvite }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      token, 
+      loading, 
+      switchingWorkspace,
+      currentWorkspaceId,
+      login, 
+      logout, 
+      signup, 
+      refresh, 
+      getUser, 
+      updateProfile, 
+      switchWorkspace,
+      workspaceSettings, 
+      workspaceAdmin, 
+      updateWorkspace, 
+      acceptInvite,
+      joinWorkspace,
+      seamlessJoinWorkspace
+    }}>
       {children}
     </AuthContext.Provider>
   );

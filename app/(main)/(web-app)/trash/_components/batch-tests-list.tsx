@@ -10,6 +10,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { BatchTestsCardSkeleton } from "../../tests/_components/batch-tests-card-skeleton";
+import { useAuth } from "@/lib/auth";
 
 export function TrashedBatchTestsList() {
   const {
@@ -21,6 +22,7 @@ export function TrashedBatchTestsList() {
   } = useBatchTests();
   const { trashedBatchTests } = useBatchTestsStore();
   const { projects } = useProjects();
+  const { user } = useAuth();
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -43,6 +45,21 @@ export function TrashedBatchTestsList() {
     };
     return arr.sort((a,b)=> getTs(b) - getTs(a));
   }, [trashedBatchTests]);
+
+  const canEmptyTrash = React.useMemo(() => {
+    if (!user) return false;
+    if (user.currentWorkspaceRole === 'admin') return true;
+    if (user.currentWorkspaceRole === 'member') {
+      // member can empty trash only if they created all trashed batch tests
+      if (uniqueBatches.length === 0) return false;
+      return uniqueBatches.every(b => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const creatorId = typeof b.createdBy === 'string' ? b.createdBy : (b.createdBy as any)?._id;
+        return creatorId === user._id;
+      });
+    }
+    return false;
+  }, [user, uniqueBatches]);
 
   const handleRestore = async (batch: BatchTest) => {
     try {
@@ -100,11 +117,18 @@ export function TrashedBatchTestsList() {
     return undefined;
   };
 
+  const getCreatorId = (b: BatchTest): string | undefined => {
+    if (!b) return undefined;
+    if (typeof b.createdBy === 'string') return b.createdBy;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (b.createdBy as any)?._id;
+  };
+
   return (
     <section>
       <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2 px-4">
         <h2 className="text-xl font-semibold">Trashed Batch Tests · {uniqueBatches.length}</h2>
-        {uniqueBatches.length > 0 && (
+        {uniqueBatches.length > 0 && canEmptyTrash && (
           <Button 
             variant="outline" 
             onClick={() => setEmptyTrashOpen(true)}
@@ -156,12 +180,14 @@ export function TrashedBatchTestsList() {
                     </p>
                   )}
                 </section>
-                <nav onClick={e => e.stopPropagation()} data-stop-row>
-                  <TrashCardActionsDropdown
-                    onRestore={() => handleRestore(batch)}
-                    onDelete={() => promptDelete(batch)}
-                  />
-                </nav>
+                { (user?.currentWorkspaceRole === 'admin' || getCreatorId(batch) === user?._id) && (
+                  <nav onClick={e => e.stopPropagation()} data-stop-row>
+                    <TrashCardActionsDropdown
+                      onRestore={() => handleRestore(batch)}
+                      onDelete={() => promptDelete(batch)}
+                    />
+                  </nav>
+                )}
               </header>
 
               <section className="flex items-center gap-2 mt-auto">

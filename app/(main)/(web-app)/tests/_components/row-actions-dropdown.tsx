@@ -27,9 +27,11 @@ interface RowActionsDropdownProps {
   actions: RowActionFns;
   showOpen?: boolean;
   showRun?: boolean;
+  showEdit?: boolean;
+  showTrash?: boolean;
 }
 
-function RowActionsDropdownComponent({ testId, testName, onOpen, actions, showOpen = true, showRun = true }: RowActionsDropdownProps) {
+function RowActionsDropdownComponent({ testId, testName, onOpen, actions, showOpen = true, showRun = true, showEdit = true, showTrash = true }: RowActionsDropdownProps) {
   const router = useRouter();
   const { duplicateTest, moveTestToTrash, deleteTest } = actions;
   const [confirmState, setConfirmState] = useState<{
@@ -42,6 +44,14 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions, showOp
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Check if dropdown should be shown (user has any actionable options)
+  const hasActionableOptions = showEdit || showTrash;
+  
+  // If user has no actionable options, don't render the dropdown
+  if (!hasActionableOptions) {
+    return null;
+  }
 
   const handleRun = () => {
     setConfirmState({ type: "run", loading: false });
@@ -125,9 +135,9 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions, showOp
         <CustomDropdownMenuContent align="end">
           {showRun && <CustomDropdownMenuItem data-stop-row onSelect={handleRun}>Run</CustomDropdownMenuItem>}
           {showOpen && <CustomDropdownMenuItem data-stop-row onSelect={handleOpen}>Open</CustomDropdownMenuItem>}
-          <CustomDropdownMenuItem data-stop-row onSelect={handleEdit}>Edit</CustomDropdownMenuItem>
+          {showEdit && <CustomDropdownMenuItem data-stop-row onSelect={handleEdit}>Edit</CustomDropdownMenuItem>}
           <CustomDropdownMenuItem data-stop-row onSelect={handleDuplicate}>Duplicate</CustomDropdownMenuItem>
-          <CustomDropdownMenuItem data-stop-row onSelect={handleTrash}>Move to trash</CustomDropdownMenuItem>
+          {showTrash && <CustomDropdownMenuItem data-stop-row onSelect={handleTrash}>Move to trash</CustomDropdownMenuItem>}
           <CustomDropdownMenuItem variant="destructive" data-stop-row onSelect={handleDelete}>
             Delete
           </CustomDropdownMenuItem>

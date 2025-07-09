@@ -4,6 +4,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SettingsTab } from "./_components/settings-tab";
 import { ProfileSection } from "./_components/profile-section";
 import { SecuritySection } from "./_components/security-section";
+import { WorkspaceSection } from "./_components/workspace-section";
 import { MembersSection } from "./_components/members-section";
 import { SubscriptionSection } from "./_components/subscription-section";
 import { useAuth } from "@/lib/auth";
@@ -11,6 +12,7 @@ import { useAuth } from "@/lib/auth";
 const TAB_OPTIONS = [
   { key: "profile", label: "Profile" },
   { key: "security", label: "Security" },
+  { key: "workspace", label: "Workspace" },
   { key: "members", label: "Members" },
   { key: "subscription", label: "Subscription & Usage" },
 ];
@@ -19,14 +21,24 @@ export const dynamic = 'force-dynamic';
 
 export default function SettingsPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  
+  // Check if user is on their own workspace (where they can manage members and subscription)
+  const isOnOwnWorkspace = useMemo(() => {
+    if (!user?.currentWorkspace || !user?.workspaces) return false;
+    
+    // Find the current workspace in the user's workspace list
+    const currentWorkspace = user.workspaces.find(ws => ws._id === user.currentWorkspace?._id);
+    
+    // Show members/subscription tabs if user is the owner or admin of this workspace
+    return currentWorkspace?.isOwner === true || currentWorkspace?.role === 'admin';
+  }, [user]);
 
   const filteredTabs = useMemo(() => {
     return TAB_OPTIONS.filter(t => {
-      if (isAdmin) return true;
-      return t.key !== "members" && t.key !== "subscription";
+      if (isOnOwnWorkspace) return true;
+      return t.key !== "workspace" && t.key !== "members" && t.key !== "subscription";
     });
-  }, [isAdmin]);
+  }, [isOnOwnWorkspace]);
 
   const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState(filteredTabs[0]?.key || "profile");
@@ -55,10 +67,13 @@ export default function SettingsPage() {
           <section className="flex-1 min-w-0">
             <TabsContent value="profile"><ProfileSection /></TabsContent>
             <TabsContent value="security"><SecuritySection /></TabsContent>
-            {isAdmin && (
+            {isOnOwnWorkspace && (
+              <TabsContent value="workspace"><WorkspaceSection /></TabsContent>
+            )}
+            {isOnOwnWorkspace && (
               <TabsContent value="members"><MembersSection /></TabsContent>
             )}
-            {isAdmin && (
+            {isOnOwnWorkspace && (
               <TabsContent value="subscription"><SubscriptionSection /></TabsContent>
             )}
           </section>

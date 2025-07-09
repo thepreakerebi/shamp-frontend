@@ -17,7 +17,9 @@ export default function TestRunsSection({ test }: { test: Test }) {
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ result: 'any', run: 'any', persona: 'any' });
 
-  // Initial fetch and cache setup
+  // Fetch runs once per test id change; we intentionally omit store/actions from deps to
+  // avoid infinite loops triggered by state updates (socket events). eslint rule disabled.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!test?._id) return;
     let mounted = true;
@@ -47,7 +49,7 @@ export default function TestRunsSection({ test }: { test: Test }) {
     return () => {
       mounted = false;
     };
-  }, [test?._id, getTestRunsForTest, addTestRunToList, testsStore]);
+  }, [test?._id]);
 
   // Sync with store changes: handle updates, additions, and deletions
   useEffect(() => {
@@ -80,11 +82,11 @@ export default function TestRunsSection({ test }: { test: Test }) {
         <h2 className="text-xl font-semibold">Test runs · {(displayRuns ?? []).length}</h2>
         <TestRunsFilter personaOptions={personaOptions} filters={filters} onChange={setFilters} />
       </section>
-      {loading && <TestRunsCardSkeleton />}
+      {loading && !runs && <TestRunsCardSkeleton />}
       {!loading && (filtered.length === 0) && (
         <p className="text-muted-foreground text-sm">No runs yet.</p>
       )}
-      {!loading && filtered.length > 0 && (
+      {((!loading && filtered.length > 0) || (loading && runs && filtered.length > 0)) && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(run => (
             <TestRunCard key={run._id} run={run} />

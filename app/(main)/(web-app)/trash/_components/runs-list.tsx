@@ -9,6 +9,9 @@ import { toast } from "sonner";
 import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-card-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { usePersonas } from "@/hooks/use-personas";
+import { useAuth } from "@/lib/auth";
+import type { Persona } from "@/hooks/use-personas";
+import { usePersonasStore } from "@/lib/store/personas";
 
 type RunWithPersona = TestRun & { personaName?: string };
 
@@ -21,30 +24,91 @@ export function TrashedRunsList() {
     fetchTrashedTestRuns,
   } = useTestRuns();
 
+  const { user, token, currentWorkspaceId } = useAuth();
+
+  const { personas } = usePersonas();
+  const personasStorePersonas = usePersonasStore(state => state.personas);
+  const addPersonaToList = usePersonasStore(state => state.addPersonaToList);
+
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [runToDelete, setRunToDelete] = useState<TestRun | null>(null);
   const [emptyTrashOpen, setEmptyTrashOpen] = useState(false);
   const [emptyTrashLoading, setEmptyTrashLoading] = useState(false);
 
-  const { personas } = usePersonas();
-
+  // Build a deduplicated & sorted list of trashed runs once personas may rely on it below
   const uniqueRuns = React.useMemo(() => {
     if (!trashedTestRuns) return [] as TestRun[];
+
     const map = new Map<string, TestRun>();
-    trashedTestRuns.forEach(r => {
-      if (!map.has(r._id)) map.set(r._id, r);
+
+    trashedTestRuns.forEach((r) => {
+      const id = (r as { _id?: string })._id;
+      if (!id) return; // Skip malformed entries
+      if (!map.has(id)) map.set(id, r);
     });
-    // Sort newest first based on ObjectId timestamp
-    const getTs = (id: string) => parseInt(id.substring(0, 8), 16);
-    return Array.from(map.values()).sort((a,b)=> getTs(b._id) - getTs(a._id));
+
+    const getTs = (id?: string) => {
+      if (!id || id.length < 8) return 0;
+      const ts = parseInt(id.substring(0, 8), 16);
+      return isNaN(ts) ? 0 : ts;
+    };
+
+    return Array.from(map.values()).sort((a, b) => getTs(b._id) - getTs(a._id));
   }, [trashedTestRuns]);
+
+  const [extraPersonaNames, setExtraPersonaNames] = React.useState<Record<string, string>>({});
+
+  // Helper to fetch a persona's name when it's missing from both the run payload
+  // and the main personas list.
+  const fetchPersonaName = React.useCallback(async (id: string) => {
+    if (!token || !currentWorkspaceId) return;
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/personas/${id}`, {
+        credentials: "include",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "X-Workspace-ID": currentWorkspaceId,
+        } as Record<string, string>,
+      });
+      if (!res.ok) return;
+      const p: Persona = await res.json();
+      // cache avatar and full persona in global store for future cards
+      addPersonaToList(p);
+      setExtraPersonaNames((prev) => ({ ...prev, [id]: p.name }));
+    } catch {/* ignore */}
+  }, [token, currentWorkspaceId, addPersonaToList]);
+
+  // Whenever the run list or personas change, ensure we have names for every run.
+  React.useEffect(() => {
+    const idsToFetch = new Set<string>();
+    uniqueRuns.forEach((r) => {
+      const pid = (r as { persona?: string }).persona;
+      if (!pid) return;
+      const nameKnown = (r as { personaName?: string }).personaName || personas?.some(p => p._id === pid) || extraPersonaNames[pid];
+      if (!nameKnown) idsToFetch.add(pid);
+    });
+    idsToFetch.forEach(id => fetchPersonaName(id));
+  }, [uniqueRuns, personas, extraPersonaNames, fetchPersonaName]);
+
+  // Check if user can empty trash
+  const canEmptyTrash = React.useMemo(() => {
+    if (!user) return false;
+    if (user.currentWorkspaceRole === 'admin') return true;
+    if (user.currentWorkspaceRole === 'member') {
+      return uniqueRuns.some(run => run.createdBy?._id === user._id);
+    }
+    return false;
+  }, [user, uniqueRuns]);
 
   const getPersonaName = (run: RunWithPersona): string | undefined => {
     if (run.personaName) return run.personaName;
-    if (run.persona && personas) {
-      const p = personas.find(pr=> pr._id === run.persona);
-      return p?.name;
+    if (run.persona) {
+      // Primary source: loaded personas list
+      const p = (personasStorePersonas ?? personas)?.find(pr => pr._id === run.persona);
+      if (p?.name) return p.name;
+      // Secondary source: names fetched ad-hoc
+      return extraPersonaNames[run.persona];
     }
     return undefined;
   };
@@ -106,11 +170,17 @@ export function TrashedRunsList() {
     return <Badge variant="secondary" className={`px-1.5 py-0 text-xs ${cls}`}>{status}</Badge>;
   };
 
+  const getCreatorId = (r: TestRun): string | undefined => {
+    if (typeof r.createdBy === 'string') return r.createdBy;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (r.createdBy as any)?._id;
+  };
+
   return (
     <section>
       <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2 px-4">
         <h2 className="text-xl font-semibold">Trashed Test Runs · {uniqueRuns.length}</h2>
-        {uniqueRuns.length > 0 && (
+        {uniqueRuns.length > 0 && canEmptyTrash && (
           <Button 
             variant="outline" 
             onClick={() => setEmptyTrashOpen(true)}
@@ -127,11 +197,20 @@ export function TrashedRunsList() {
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 p-4" aria-label="Trashed test runs list">
         {uniqueRuns.map(run => {
           const rp = run as RunWithPersona;
+          let avatarUrl = rp.persona ? (personasStorePersonas ?? personas)?.find(p=>p._id===rp.persona)?.avatarUrl : undefined;
+          if (!avatarUrl) {
+            avatarUrl = (rp as { personaAvatarUrl?: string }).personaAvatarUrl;
+          }
           return (
           <article key={run._id} className="rounded-3xl border dark:border-0 bg-card/80 p-4 flex flex-col gap-3">
             <header className="flex items-start gap-3">
-              <figure className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl font-bold shrink-0" aria-hidden="true">
-                {(getPersonaName(rp)?.[0] ?? "R").toUpperCase()}
+              <figure className="w-10 h-10 rounded-xl overflow-hidden bg-muted flex items-center justify-center text-xl font-bold shrink-0" aria-hidden="true">
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarUrl} alt={getPersonaName(rp) ?? "Persona avatar"} className="w-full h-full object-cover" />
+                ) : (
+                  (getPersonaName(rp)?.[0] ?? "R").toUpperCase()
+                )}
               </figure>
               <section className="flex-1 min-w-0">
                 <h3 className="font-semibold leading-tight truncate" title={getPersonaName(rp) ?? run._id}>{getPersonaName(rp) ?? run._id}</h3>
@@ -141,9 +220,11 @@ export function TrashedRunsList() {
                 </div>
                 
               </section>
-              <nav onClick={e=>e.stopPropagation()} data-stop-row>
-                <TrashCardActionsDropdown onRestore={() => handleRestore(run)} onDelete={() => promptDelete(run)} />
-              </nav>
+              {(user?.currentWorkspaceRole === 'admin' || getCreatorId(run) === user?._id) && (
+                <nav onClick={e=>e.stopPropagation()} data-stop-row>
+                  <TrashCardActionsDropdown onRestore={() => handleRestore(run)} onDelete={() => promptDelete(run)} />
+                </nav>
+              )}
             </header>
           </article>
         );})}

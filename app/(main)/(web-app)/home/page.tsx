@@ -1,7 +1,6 @@
 'use client';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
-// import { useAuth } from '@/lib/auth';
 import { TotalProjectsCard } from "./_components/total-projects-card";
 import { TotalTestsCard } from "./_components/total-tests-card";
 import { TotalSuccessfulTestRunsCard } from "./_components/total-successful-test-runs-card";
@@ -10,8 +9,6 @@ import { TotalPersonasCard } from "./_components/total-personas-card";
 import { ProjectsList } from '@/app/(main)/(web-app)/home/_components/projects-list';
 
 export default function HomePage() {
-  // const { user } = useAuth();
-
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('showLoggedInToast') === '1') {
       toast.success('You are logged in');

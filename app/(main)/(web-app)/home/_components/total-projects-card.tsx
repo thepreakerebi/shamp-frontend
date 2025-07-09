@@ -8,8 +8,8 @@ import { useProjects } from "@/hooks/use-projects";
 export function TotalProjectsCard() {
   const { count, countLoading, countError } = useProjects();
 
-  // Show skeleton only on first load
-  if (countLoading && count === 0) return <CountCardSkeleton />;
+  // Show skeleton when loading
+  if (countLoading) return <CountCardSkeleton />;
 
   return (
     <Card className="w-full md:max-w-sm bg-card/90 p-0">

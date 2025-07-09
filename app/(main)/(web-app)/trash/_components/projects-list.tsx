@@ -1,5 +1,6 @@
 "use client";
 import { useProjects, type Project } from "@/hooks/use-projects";
+import { useAuth } from "@/lib/auth";
 import Image from "next/image";
 import React, { useState } from "react";
 import { TrashCardActionsDropdown } from "@/components/ui/trash-card-actions-dropdown";
@@ -19,6 +20,7 @@ export function TrashedProjectsList() {
     refetchTrashed,
     emptyProjectTrash,
   } = useProjects();
+  const { user } = useAuth();
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -85,10 +87,28 @@ export function TrashedProjectsList() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const anyP = p as any;
       if (anyP.updatedAt) return new Date(anyP.updatedAt).getTime();
-      return parseInt(p._id.substring(0,8),16)*1000;
+      if (p._id && typeof p._id === 'string' && p._id.length >= 8) {
+        return parseInt(p._id.substring(0,8),16)*1000;
+      }
+      return Date.now(); // fallback to current time
     };
     return arr.sort((a,b)=> getTs(b) - getTs(a));
   }, [trashedProjects]);
+
+  // Check if user can empty trash
+  const canEmptyTrash = React.useMemo(() => {
+    if (!user) return false;
+    
+    // Admin can empty all trash
+    if (user.currentWorkspaceRole === 'admin') return true;
+    
+    // Members can only empty trash if they have trashed projects they created
+    if (user.currentWorkspaceRole === 'member') {
+      return uniqueProjects.some(project => project.createdBy?._id === user._id);
+    }
+    
+    return false;
+  }, [user, uniqueProjects]);
 
   if (trashedProjectsLoading && (!trashedProjects || trashedProjects.length === 0)) {
     return <ProjectListSkeleton count={3} />;
@@ -102,7 +122,7 @@ export function TrashedProjectsList() {
     <section>
       <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2 px-4">
         <h2 className="text-xl font-semibold">Trashed Projects · {uniqueProjects.length}</h2>
-        {uniqueProjects.length > 0 && (
+        {uniqueProjects.length > 0 && canEmptyTrash && (
           <Button 
             variant="outline" 
             onClick={() => setEmptyTrashOpen(true)}
@@ -145,10 +165,12 @@ export function TrashedProjectsList() {
                 <h3 className="text-muted-foreground w-full text-sm truncate">
                   {project.url || "No URL"}
                 </h3>
-                <TrashCardActionsDropdown
-                  onRestore={() => handleRestore(project)}
-                  onDelete={() => handleDeletePrompt(project)}
-                />
+                {(user?.currentWorkspaceRole === 'admin' || project.createdBy?._id === user?._id) && (
+                  <TrashCardActionsDropdown
+                    onRestore={() => handleRestore(project)}
+                    onDelete={() => handleDeletePrompt(project)}
+                  />
+                )}
               </footer>
             </section>
           </article>

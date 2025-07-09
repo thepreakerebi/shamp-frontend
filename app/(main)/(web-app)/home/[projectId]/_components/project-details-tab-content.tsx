@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { useProjectsStore } from "@/lib/store/projects";
+import { useAuth } from "@/lib/auth";
 import { ProjectCardDropdown } from "../../_components/project-card-dropdown";
 import { EditProjectModal } from "../../../_components/edit-project-modal";
 import { MoveProjectToTrashModal } from "../../../_components/move-project-to-trash-modal";
@@ -17,6 +18,44 @@ export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContent
   const [trashOpen, setTrashOpen] = useState(false);
   const [visibleCredentials, setVisibleCredentials] = useState<Record<string, boolean>>({});
   const project = useProjectsStore((s) => s.projects?.find((p) => p._id === projectId) || null);
+  const { user } = useAuth();
+
+  // Function to check if user can trash this project
+  const canTrashProject = () => {
+    if (!user || !project) return false;
+    
+    // Admin can trash any project in the workspace
+    if (user.currentWorkspaceRole === 'admin') return true;
+    
+    // Members can only trash projects they created
+    if (user.currentWorkspaceRole === 'member') {
+      return project.createdBy?._id === user._id;
+    }
+    
+    // Default to false if no role or unrecognized role
+    return false;
+  };
+
+  // Function to check if user can edit this project (same logic as trash)
+  const canEditProject = () => {
+    if (!user || !project) return false;
+    
+    // Admin can edit any project in the workspace
+    if (user.currentWorkspaceRole === 'admin') return true;
+    
+    // Members can only edit projects they created
+    if (user.currentWorkspaceRole === 'member') {
+      return project.createdBy?._id === user._id;
+    }
+    
+    // Default to false if no role or unrecognized role
+    return false;
+  };
+
+  // Function to check if dropdown should be shown (user has any actionable options)
+  const shouldShowDropdown = () => {
+    return canEditProject() || canTrashProject();
+  };
 
   const toggleCredentialVisibility = (key: string) => {
     setVisibleCredentials(prev => ({
@@ -78,7 +117,15 @@ export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContent
             </section>
             {/* Dropdown */}
             <section className="flex items-start">
-              <ProjectCardDropdown showOpen={false} onEdit={() => setEditOpen(true)} onTrash={() => setTrashOpen(true)} />
+              {shouldShowDropdown() && (
+                <ProjectCardDropdown 
+                  showOpen={false} 
+                  onEdit={() => setEditOpen(true)} 
+                  onTrash={() => setTrashOpen(true)}
+                  showEdit={canEditProject()}
+                  showTrash={canTrashProject()}
+                />
+              )}
             </section>
           </section>
         </section>

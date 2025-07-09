@@ -8,6 +8,7 @@ export interface Notification {
   read: boolean;
   createdAt: string;
   updatedAt: string;
+  workspace?: string;
 }
 
 interface NotificationsState {

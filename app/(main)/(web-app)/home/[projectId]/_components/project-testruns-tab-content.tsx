@@ -9,6 +9,7 @@ import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_com
 import TestRunsFilter from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-filter";
 import { TestRunsListEmpty } from "@/app/(main)/(web-app)/test-runs/_components/test-runs-list-empty";
 import { useAuth } from "@/lib/auth";
+import { usePersonasStore } from "@/lib/store/personas";
 
 export function ProjectTestrunsTabContent() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -17,6 +18,7 @@ export function ProjectTestrunsTabContent() {
   const storeRuns = useTestRunsStore(s => s.testRuns);
   const projectStoreRuns = useProjectsStore(state => (projectId ? state.projectTestRuns[projectId as string] : undefined));
   const { token } = useAuth();
+  const personasStore = usePersonasStore(state=>state.personas);
 
   const cached = projectId ? projectsStore.getTestRunsForProject(projectId as string) : undefined;
 
@@ -39,6 +41,25 @@ export function ProjectTestrunsTabContent() {
             const n = personaObj && typeof personaObj === 'object' ? (personaObj.name as string|undefined) : undefined;
             return { ...run, personaName: n } as unknown;
           }
+          // Ensure avatarUrl present if missing
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if (!run.personaAvatarUrl && run.persona) {
+            let avatar;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            if (typeof run.persona === 'object' && 'avatarUrl' in (run.persona as any)) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              avatar = (run.persona as any).avatarUrl as string | undefined;
+            }
+            if (!avatar && personasStore) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const pid = (run.persona as any)?._id ?? run.persona;
+              const p = personasStore.find(p => p._id === pid);
+              avatar = p?.avatarUrl;
+            }
+            if (avatar) {
+              return { ...run, personaAvatarUrl: avatar } as unknown;
+            }
+          }
           return r;
         });
         if (mounted) setRuns(enriched as import("@/hooks/use-testruns").TestRun[]);
@@ -52,7 +73,7 @@ export function ProjectTestrunsTabContent() {
     return () => {
       mounted = false;
     };
-  }, [projectId, token, cached, getProjectTestruns]);
+  }, [projectId, token, cached, getProjectTestruns, personasStore]);
 
   // Sync with global testRuns store (e.g., deletions) once we have initial data
   useEffect(() => {

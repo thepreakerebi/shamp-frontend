@@ -1,6 +1,7 @@
 "use client";
 import { NodeProps } from "reactflow";
 import { useState, useRef, useEffect } from "react";
+import { useAuth } from "@/lib/auth";
 
 interface RecordingData {
   url?: string | null;
@@ -12,6 +13,7 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(data.url?.trim() || null);
   const hasVideo = !!videoUrl;
+  const { token, currentWorkspaceId } = useAuth();
 
   // Helper to set loaded from multiple events
   const handleLoaded = () => {
@@ -34,6 +36,31 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
     return () => clearTimeout(id);
   }, [videoUrl, hasVideo]);
 
+  // On mount or when URL missing, attempt to fetch media once
+  useEffect(() => {
+    const maybeFetchMedia = async () => {
+      if (hasVideo || !data.testRunId) return;
+      const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+      const headers: Record<string,string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      if (currentWorkspaceId) headers["X-Workspace-ID"] = currentWorkspaceId;
+      try {
+        const res = await fetch(`${API_BASE}/testruns/${data.testRunId}/media`, {
+          credentials: "include",
+          headers,
+        });
+        if (res.ok) {
+          const arr = (await res.json()) as (string | { url: string })[];
+          const first = arr[0];
+          const newUrl = typeof first === 'string' ? first : first?.url;
+          if (newUrl) setVideoUrl(newUrl.trim());
+        }
+      } catch {}
+    };
+
+    maybeFetchMedia();
+  }, [hasVideo, data.testRunId, token, currentWorkspaceId]);
+
   // Listen for stalled/error events and try to refresh media URL once
   useEffect(() => {
     if (!hasVideo || !data.testRunId) return;
@@ -47,8 +74,13 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
       attemptedRefresh = true;
       try {
         const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+        const headers: Record<string,string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        if (currentWorkspaceId) headers["X-Workspace-ID"] = currentWorkspaceId;
+
         const res = await fetch(`${API_BASE}/testruns/${data.testRunId}/media`, {
           credentials: "include",
+          headers,
         });
         if (res.ok) {
           const arr = (await res.json()) as (string | { url: string })[];
@@ -69,7 +101,7 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
       vid.removeEventListener('stalled', onStalled);
       vid.removeEventListener('error', onError);
     };
-  }, [hasVideo, data.testRunId, videoUrl]);
+  }, [hasVideo, data.testRunId, videoUrl, token, currentWorkspaceId]);
 
   return (
     <section className="flex flex-col items-center justify-center max-w-[420px] border rounded-lg bg-card shadow relative">

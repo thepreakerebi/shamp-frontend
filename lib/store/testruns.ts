@@ -8,11 +8,15 @@ interface TestRunsState {
   testRunsError: string | null;
   successfulCount: number | null;
   failedCount: number | null;
+  countsLoading: boolean;
+  countsError: string | null;
   setTestRuns: (runs: TestRun[] | null) => void;
   setTestRunsLoading: (loading: boolean) => void;
   setTestRunsError: (error: string | null) => void;
   setSuccessfulCount: (count: number | null) => void;
   setFailedCount: (count: number | null) => void;
+  setCountsLoading: (loading: boolean) => void;
+  setCountsError: (error: string | null) => void;
   updateTestRunInList: (run: TestRun) => void;
   removeTestRunFromList: (id: string) => void;
   addTestRunToList: (run: TestRun) => void;
@@ -21,6 +25,7 @@ interface TestRunsState {
   setTrashedTestRuns: (runs: TestRun[] | null) => void;
   emptyTrashedTestRuns: () => void;
   reset: () => void;
+  moveRunToTrash: (run: TestRun) => void;
 }
 
 export const useTestRunsStore = create<TestRunsState>((set) => ({
@@ -30,6 +35,8 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
   testRunsError: null,
   successfulCount: null,
   failedCount: null,
+  countsLoading: false,
+  countsError: null,
   setTestRuns: (incoming) =>
     set((state) => {
       if (!incoming) return { testRuns: null };
@@ -46,9 +53,23 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
         }
       });
 
-      // Deduplicate by _id (incoming takes precedence)
+      // Deduplicate by _id (merge incoming with existing, preserving analysis/browserUseOutput)
       const map = new Map<string, typeof combined[number]>();
-      combined.forEach(run => map.set(run._id, run));
+      combined.forEach(run => {
+        const existing = state.testRuns?.find(r => r._id === run._id);
+        if (existing) {
+          const prev = existing as import("@/hooks/use-testruns").TestRunStatus;
+          const next = run as import("@/hooks/use-testruns").TestRunStatus;
+          map.set(run._id, {
+            ...prev,
+            ...next,
+            analysis: next.analysis ?? prev.analysis,
+            browserUseOutput: next.browserUseOutput ?? prev.browserUseOutput,
+          } as import("@/hooks/use-testruns").TestRunStatus);
+        } else {
+          map.set(run._id, run);
+        }
+      });
 
       // Sort by creation time inferred from Mongo ObjectId (newest first)
       const getTs = (id: string) => {
@@ -67,10 +88,22 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
   setTestRunsError: (testRunsError) => set({ testRunsError }),
   setSuccessfulCount: (successfulCount) => set({ successfulCount }),
   setFailedCount: (failedCount) => set({ failedCount }),
+  setCountsLoading: (countsLoading) => set({ countsLoading }),
+  setCountsError: (countsError) => set({ countsError }),
   updateTestRunInList: (run) =>
     set((state) => ({
       testRuns: state.testRuns
-        ? state.testRuns.map((r) => (r._id === run._id ? run : r))
+        ? state.testRuns.map((r) => {
+            if (r._id !== run._id) return r;
+            const prev = r as import("@/hooks/use-testruns").TestRunStatus;
+            const next = run as import("@/hooks/use-testruns").TestRunStatus;
+            return {
+              ...prev,
+              ...next,
+              analysis: next.analysis ?? prev.analysis,
+              browserUseOutput: next.browserUseOutput ?? prev.browserUseOutput,
+            };
+          })
         : [run],
     })),
   removeTestRunFromList: (id) =>
@@ -82,7 +115,17 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
       const exists = state.testRuns?.some(r => r._id === run._id);
       if (exists) {
         return {
-          testRuns: state.testRuns?.map(r => (r._id === run._id ? run : r)) || [run],
+          testRuns: state.testRuns?.map(r => {
+            if (r._id !== run._id) return r;
+            const prev = r as import("@/hooks/use-testruns").TestRunStatus;
+            const next = run as import("@/hooks/use-testruns").TestRunStatus;
+            return {
+              ...prev,
+              ...next,
+              analysis: next.analysis ?? prev.analysis,
+              browserUseOutput: next.browserUseOutput ?? prev.browserUseOutput,
+            };
+          }) || [run],
         };
       }
       return {
@@ -93,6 +136,12 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
     set((state) => ({
       trashedTestRuns: state.trashedTestRuns ? [run, ...state.trashedTestRuns] : [run],
     })),
+  moveRunToTrash: (run) =>
+    set((state) => {
+      const filteredActive = state.testRuns ? state.testRuns.filter(r => r._id !== run._id) : null;
+      const newTrash = state.trashedTestRuns ? [run, ...state.trashedTestRuns] : [run];
+      return { testRuns: filteredActive, trashedTestRuns: newTrash };
+    }),
   removeTrashedTestRun: (id) =>
     set((state) => ({
       trashedTestRuns: state.trashedTestRuns ? state.trashedTestRuns.filter((r) => r._id !== id) : null,
@@ -107,5 +156,7 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
       testRunsError: null,
       successfulCount: null,
       failedCount: null,
+      countsLoading: false,
+      countsError: null,
     }),
 })); 

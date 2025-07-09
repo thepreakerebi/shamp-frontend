@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProjectBadge } from "@/components/ui/project-badge";
 import { PersonaBadge } from "@/components/ui/persona-badge";
 import { format } from "date-fns";
+import { useAuth } from "@/lib/auth";
 
 export function TrashedSchedulesList() {
   const {
@@ -22,6 +23,8 @@ export function TrashedSchedulesList() {
     emptyTestScheduleTrash,
     fetchTrashedSchedules,
   } = useTestSchedules();
+
+  const { user } = useAuth();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
@@ -46,10 +49,19 @@ export function TrashedSchedulesList() {
     return arr.sort((a,b)=> getTs(b) - getTs(a));
   }, [trashedSchedules]);
 
+  const canEmptyTrash = React.useMemo(() => {
+    if (!user) return false;
+    if (user.currentWorkspaceRole === 'admin') return uniqueSchedules.length > 0;
+    const hasOwn = uniqueSchedules.some(s => {
+      const creator = (s as unknown as { createdBy?: string }).createdBy;
+      return creator === user._id;
+    });
+    return hasOwn;
+  }, [user?._id, user?.currentWorkspaceRole, uniqueSchedules]);
+
   const handleRestore = async (schedule: TestSchedule) => {
     try {
       await restoreScheduleFromTrash(schedule._id);
-      toast.success("Schedule restored");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to restore schedule");
     }
@@ -100,7 +112,7 @@ export function TrashedSchedulesList() {
     <section>
       <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2 px-4">
         <h2 className="text-xl font-semibold">Trashed Schedules · {uniqueSchedules.length}</h2>
-        {uniqueSchedules.length > 0 && (
+        {canEmptyTrash && (
           <Button 
             variant="outline" 
             onClick={() => setEmptyTrashOpen(true)}
@@ -115,40 +127,49 @@ export function TrashedSchedulesList() {
         <p className="text-muted-foreground p-4">No schedules in trash.</p>
       ) : (
       <section className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 p-4" aria-label="Trashed schedules list">
-        {uniqueSchedules.map(sch => (
-          <article key={sch._id} className="rounded-3xl border dark:border-0 bg-card/80 p-4 flex flex-col gap-3">
-            <header className="flex items-start gap-3">
-              <figure className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl font-bold shrink-0" aria-hidden="true">
-                {sch.testName?.[0]?.toUpperCase() || "S"}
-              </figure>
-              <section className="flex-1 min-w-0">
-                <h3 className="font-semibold leading-tight truncate" title={sch.testName}>{sch.testName}</h3>
-                {sch.testDescription && (
-                  <p className="text-sm text-muted-foreground line-clamp-2" title={sch.testDescription}>{sch.testDescription}</p>
+        {uniqueSchedules.map(sch => {
+          const friendlyCron = (sch as unknown as { friendlyCron?: string }).friendlyCron;
+          return (
+            <article key={sch._id} className="rounded-3xl border dark:border-0 bg-card/80 p-4 flex flex-col gap-3">
+              <header className="flex items-start gap-3">
+                <figure className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl font-bold shrink-0" aria-hidden="true">
+                  {sch.testName?.[0]?.toUpperCase() || "S"}
+                </figure>
+                <section className="flex-1 min-w-0">
+                  <h3 className="font-semibold leading-tight truncate" title={sch.testName}>{sch.testName}</h3>
+                  {sch.testDescription && (
+                    <p className="text-sm text-muted-foreground line-clamp-2" title={sch.testDescription}>{sch.testDescription}</p>
+                  )}
+                </section>
+                { (user?.currentWorkspaceRole === 'admin' || (sch as unknown as { createdBy?: string }).createdBy === user?._id) && (
+                  <nav onClick={e=>e.stopPropagation()} data-stop-row>
+                    <TrashCardActionsDropdown onRestore={() => handleRestore(sch)} onDelete={() => promptDelete(sch)} />
+                  </nav>
+                )}
+              </header>
+
+              {/* Badges */}
+              <section className="flex flex-wrap items-center gap-2 mt-auto">
+                {sch.projectName && <ProjectBadge name={sch.projectName} />}
+                {sch.personaName && <PersonaBadge name={sch.personaName} />}
+                {friendlyCron ? (
+                  <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-primary/10 text-primary-foreground dark:text-primary whitespace-nowrap">
+                    {friendlyCron}
+                  </Badge>
+                ) : sch.recurrenceRule ? (
+                  <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-primary/10 text-primary-foreground dark:text-primary whitespace-nowrap">
+                    {sch.recurrenceRule}
+                  </Badge>
+                ) : null}
+                {sch.nextRun && (
+                  <Badge variant="outline" className="text-xs whitespace-nowrap">
+                    Next run: {format(new Date(sch.nextRun), "PPP p")}
+                  </Badge>
                 )}
               </section>
-              <nav onClick={e=>e.stopPropagation()} data-stop-row>
-                <TrashCardActionsDropdown onRestore={() => handleRestore(sch)} onDelete={() => promptDelete(sch)} />
-              </nav>
-            </header>
-
-            {/* Badges */}
-            <section className="flex flex-wrap items-center gap-2 mt-auto">
-              {sch.projectName && <ProjectBadge name={sch.projectName} />}
-              {sch.personaName && <PersonaBadge name={sch.personaName} />}
-              {sch.recurrenceRule && (
-                <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-primary/10 text-primary-foreground dark:text-primary whitespace-nowrap">
-                  {sch.recurrenceRule}
-                </Badge>
-              )}
-              {sch.nextRun && (
-                <Badge variant="outline" className="text-xs whitespace-nowrap">
-                  Next run: {format(new Date(sch.nextRun), "PPP p")}
-                </Badge>
-              )}
-            </section>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </section>
       )}
 

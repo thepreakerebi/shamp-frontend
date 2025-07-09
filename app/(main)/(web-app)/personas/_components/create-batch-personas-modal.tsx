@@ -129,18 +129,22 @@ function CreateBatchPersonasModal() {
           <form onSubmit={handleSubmit} className="space-y-4" id="create-batch-personas-form">
             <section>
               <label htmlFor="count" className="block text-sm font-medium mb-1">Count</label>
+              <span className="block text-xs text-muted-foreground mb-1">How many unique personas do you want to generate in this batch? 3–10 recommended.</span>
               <Input id="count" name="count" type="number" min={1} max={10} value={form.count} onChange={handleChange} disabled={loading} required />
             </section>
             <section>
               <label htmlFor="name" className="block text-sm font-medium mb-1">Batch Name</label>
+              <span className="block text-xs text-muted-foreground mb-1">A short label to identify this group of personas (e.g. “Mobile Banking Personas”).</span>
               <Input id="name" name="name" value={form.name} onChange={handleChange} disabled={loading} required />
             </section>
             <section>
               <label htmlFor="description" className="block text-sm font-medium mb-1">Description</label>
+              <span className="block text-xs text-muted-foreground mb-1">Describe the overall purpose or theme for these personas. This helps the AI stay on track.</span>
               <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} required />
             </section>
             <section>
               <label htmlFor="targetAudience" className="block text-sm font-medium mb-1">Target Audience <span className="text-muted-foreground">(optional)</span></label>
+              <span className="block text-xs text-muted-foreground mb-1">Who will use or encounter the product? e.g. “first-time home buyers” or “Gen-Z gamers”.</span>
               <Input id="targetAudience" name="targetAudience" value={form.targetAudience} onChange={handleChange} disabled={loading} />
             </section>
             <fieldset className="border rounded-md p-3">
@@ -169,6 +173,7 @@ function CreateBatchPersonasModal() {
             </fieldset>
             <section>
               <label htmlFor="additionalContext" className="block text-sm font-medium mb-1">Additional Context <span className="text-muted-foreground">(optional)</span></label>
+              <span className="block text-xs text-muted-foreground mb-1">Any extra guidance you want the AI to consider (market segment, product stage, constraints, etc.).</span>
               <Textarea id="additionalContext" name="additionalContext" value={form.additionalContext} onChange={handleChange} disabled={loading} />
             </section>
           </form>

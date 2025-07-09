@@ -30,6 +30,8 @@ export function TokenGate({ children }: { children: React.ReactNode }) {
     const token = urlParams.get("token");
     if (token) {
       localStorage.setItem("authToken", token);
+      // Dispatch custom event to notify auth context of token change
+      window.dispatchEvent(new CustomEvent('authTokenChanged', { detail: { token } }));
       // Remove token from URL but preserve other params
       const params = new URLSearchParams(window.location.search);
       params.delete("token");

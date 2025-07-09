@@ -4,17 +4,20 @@ import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 
 export function useUsers() {
-  const { token } = useAuth();
+  const { token, currentWorkspaceId } = useAuth();
   const store = useUsersStore();
   const { users, loading, error, setUsers, setLoading, setError, removeUser } = store;
 
   const fetchUsers = useCallback(async () => {
-    if (!token) return;
+    if (!token || !currentWorkspaceId) return;
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/users`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'X-Workspace-ID': currentWorkspaceId
+        },
       });
       if (!res.ok) {
         throw new Error((await res.json()).error || 'Failed to load users');
@@ -26,31 +29,52 @@ export function useUsers() {
     } finally {
       setLoading(false);
     }
-  }, [token, setLoading, setError, setUsers]);
+  }, [token, currentWorkspaceId, setLoading, setError, setUsers]);
 
-  useEffect(() => { if (users === null) fetchUsers(); }, [users, fetchUsers]);
+  useEffect(() => { 
+    if (users === null && currentWorkspaceId) {
+      fetchUsers(); 
+    }
+  }, [users, fetchUsers, currentWorkspaceId]);
 
   const inviteMember = useCallback(async (payload: { email: string; }) => {
-    if (!token) throw new Error('Not authenticated');
+    if (!token || !currentWorkspaceId) throw new Error('Not authenticated or no workspace context');
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/users/invite`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: { 
+        'Content-Type': 'application/json', 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error((await res.json()).error || 'Failed to send invite');
-    toast.success('Invite sent');
-  }, [token]);
+    const result = await res.json();
+    toast.success(`Invite sent${result.userType ? ` (${result.userType})` : ''}`);
+    return result;
+  }, [token, currentWorkspaceId]);
 
   const deleteMember = useCallback(async (id: string) => {
-    if (!token) throw new Error('Not authenticated');
+    if (!token || !currentWorkspaceId) throw new Error('Not authenticated or no workspace context');
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/users/${id}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId
+      },
     });
     if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete member');
     removeUser(id);
-    toast.success('Member removed');
-  }, [token, removeUser]);
+    toast.success('Member removed from workspace');
+  }, [token, currentWorkspaceId, removeUser]);
 
-  return { users, loading, error, refetch: fetchUsers, inviteMember, deleteMember };
+  return { 
+    users, 
+    loading, 
+    error, 
+    refetch: fetchUsers, 
+    inviteMember, 
+    deleteMember,
+    hasWorkspaceContext: !!currentWorkspaceId
+  };
 } 
