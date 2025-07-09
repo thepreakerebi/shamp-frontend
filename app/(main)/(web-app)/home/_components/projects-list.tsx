@@ -9,7 +9,6 @@ import { ProjectCardDropdown } from "./project-card-dropdown";
 import { MoveProjectToTrashModal } from "../../_components/move-project-to-trash-modal";
 import { toast } from "sonner";
 import { ProjectListEmpty } from "./project-list-empty";
-import { CreateProjectModalProvider, useCreateProjectModal } from "../../_components/create-project-modal";
 import { EditProjectModal } from "../../_components/edit-project-modal";
 
 // -------------------- ProjectCard component --------------------
@@ -133,7 +132,7 @@ ProjectCard.displayName = "ProjectCard";
 function ProjectsListInner() {
   const { projects, trashedProjects, projectsLoading, projectsError, moveProjectToTrash } = useProjects();
   const { user } = useAuth();
-  const { setOpen: setCreateOpen } = useCreateProjectModal();
+  const router = useRouter();
   const [trashModalOpen, setTrashModalOpen] = React.useState(false);
   const [trashingProject, setTrashingProject] = React.useState<Project | null>(null);
   const [trashLoading, setTrashLoading] = React.useState(false);
@@ -189,7 +188,7 @@ function ProjectsListInner() {
 
   if (projectsLoading && uniqueProjects.length === 0) return <ProjectListSkeleton count={3} />;
   if (projectsError) return <div className="text-destructive">Error loading projects: {projectsError}</div>;
-  if (uniqueProjects.length === 0) return <ProjectListEmpty onCreate={() => setCreateOpen(true)} />;
+  if (uniqueProjects.length === 0) return <ProjectListEmpty onCreate={() => router.push('/home/create')} />;
 
   const handleMoveToTrash = async () => {
     if (!trashingProject) return;
@@ -251,9 +250,5 @@ function ProjectsListInner() {
 }
 
 export function ProjectsList() {
-  return (
-    <CreateProjectModalProvider>
-      <ProjectsListInner />
-    </CreateProjectModalProvider>
-  );
+  return <ProjectsListInner />;
 }

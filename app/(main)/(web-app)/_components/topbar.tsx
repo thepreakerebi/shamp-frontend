@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Breadcrumbs } from './breadcrumbs';
 import { CreateProjectButton } from './create-project-button';
@@ -11,6 +11,7 @@ import { useCreateBatchPersonasModal } from '@/app/(main)/(web-app)/personas/_co
 import { useImportPersonasModal } from '@/app/(main)/(web-app)/personas/_components/import-personas-modal';
 import { CreateTestDropdownButton } from '@/app/(main)/(web-app)/tests/_components/create-test-dropdown-button';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { StartTestRunModal } from '@/app/(main)/(web-app)/test-runs/_components/start-test-run-modal';
 
@@ -25,6 +26,7 @@ export function Topbar() {
   const { setOpen: setBatchModalOpen } = useCreateBatchPersonasModal();
   const { setOpen: setImportModalOpen } = useImportPersonasModal();
   const [modalOpen, setModalOpen] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
 
   // Only shift when expanded on desktop
   const isExpandedDesktop = !isMobile && state === 'expanded';
@@ -35,6 +37,29 @@ export function Topbar() {
   const handleSingleTest = () => router.push('/tests/create');
   const handleBatchTests = () => router.push('/tests/create-batch');
   const handleStartTest = () => setModalOpen(true);
+
+  // Submit create-project form when on /home/create
+  const handleSubmitProject = () => {
+    const form = document.getElementById('create-project-form') as HTMLFormElement | null;
+    form?.requestSubmit();
+  };
+
+  // Listen for loading state broadcast from create-project page
+  useEffect(() => {
+    const listener = (e: Event) => {
+      const custom = e as CustomEvent<boolean>;
+      setCreateLoading(custom.detail);
+    };
+    window.addEventListener('create-project-loading', listener);
+    return () => window.removeEventListener('create-project-loading', listener);
+  }, []);
+
+  // Reset loading when navigating away after submission
+  useEffect(() => {
+    if (pathname !== '/home/create' && createLoading) {
+      setCreateLoading(false);
+    }
+  }, [pathname, createLoading]);
 
   return (
     <section
@@ -66,6 +91,12 @@ export function Topbar() {
         {pathname === '/test-runs' && (
           <Button variant="secondary" onClick={handleStartTest}>
             Run test
+          </Button>
+        )}
+        {pathname === '/home/create' && (
+          <Button variant="default" onClick={handleSubmitProject} disabled={createLoading} className="flex items-center gap-2">
+            {createLoading && <Loader2 className="animate-spin size-4" />}
+            {createLoading ? 'Creating…' : 'Create project'}
           </Button>
         )}
         <StartTestRunModal open={modalOpen} onOpenChange={setModalOpen} />
