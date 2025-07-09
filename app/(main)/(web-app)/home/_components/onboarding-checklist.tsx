@@ -4,6 +4,8 @@ import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Circle, ChevronDown, ChevronUp } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { StartTestRunModal } from "@/app/(main)/(web-app)/test-runs/_components/start-test-run-modal";
 import { useOnboardingChecklist } from "@/hooks/use-onboarding-checklist";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +13,8 @@ const LOCAL_KEY = "onboarding_checklist_collapsed";
 
 export function OnboardingChecklist() {
   const { ready, hasProject, hasPersona, hasTest, hasRun, allDone } = useOnboardingChecklist();
+  const router = useRouter();
+  const [runModalOpen, setRunModalOpen] = React.useState(false);
 
   const [collapsed, setCollapsed] = React.useState(() => {
     if (typeof window === "undefined") return false;
@@ -54,26 +58,60 @@ export function OnboardingChecklist() {
         </header>
         {!collapsed && (
           <ul className="p-3 space-y-2 text-sm">
-            <ChecklistItem done={hasProject} label="Create your first project" />
-            <ChecklistItem done={hasPersona} label="Create a persona" />
-            <ChecklistItem done={hasTest} label="Create a test" />
-            <ChecklistItem done={hasRun} label="Start a test run" />
+            <ChecklistItem
+              done={hasProject}
+              label="Create your first project"
+              onClick={() => router.push('/home/create')}
+            />
+            <ChecklistItem
+              done={hasPersona}
+              label="Create a persona"
+              onClick={() => router.push('/personas/create')}
+            />
+            <ChecklistItem
+              done={hasTest}
+              label="Create a test"
+              onClick={() => router.push('/tests/create')}
+            />
+            <ChecklistItem
+              done={hasRun}
+              label="Start a test run"
+              onClick={() => setRunModalOpen(true)}
+            />
           </ul>
         )}
       </Card>
+      {/* Test run modal */}
+      <StartTestRunModal open={runModalOpen} onOpenChange={setRunModalOpen} />
     </aside>
   );
 }
 
-function ChecklistItem({ done, label }: { done: boolean; label: string }) {
+interface ChecklistItemProps {
+  done: boolean;
+  label: string;
+  onClick?: () => void;
+}
+
+function ChecklistItem({ done, label, onClick }: ChecklistItemProps) {
   return (
-    <li className="flex items-center gap-2">
-      {done ? (
-        <CheckCircle2 className="size-4 text-green-600" />
-      ) : (
-        <Circle className="size-4 text-muted-foreground" />
-      )}
-      <span className={cn(done && "line-through text-muted-foreground")}>{label}</span>
+    <li>
+      <button
+        type="button"
+        disabled={done}
+        onClick={onClick}
+        className={cn(
+          "w-full flex items-center gap-2 text-left",
+          done ? "text-muted-foreground cursor-default" : "hover:bg-accent/50 rounded-md p-1"
+        )}
+      >
+        {done ? (
+          <CheckCircle2 className="size-4 text-green-600" />
+        ) : (
+          <Circle className="size-4 text-muted-foreground" />
+        )}
+        <span className={cn(done && "line-through")}>{label}</span>
+      </button>
     </li>
   );
 } 
