@@ -34,6 +34,13 @@ export function PersonaCardDropdown({ onOpen, onEdit, onDelete, showOpen = true,
       router.push(`/personas/${personaId}`);
     }
   };
+
+  const handleEdit = () => {
+    if (onEdit) onEdit();
+    if (personaId) {
+      router.push(`/personas/${personaId}/edit`);
+    }
+  };
   return (
     <CustomDropdownMenu>
       <CustomDropdownMenuTrigger asChild>
@@ -45,7 +52,7 @@ export function PersonaCardDropdown({ onOpen, onEdit, onDelete, showOpen = true,
         {showOpen && (
           <CustomDropdownMenuItem onSelect={handleOpen}>Open</CustomDropdownMenuItem>
         )}
-        <CustomDropdownMenuItem onSelect={onEdit}>Edit</CustomDropdownMenuItem>
+        <CustomDropdownMenuItem onSelect={handleEdit}>Edit</CustomDropdownMenuItem>
         <CustomDropdownMenuItem onSelect={onDelete} variant="destructive">Delete</CustomDropdownMenuItem>
       </CustomDropdownMenuContent>
     </CustomDropdownMenu>

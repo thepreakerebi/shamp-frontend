@@ -5,7 +5,6 @@ import { Breadcrumbs } from './breadcrumbs';
 import { CreateProjectButton } from './create-project-button';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSidebar } from '@/components/ui/sidebar';
-import { useCreatePersonaModal } from '@/app/(main)/(web-app)/personas/_components/create-persona-modal';
 import { CreateDropdownButton } from './create-persona-dropdown-button';
 import { useCreateBatchPersonasModal } from '@/app/(main)/(web-app)/personas/_components/create-batch-personas-modal';
 import { useImportPersonasModal } from '@/app/(main)/(web-app)/personas/_components/import-personas-modal';
@@ -22,12 +21,13 @@ export function Topbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { state, isMobile } = useSidebar();
-  const { setOpen: setCreatePersonaOpen } = useCreatePersonaModal();
   const { setOpen: setBatchModalOpen } = useCreateBatchPersonasModal();
   const { setOpen: setImportModalOpen } = useImportPersonasModal();
   const [modalOpen, setModalOpen] = useState(false);
-  const [createLoading, setCreateLoading] = useState(false);
-  const [editLoading, setEditLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false); // project
+  const [editLoading, setEditLoading] = useState(false); // project
+  const [createPersonaLoading, setCreatePersonaLoading] = useState(false);
+  const [editPersonaLoading, setEditPersonaLoading] = useState(false);
 
   // Only shift when expanded on desktop
   const isExpandedDesktop = !isMobile && state === 'expanded';
@@ -65,12 +65,45 @@ export function Topbar() {
     return () => window.removeEventListener('edit-project-loading', listener);
   }, []);
 
+  // Listen for create persona loading
+  useEffect(() => {
+    const listener = (e: Event) => {
+      const custom = e as CustomEvent<boolean>;
+      setCreatePersonaLoading(custom.detail);
+    };
+    window.addEventListener('create-persona-loading', listener);
+    return () => window.removeEventListener('create-persona-loading', listener);
+  }, []);
+
+  // Listen for edit persona loading
+  useEffect(() => {
+    const listener = (e: Event) => {
+      const custom = e as CustomEvent<boolean>;
+      setEditPersonaLoading(custom.detail);
+    };
+    window.addEventListener('edit-persona-loading', listener);
+    return () => window.removeEventListener('edit-persona-loading', listener);
+  }, []);
+
   // Reset loading when navigating away after submission
   useEffect(() => {
     if (pathname !== '/home/create' && createLoading) {
       setCreateLoading(false);
     }
   }, [pathname, createLoading]);
+
+  // Reset persona loading when navigating away
+  useEffect(() => {
+    if (pathname !== '/personas/create' && createPersonaLoading) {
+      setCreatePersonaLoading(false);
+    }
+  }, [pathname, createPersonaLoading]);
+
+  useEffect(() => {
+    if (!/^\/personas\/[^/]+\/edit$/.test(pathname) && editPersonaLoading) {
+      setEditPersonaLoading(false);
+    }
+  }, [pathname, editPersonaLoading]);
 
   return (
     <section
@@ -88,7 +121,7 @@ export function Topbar() {
         {pathname === '/home' && <CreateProjectButton />}
         {pathname === '/personas' && (
           <CreateDropdownButton
-            onSinglePersona={() => setCreatePersonaOpen(true)}
+            onSinglePersona={() => router.push('/personas/create')}
             onBatchPersonas={() => setBatchModalOpen(true)}
             onImportFile={() => setImportModalOpen(true)}
           />
@@ -117,6 +150,24 @@ export function Topbar() {
           }} disabled={editLoading} className="flex items-center gap-2">
             {editLoading && <Loader2 className="animate-spin size-4" />}
             {editLoading ? 'Saving…' : 'Save changes'}
+          </Button>
+        )}
+        {pathname === '/personas/create' && (
+          <Button variant="default" onClick={() => {
+            const form = document.getElementById('create-persona-form') as HTMLFormElement | null;
+            form?.requestSubmit();
+          }} disabled={createPersonaLoading} className="flex items-center gap-2">
+            {createPersonaLoading && <Loader2 className="animate-spin size-4" />}
+            {createPersonaLoading ? 'Creating…' : 'Create persona'}
+          </Button>
+        )}
+        {/^\/personas\/[^/]+\/edit$/.test(pathname) && (
+          <Button variant="default" onClick={() => {
+            const form = document.getElementById('edit-persona-form') as HTMLFormElement | null;
+            form?.requestSubmit();
+          }} disabled={editPersonaLoading} className="flex items-center gap-2">
+            {editPersonaLoading && <Loader2 className="animate-spin size-4" />}
+            {editPersonaLoading ? 'Saving…' : 'Save changes'}
           </Button>
         )}
         <StartTestRunModal open={modalOpen} onOpenChange={setModalOpen} />

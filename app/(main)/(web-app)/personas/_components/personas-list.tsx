@@ -1,20 +1,18 @@
 "use client";
 import { usePersonas } from "@/hooks/use-personas";
 import { PersonaCard } from "./persona-card";
-import { EditPersonaModal } from "./edit-persona-modal";
 import { DeletePersonaModal } from "./delete-persona-modal";
 import React from "react";
 import type { Persona } from "@/hooks/use-personas";
 import { toast } from "sonner";
 import { PersonaListSkeleton } from "./persona-list-skeleton";
 import { PersonaListEmpty } from "./persona-list-empty";
-import { useCreatePersonaModal } from "./create-persona-modal";
+import { useRouter } from "next/navigation";
 
 function PersonasListInner() {
   const { personas, personasLoading, personasError, deletePersona } = usePersonas();
-  const { setOpen: setCreateOpen } = useCreatePersonaModal();
-  const [editOpen, setEditOpen] = React.useState(false);
-  const [editingPersona, setEditingPersona] = React.useState<Persona | null>(null);
+  const router = useRouter();
+  // Removed edit modal state; edit now navigates to edit page.
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deletingPersona, setDeletingPersona] = React.useState<Persona | null>(null);
   const [deleteLoading, setDeleteLoading] = React.useState(false);
@@ -36,7 +34,7 @@ function PersonasListInner() {
 
   if (personasLoading && (!personas || personas.length === 0)) return <PersonaListSkeleton />;
   if (personasError) return <div className="py-8 text-center text-destructive">{personasError}</div>;
-  if (!personas || personas.length === 0) return <PersonaListEmpty onCreate={() => setCreateOpen(true)} />;
+  if (!personas || personas.length === 0) return <PersonaListEmpty onCreate={() => router.push('/personas/create')} />;
 
   return (
     <>
@@ -45,10 +43,7 @@ function PersonasListInner() {
           <PersonaCard
             key={persona._id}
             persona={persona}
-            onEdit={() => {
-              setEditingPersona(persona);
-              setEditOpen(true);
-            }}
+            onEdit={() => router.push(`/personas/${persona._id}/edit`)}
             onOpen={() => {}}
             onDelete={() => {
               setDeletingPersona(persona);
@@ -57,7 +52,6 @@ function PersonasListInner() {
           />
         ))}
       </section>
-      <EditPersonaModal open={editOpen} setOpen={setEditOpen} persona={editingPersona} />
       <DeletePersonaModal open={deleteOpen} setOpen={setDeleteOpen} persona={deletingPersona} onConfirm={handleDelete} loading={deleteLoading} />
     </>
   );
