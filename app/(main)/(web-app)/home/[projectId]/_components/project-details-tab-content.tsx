@@ -3,22 +3,22 @@ import { useState } from "react";
 import { useProjectsStore } from "@/lib/store/projects";
 import { useAuth } from "@/lib/auth";
 import { ProjectCardDropdown } from "../../_components/project-card-dropdown";
-import { EditProjectModal } from "../../../_components/edit-project-modal";
 import { MoveProjectToTrashModal } from "../../../_components/move-project-to-trash-modal";
 import { ProjectDetailsTabContentSkeleton } from "./project-details-tab-content-skeleton";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 interface ProjectDetailsTabContentProps {
   projectId: string;
 }
 
 export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContentProps) {
-  const [editOpen, setEditOpen] = useState(false);
   const [trashOpen, setTrashOpen] = useState(false);
   const [visibleCredentials, setVisibleCredentials] = useState<Record<string, boolean>>({});
   const project = useProjectsStore((s) => s.projects?.find((p) => p._id === projectId) || null);
   const { user } = useAuth();
+  const router = useRouter();
 
   // Function to check if user can trash this project
   const canTrashProject = () => {
@@ -74,7 +74,6 @@ export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContent
 
   return (
     <section className="w-full">
-      <EditProjectModal open={editOpen} setOpen={setEditOpen} project={project} />
       <MoveProjectToTrashModal open={trashOpen} setOpen={setTrashOpen} project={project} onConfirm={handleMoveToTrash} />
       <section className="flex flex-col gap-6 w-full">
         {/* Section 1: Image + Info + Dropdown */}
@@ -120,7 +119,7 @@ export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContent
               {shouldShowDropdown() && (
                 <ProjectCardDropdown 
                   showOpen={false} 
-                  onEdit={() => setEditOpen(true)} 
+                  onEdit={() => router.push(`/home/${project._id}/edit`)} 
                   onTrash={() => setTrashOpen(true)}
                   showEdit={canEditProject()}
                   showTrash={canTrashProject()}

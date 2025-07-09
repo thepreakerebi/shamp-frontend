@@ -9,7 +9,6 @@ import { ProjectCardDropdown } from "./project-card-dropdown";
 import { MoveProjectToTrashModal } from "../../_components/move-project-to-trash-modal";
 import { toast } from "sonner";
 import { ProjectListEmpty } from "./project-list-empty";
-import { EditProjectModal } from "../../_components/edit-project-modal";
 
 // -------------------- ProjectCard component --------------------
 interface ProjectCardProps {
@@ -137,10 +136,6 @@ function ProjectsListInner() {
   const [trashingProject, setTrashingProject] = React.useState<Project | null>(null);
   const [trashLoading, setTrashLoading] = React.useState(false);
 
-  // Edit modal state
-  const [editModalOpen, setEditModalOpen] = React.useState(false);
-  const [editingProject, setEditingProject] = React.useState<Project | null>(null);
-
   const uniqueProjects = React.useMemo(() => {
     if (!projects) return [];
     const trashedIds = new Set(trashedProjects?.map(p => p._id) || []);
@@ -219,8 +214,7 @@ function ProjectsListInner() {
             canTrash={canTrashProject(project)}
             showDropdown={shouldShowDropdown(project)}
             onEdit={(p) => {
-              setEditingProject(p);
-              setEditModalOpen(true);
+              router.push(`/home/${p._id}/edit`);
             }}
             onTrash={(p) => {
               setTrashingProject(p);
@@ -237,14 +231,7 @@ function ProjectsListInner() {
         loading={trashLoading}
       />
 
-      <EditProjectModal
-        open={editModalOpen}
-        setOpen={setEditModalOpen}
-        project={editingProject}
-        onSuccess={() => {
-          /* Refresh handled inside modal via router.refresh */
-        }}
-      />
+
     </>
   );
 }

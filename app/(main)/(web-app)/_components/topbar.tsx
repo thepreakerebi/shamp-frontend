@@ -27,6 +27,7 @@ export function Topbar() {
   const { setOpen: setImportModalOpen } = useImportPersonasModal();
   const [modalOpen, setModalOpen] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
 
   // Only shift when expanded on desktop
   const isExpandedDesktop = !isMobile && state === 'expanded';
@@ -52,6 +53,16 @@ export function Topbar() {
     };
     window.addEventListener('create-project-loading', listener);
     return () => window.removeEventListener('create-project-loading', listener);
+  }, []);
+
+  // Listen for edit project loading
+  useEffect(() => {
+    const listener = (e: Event) => {
+      const custom = e as CustomEvent<boolean>;
+      setEditLoading(custom.detail);
+    };
+    window.addEventListener('edit-project-loading', listener);
+    return () => window.removeEventListener('edit-project-loading', listener);
   }, []);
 
   // Reset loading when navigating away after submission
@@ -97,6 +108,15 @@ export function Topbar() {
           <Button variant="default" onClick={handleSubmitProject} disabled={createLoading} className="flex items-center gap-2">
             {createLoading && <Loader2 className="animate-spin size-4" />}
             {createLoading ? 'Creating…' : 'Create project'}
+          </Button>
+        )}
+        {/^\/home\/[^/]+\/edit$/.test(pathname) && (
+          <Button variant="default" onClick={() => {
+            const form = document.getElementById('edit-project-form') as HTMLFormElement | null;
+            form?.requestSubmit();
+          }} disabled={editLoading} className="flex items-center gap-2">
+            {editLoading && <Loader2 className="animate-spin size-4" />}
+            {editLoading ? 'Saving…' : 'Save changes'}
           </Button>
         )}
         <StartTestRunModal open={modalOpen} onOpenChange={setModalOpen} />
