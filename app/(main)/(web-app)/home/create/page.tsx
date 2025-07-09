@@ -99,7 +99,18 @@ export default function CreateProjectPage() {
     <main className="p-4 w-full max-w-[600px] mx-auto space-y-6">
       <h1 className="text-2xl font-semibold">Create Project</h1>
       <ScrollArea className="max-h-[80vh] pr-2">
-        <form onSubmit={handleSubmit} className="space-y-4" id="create-project-form">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+          id="create-project-form"
+          onKeyDown={(e) => {
+            if ((e.key === 'Enter' || e.key === 'Return') && e.target instanceof HTMLElement && e.target.tagName !== 'TEXTAREA') {
+              e.preventDefault();
+              const form = document.getElementById('create-project-form') as HTMLFormElement | null;
+              form?.requestSubmit();
+            }
+          }}
+        >
           {/* Name */}
           <section>
             <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
