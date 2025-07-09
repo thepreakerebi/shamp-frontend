@@ -145,19 +145,22 @@ export default function EditProjectPage() {
         >
           {/* Name */}
           <section>
-            <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
+            <label htmlFor="name" className="block text-sm font-medium">Name</label>
+            <p className="text-xs text-muted-foreground mb-1">Choose a clear, human-readable name (e.g. “Marketing Website”).</p>
             <Input id="name" name="name" value={form.name} onChange={handleChange} aria-invalid={!!errors.name} />
             {errors.name && <p className="text-destructive text-xs mt-1">{errors.name}</p>}
           </section>
           {/* URL */}
           <section>
-            <label htmlFor="url" className="block text-sm font-medium mb-1">URL</label>
+            <label htmlFor="url" className="block text-sm font-medium">URL</label>
+            <p className="text-xs text-muted-foreground mb-1">Full address starting with http:// or https://</p>
             <Input id="url" name="url" value={form.url} onChange={handleChange} aria-invalid={!!errors.url} />
             {errors.url && <p className="text-destructive text-xs mt-1">{errors.url}</p>}
           </section>
           {/* Description */}
           <section>
-            <label htmlFor="description" className="block text-sm font-medium mb-1">Description <span className="text-muted-foreground">(optional)</span></label>
+            <label htmlFor="description" className="block text-sm font-medium">Description <span className="text-muted-foreground">(optional)</span></label>
+            <p className="text-xs text-muted-foreground mb-1">Describe the product or feature this project is for.</p>
             <Textarea id="description" name="description" value={form.description} onChange={handleChange} />
           </section>
 
