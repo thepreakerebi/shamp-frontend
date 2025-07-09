@@ -51,19 +51,20 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         ? projects.map((incoming) => {
             const existing = state.projects?.find((p) => p._id === incoming._id);
             if (!existing) return incoming;
-            // Prefer decrypted credentials
             const isDecrypted = (obj?: Record<string, string>) =>
-              obj && Object.values(obj).some(
-                (v) => v && !/^ENC\[.*\]$/.test(v)
-              );
+              obj && Object.values(obj).some((v) => v && !/^ENC\[.*\]$/.test(v));
             const incomingHasDecrypted =
               isDecrypted(incoming.authCredentials) || isDecrypted(incoming.paymentCredentials);
             const existingHasDecrypted =
               isDecrypted(existing.authCredentials) || isDecrypted(existing.paymentCredentials);
+
+            // Merge fields, preferring decrypted credentials where appropriate
+            const merged = { ...existing, ...incoming } as Project;
             if (existingHasDecrypted && !incomingHasDecrypted) {
-              return existing; // keep decrypted
+              merged.authCredentials = existing.authCredentials;
+              merged.paymentCredentials = existing.paymentCredentials;
             }
-            return incoming;
+            return merged;
           })
         : null,
     })),
@@ -81,19 +82,19 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       projects: state.projects
         ? state.projects.map((p) => {
             if (p._id !== project._id) return p;
-            // Prefer decrypted credentials
             const isDecrypted = (obj?: Record<string, string>) =>
-              obj && Object.values(obj).some(
-                (v) => v && !/^ENC\[.*\]$/.test(v)
-              );
+              obj && Object.values(obj).some((v) => v && !/^ENC\[.*\]$/.test(v));
             const newHasDecrypted =
               isDecrypted(project.authCredentials) || isDecrypted(project.paymentCredentials);
             const oldHasDecrypted =
               isDecrypted(p.authCredentials) || isDecrypted(p.paymentCredentials);
+
+            const merged = { ...p, ...project } as Project;
             if (oldHasDecrypted && !newHasDecrypted) {
-              return p; // keep decrypted
+              merged.authCredentials = p.authCredentials;
+              merged.paymentCredentials = p.paymentCredentials;
             }
-            return project; // otherwise, update
+            return merged;
           })
         : [project],
     })),

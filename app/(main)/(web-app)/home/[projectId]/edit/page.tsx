@@ -1,11 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams, notFound } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { useProjects } from "@/hooks/use-projects";
 import { useProjectsStore } from "@/lib/store/projects";
@@ -13,7 +12,7 @@ import { useProjectsStore } from "@/lib/store/projects";
 export default function EditProjectPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const router = useRouter();
-  const { updateProject } = useProjects();
+  const { updateProject, getProjectById } = useProjects();
   const project = useProjectsStore((s) => s.projects?.find((p) => p._id === projectId) || null);
 
   const [form, setForm] = useState({ name: "", description: "", url: "" });
@@ -29,9 +28,10 @@ export default function EditProjectPage() {
     }
   }, [loading]);
 
-  // Initialize form when project available
+  // Initialize form once when project first loads to avoid wiping user input on store updates
+  const initializedRef = useRef(false);
   useEffect(() => {
-    if (project) {
+    if (project && !initializedRef.current) {
       setForm({
         name: project.name || "",
         description: project.description || "",
@@ -43,6 +43,7 @@ export default function EditProjectPage() {
       setPaymentCredentials(
         project.paymentCredentials ? Object.entries(project.paymentCredentials).map(([k, v]) => ({ key: k, value: v })) : []
       );
+      initializedRef.current = true;
     }
   }, [project]);
 
@@ -112,6 +113,12 @@ export default function EditProjectPage() {
         authCredentials: authCredObj,
         paymentCredentials: paymentCredObj,
       });
+
+      // Fetch updated project with decrypted credentials to refresh store
+      try {
+        await getProjectById(project._id);
+      } catch {}
+
       toast.success("Project updated!");
       router.push(`/home/${project._id}`);
     } catch (err: unknown) {
@@ -124,8 +131,7 @@ export default function EditProjectPage() {
   return (
     <main className="p-4 w-full max-w-[600px] mx-auto space-y-6">
       <h1 className="text-2xl font-semibold">Edit Project</h1>
-      <ScrollArea className="max-h-[80vh] pr-2">
-        <form
+      <form
           onSubmit={handleSubmit}
           className="space-y-4"
           id="edit-project-form"
@@ -227,7 +233,6 @@ export default function EditProjectPage() {
             ))}
           </fieldset>
         </form>
-      </ScrollArea>
     </main>
   );
 } 

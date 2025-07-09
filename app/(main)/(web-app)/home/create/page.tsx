@@ -7,7 +7,6 @@ import { Plus, Trash2 } from "lucide-react";
 import { useProjects } from "@/hooks/use-projects";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function CreateProjectPage() {
   const { createProject } = useProjects();
@@ -98,8 +97,7 @@ export default function CreateProjectPage() {
   return (
     <main className="p-4 w-full max-w-[600px] mx-auto space-y-6">
       <h1 className="text-2xl font-semibold">Create Project</h1>
-      <ScrollArea className="max-h-[80vh] pr-2">
-        <form
+      <form
           onSubmit={handleSubmit}
           className="space-y-4"
           id="create-project-form"
@@ -203,7 +201,6 @@ export default function CreateProjectPage() {
 
           {/* Note: Submission is triggered from Topbar button */}
         </form>
-      </ScrollArea>
     </main>
   );
 } 
