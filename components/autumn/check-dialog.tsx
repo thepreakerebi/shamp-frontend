@@ -51,7 +51,8 @@ export default function CheckDialog(params?: CheckDialogProps) {
                   const { id } = products[0] as { id: string };
                   const { checkout_url } = await attachProductCheckout({ productId: id });
                   if (checkout_url) {
-                    window.open(checkout_url, "_blank");
+                    window.location.href = checkout_url;
+                    // window.open(checkout_url, "_blank");
                   }
                 }
               } catch (e) {
