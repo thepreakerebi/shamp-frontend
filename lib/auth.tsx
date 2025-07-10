@@ -39,7 +39,7 @@ interface AuthContextType {
   currentWorkspaceId: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  signup: (data: SignupData) => Promise<void>;
+  signup: (data: SignupData) => Promise<string | undefined>;
   refresh: () => Promise<void>;
   getUser: () => Promise<User | null>;
   updateProfile: (changes: { firstName?: string; lastName?: string }) => Promise<void>;
@@ -298,7 +298,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Signup method
-  const signup = async (data: SignupData) => {
+  const signup = async (data: SignupData): Promise<string | undefined> => {
     setLoading(true);
     const res = await fetch(`${API_BASE}/users/create-account`, {
       method: 'POST',
@@ -309,8 +309,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       throw new Error((await res.json()).error || 'Signup failed');
     }
-    // Optionally, auto-login or prompt for email verification
+    const json = await res.json();
     setLoading(false);
+    const checkoutUrl: string | undefined = json?.checkoutUrl;
+    return checkoutUrl;
   };
 
   // Update profile (first & last name)

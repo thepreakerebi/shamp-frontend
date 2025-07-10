@@ -54,7 +54,11 @@ export default function CreateAccountPage() {
       return;
     }
     try {
-      await signup(form);
+      const checkoutUrl = await signup(form);
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+        return;
+      }
       router.push('/account-created?created=1');
     } catch (err: unknown) {
       let message = 'Signup failed. Please try again.';
