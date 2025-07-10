@@ -9,6 +9,7 @@ import {
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useBilling } from "@/hooks/use-billing";
 import { getCheckContent } from "@/lib/autumn/check-content";
 import { type CheckFeaturePreview } from "autumn-js";
 import { cn } from "@/lib/utils";
@@ -20,13 +21,15 @@ export interface CheckDialogProps {
 }
 
 export default function CheckDialog(params?: CheckDialogProps) {
-  const [loading] = useState(false);
+  const { attachProductCheckout } = useBilling();
+  const [loading, setLoading] = useState(false);
 
   if (!params || !params.preview) {
     return <></>;
   }
 
   const { open, setOpen } = params;
+  const { products } = params.preview;
   const { title, message } = getCheckContent(params.preview);
 
   return (
@@ -41,13 +44,24 @@ export default function CheckDialog(params?: CheckDialogProps) {
             size="sm"
             className="font-medium shadow transition min-w-20"
             onClick={async () => {
-              setOpen(false);
+              if (loading) return;
+              setLoading(true);
+              try {
+                if (products && products.length > 0) {
+                  const { id } = products[0] as { id: string };
+                  const { checkout_url } = await attachProductCheckout({ productId: id });
+                  if (checkout_url) {
+                    window.open(checkout_url, "_blank");
+                  }
+                }
+              } catch (e) {
+                console.error(e);
+              } finally {
+                setLoading(false);
+              }
             }}
           >
-            {loading && (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            )}
-            Confirm
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Upgrade"}
           </Button>
         </DialogFooter>
       </DialogContent>

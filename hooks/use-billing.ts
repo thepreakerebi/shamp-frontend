@@ -56,12 +56,20 @@ export function useBilling() {
   const allowed = useCallback(
     ({ featureId, requiredBalance = 1 }: { featureId: string; requiredBalance?: number }) => {
       const { summary } = useBillingStore.getState();
-      const feature = summary?.features?.find((f) => f.feature_id === featureId);
+      const features: unknown = summary?.features;
+      let feature: unknown;
+      if (Array.isArray(features)) {
+        feature = features.find((f) => (f as { feature_id: string }).feature_id === featureId);
+      } else if (features && typeof features === "object") {
+        // record lookup
+        feature = (features as Record<string, unknown>)[featureId];
+      }
       if (!feature) return false;
-      if (feature.unlimited) return true;
-      if (feature.balance !== undefined) return feature.balance >= requiredBalance;
-      if ('allowed' in feature && typeof (feature as { allowed?: unknown }).allowed === 'boolean') {
-        return Boolean((feature as { allowed?: boolean }).allowed);
+      const f = feature as Record<string, unknown>;
+      if (f.unlimited) return true;
+      if (typeof f.balance === 'number') return f.balance >= requiredBalance;
+      if ('allowed' in f && typeof f.allowed === 'boolean') {
+        return Boolean(f.allowed);
       }
       return false;
     },
