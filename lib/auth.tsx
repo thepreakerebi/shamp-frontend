@@ -203,6 +203,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [token]);
 
+  // Keep the 'ws' cookie in sync with the current workspace – this is used by server components
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    if (currentWorkspaceId) {
+      // 1-year expiry, SameSite Lax so it’s sent on same-site navigation and API calls
+      document.cookie = `ws=${currentWorkspaceId}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+    } else {
+      // Clear cookie
+      document.cookie = 'ws=; path=/; max-age=0; SameSite=Lax';
+    }
+  }, [currentWorkspaceId]);
+
   // Login method
   const login = async (email: string, password: string) => {
     setLoading(true);

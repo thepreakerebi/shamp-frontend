@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { cookies } from "next/headers";
+import { AutumnProvider } from "autumn-js/next";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -26,15 +28,20 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Read the current workspace identifier that we store in a cookie (set from the AuthProvider on the client).
+  // This runs on the server, so we can safely access the cookie here.
+  const cookieStore = await cookies();
+  const wsCookie = cookieStore.get("ws")?.value;
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
-        {children}
+        {/* AutumnProvider must be rendered in a server component (which this layout is). */}
+        <AutumnProvider customerId={wsCookie}>{children}</AutumnProvider>
       </body>
     </html>
   );
