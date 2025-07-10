@@ -6,6 +6,7 @@ import { AuthProvider } from "@/lib/auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Toaster } from "@/components/ui/sonner";
 import { useTestRuns } from "@/hooks/use-testruns";
+import { BillingProvider } from "@/components/providers/billing-provider";
 
 // Force dynamic rendering to prevent static generation issues with useSearchParams in TokenGate
 export const dynamic = 'force-dynamic';
@@ -28,8 +29,10 @@ export default function FullscreenLayout({ children }: { children: React.ReactNo
         <AuthProvider>
           <SocketProvider>
             <ProtectedRoute>
-              <Toaster position="top-center" />
-              <main className="min-h-screen w-full">{children}</main>
+              <BillingProvider>
+                <Toaster position="top-center" />
+                <main className="min-h-screen w-full">{children}</main>
+              </BillingProvider>
             </ProtectedRoute>
           </SocketProvider>
         </AuthProvider>
