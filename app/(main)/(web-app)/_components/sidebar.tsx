@@ -196,40 +196,46 @@ function WorkspaceAndPlan() {
   if (billingLoading || !isAdmin) return null;
 
   return (
-    <div className="flex items-center gap-2">
+    <section className="flex items-center gap-2">
       <WorkspaceSwitcher />
-      <Badge className="text-xs py-0.5 px-2 whitespace-nowrap bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100">
-        {summary?.products && Array.isArray(summary.products) && summary.products.length > 0
-          ? (summary.products[0] as { name?: string; id?: string }).name || (summary.products[0] as { id?: string }).id
-          : "Free"}
-      </Badge>
-    </div>
+      <Link href="/pricing" className="group">
+        <Badge className="text-xs py-0.5 px-2 whitespace-nowrap bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 cursor-pointer group-hover:opacity-80 transition">
+          {summary?.products && Array.isArray(summary.products) && summary.products.length > 0
+            ? (summary.products[0] as { name?: string; id?: string }).name || (summary.products[0] as { id?: string }).id
+            : "Free"}
+        </Badge>
+      </Link>
+    </section>
   );
 }
 
 // Small card prompting upgrade; visible only for admins on Free plan
 const UpgradePlanCard = () => {
-  const { loading: billingLoading } = useBilling();
+  const { summary, loading: billingLoading } = useBilling();
   const { user, currentWorkspaceId } = useAuth();
 
   const currentWs = user?.workspaces?.find(w => w._id === currentWorkspaceId);
   const isAdmin = currentWs?.role === 'admin';
 
-  if (billingLoading || !isAdmin) return null;
+  const planName = (summary?.products && Array.isArray(summary.products) && summary.products.length > 0)
+    ? (summary.products[0] as { name?: string; id?: string }).name || (summary.products[0] as { id?: string }).id
+    : "Free";
+
+  if (billingLoading || !isAdmin || (planName ?? "").toLowerCase() !== "free") return null;
 
   return (
-    <div className="px-3 mt-4">
+    <section className="px-3 mt-4">
       <Link href="/pricing" className="block group">
-        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-          <div className="bg-primary/20 text-primary rounded-md p-1">
+        <section className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+          <section className="bg-secondary/20 text-secondary rounded-md p-1">
             <Sparkles className="h-4 w-4" />
-          </div>
-          <div className="flex flex-col">
+          </section>
+          <section className="flex flex-col">
             <span className="font-medium text-sm">Upgrade plan</span>
-            <span className="text-xs text-muted-foreground">Unlock more projects and advanced features</span>
-          </div>
-        </div>
+            <span className="text-xs text-muted-foreground">Get more credits for more test runs and access to advanced features</span>
+          </section>
+        </section>
       </Link>
-    </div>
+    </section>
   );
 }; 
