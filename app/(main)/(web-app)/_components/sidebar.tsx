@@ -24,6 +24,8 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { SidebarSearchDropdown } from "./sidebar-search";
 import { WorkspaceSwitcher } from "./workspace-switcher";
+import { useBilling } from "@/hooks/use-billing";
+import { Badge } from "@/components/ui/badge";
 
 const items = [
   {
@@ -115,7 +117,7 @@ export function AppSidebar() {
           {loading ? (
             <Skeleton className="h-4 w-32 mb-2" />
           ) : (
-            <WorkspaceSwitcher />
+            <WorkspaceAndPlan />
           )}
           <CreateSidebarDropdownButton />
           {/* <CreateProjectButton /> */}
@@ -179,5 +181,27 @@ export function AppSidebar() {
         </section>
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+// Composite of workspace switcher and current plan badge
+function WorkspaceAndPlan() {
+  const { summary, loading } = useBilling();
+  const { user, currentWorkspaceId } = useAuth();
+  const currentWs = user?.workspaces?.find(w => w._id === currentWorkspaceId);
+  const isAdmin = currentWs?.role === 'admin';
+
+  const planName = (summary?.products && Array.isArray(summary.products) && summary.products.length > 0)
+    ? (summary.products[0] as { name?: string; id?: string }).name || (summary.products[0] as { id?: string }).id
+    : "Free";
+  return (
+    <div className="flex items-center gap-2">
+      <WorkspaceSwitcher />
+      {!loading && isAdmin && (
+        <Badge variant="secondary" className="text-xs py-0.5 px-2 whitespace-nowrap">
+          {planName}
+        </Badge>
+      )}
+    </div>
   );
 } 
