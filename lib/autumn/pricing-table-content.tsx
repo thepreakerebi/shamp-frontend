@@ -1,4 +1,4 @@
-import { type CheckProductPreview } from "autumn-js";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export const getPricingTableContent = (product: any) => {
   const { scenario, free_trial } = product;
