@@ -27,8 +27,8 @@ function CreateProjectButtonContent() {
     const usageExhausted = typeof bal === "number" && bal <= 0;
 
     const nextProduct = {
-      id: "pro",
-      name: "Pro Plan",
+      id: "hobby",
+      name: "Hobby Plan",
       is_add_on: false,
       free_trial: undefined,
     } as unknown as Record<string, unknown>;
@@ -37,7 +37,7 @@ function CreateProjectButtonContent() {
       scenario: usageExhausted ? "usage_limit" : "feature_flag",
       feature_id: "projects",
       feature_name: "Projects",
-      product_id: "pro",
+      product_id: "hobby",
       products: [nextProduct],
     };
   };
