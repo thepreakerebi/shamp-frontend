@@ -29,7 +29,10 @@ export function useBilling() {
 
   const loadSummary = useCallback(async () => {
     if (!token || !currentWorkspaceId) return;
-    store.setLoading(true);
+    const initialLoad = !useBillingStore.getState().summary;
+    if (initialLoad) {
+      store.setLoading(true);
+    }
     store.setError(null);
     try {
       const summary = await fetcher(
@@ -42,7 +45,9 @@ export function useBilling() {
       const message = err instanceof Error ? err.message : "Failed to fetch";
       store.setError(message);
     } finally {
-      store.setLoading(false);
+      if (initialLoad) {
+        store.setLoading(false);
+      }
     }
   }, [token, currentWorkspaceId, store]);
 
