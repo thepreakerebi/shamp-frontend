@@ -26,6 +26,7 @@ import { WorkspaceSwitcher } from "./workspace-switcher";
 import { useBilling } from "@/hooks/use-billing";
 import { Badge } from "@/components/ui/badge";
 import { UpgradePlanCard } from "./upgrade-plan-card";
+import { CreditsUsageCard } from "./credits-usage-card";
 import Link from "next/link";
 
 const items = [
@@ -153,6 +154,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         <UpgradePlanCard />
+        <CreditsUsageCard />
       </SidebarContent>
       <SidebarFooter className="mt-auto flex flex-col gap-2 border-t pt-4">
         <ThemeSwitcher />
