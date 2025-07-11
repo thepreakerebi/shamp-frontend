@@ -3,6 +3,7 @@
 
 import { useBilling } from "@/hooks/use-billing";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function CreditsUsageCard() {
   const { summary, loading: billingLoading } = useBilling();
@@ -17,7 +18,15 @@ export function CreditsUsageCard() {
   // Show only for paid plans (hobby, pro, ultra, etc.)
   const paidPlans = ["hobby", "pro", "ultra"];
 
-  if (billingLoading || !paidPlans.includes((planName ?? "").toLowerCase())) return null;
+  if (billingLoading) {
+    return (
+      <section className="px-3 mt-4 mb-3">
+        <Skeleton className="h-24 w-full rounded-lg" />
+      </section>
+    );
+  }
+
+  if (!paidPlans.includes((planName ?? "").toLowerCase())) return null;
 
   // ---------------------------------------------------------------------------
   // Extract credits feature information

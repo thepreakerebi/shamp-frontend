@@ -195,7 +195,15 @@ function WorkspaceAndPlan() {
   const currentWs = user?.workspaces?.find(w => w._id === currentWorkspaceId);
   const isAdmin = currentWs?.role === 'admin';
 
-  if (billingLoading || !isAdmin) return null;
+  if (!isAdmin) return null;
+
+  if (billingLoading) {
+    return (
+      <section className="flex items-center gap-2">
+        <Skeleton className="h-8 w-32 rounded-md" />
+      </section>
+    );
+  }
 
   return (
     <section className="flex items-center gap-2">

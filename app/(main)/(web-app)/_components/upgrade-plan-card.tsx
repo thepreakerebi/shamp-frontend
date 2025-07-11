@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useBilling } from "@/hooks/use-billing";
 import { useAuth } from "@/lib/auth";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Separate card component prompting admins on the Free plan to upgrade.
 // Additionally shows included request credits usage progress.
@@ -24,9 +25,17 @@ export function UpgradePlanCard() {
         (summary.products[0] as { id?: string }).id
       : "Free";
 
-  // Guard: only show for workspace admins on Free plan and when billing info loaded
-  if (billingLoading || !isAdmin || (planName ?? "").toLowerCase() !== "free")
-    return null;
+  // Show skeleton while loading
+  if (billingLoading) {
+    return (
+      <section className="px-3 mt-4 mb-3">
+        <Skeleton className="h-24 w-full rounded-lg" />
+      </section>
+    );
+  }
+
+  // Guard: only show for admins on Free plan
+  if (!isAdmin || (planName ?? "").toLowerCase() !== "free") return null;
 
   /* -------------------------------------------------------------------------- */
   /*            Attempt to extract usage / quota for included requests           */
