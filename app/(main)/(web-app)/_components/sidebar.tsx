@@ -25,7 +25,7 @@ import { SidebarSearchDropdown } from "./sidebar-search";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 import { useBilling } from "@/hooks/use-billing";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles } from "lucide-react";
+import { UpgradePlanCard } from "./upgrade-plan-card";
 import Link from "next/link";
 
 const items = [
@@ -207,35 +207,4 @@ function WorkspaceAndPlan() {
       </Link>
     </section>
   );
-}
-
-// Small card prompting upgrade; visible only for admins on Free plan
-const UpgradePlanCard = () => {
-  const { summary, loading: billingLoading } = useBilling();
-  const { user, currentWorkspaceId } = useAuth();
-
-  const currentWs = user?.workspaces?.find(w => w._id === currentWorkspaceId);
-  const isAdmin = currentWs?.role === 'admin';
-
-  const planName = (summary?.products && Array.isArray(summary.products) && summary.products.length > 0)
-    ? (summary.products[0] as { name?: string; id?: string }).name || (summary.products[0] as { id?: string }).id
-    : "Free";
-
-  if (billingLoading || !isAdmin || (planName ?? "").toLowerCase() !== "free") return null;
-
-  return (
-    <section className="px-3 mt-4">
-      <Link href="/pricing" className="block group">
-        <section className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-          <section className="bg-secondary/20 text-secondary rounded-md p-1">
-            <Sparkles className="h-4 w-4" />
-          </section>
-          <section className="flex flex-col">
-            <span className="font-medium text-sm">Upgrade plan</span>
-            <span className="text-xs text-muted-foreground">Get more credits for more test runs and access to advanced features</span>
-          </section>
-        </section>
-      </Link>
-    </section>
-  );
-}; 
+} 
