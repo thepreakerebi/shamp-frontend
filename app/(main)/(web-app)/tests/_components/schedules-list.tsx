@@ -54,7 +54,10 @@ export function SchedulesList() {
 
     return (
       <section className="flex flex-col items-center justify-center w-full py-16 gap-4 bg-background rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800">
-        <p className="text-muted-foreground text-sm">No schedules</p>
+        <h2 className="text-xl font-semibold text-foreground mb-1">No schedules yet</h2>
+        <p className="text-muted-foreground text-sm max-w-xs text-center">
+          You haven&apos;t scheduled any test runs yet. To create one, open the test you want to run, click the <span className="font-medium">“Schedule run”</span> button, and fill in the schedule details.
+        </p>
       </section>
     );
   }
