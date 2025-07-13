@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/custom-dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Plus, Users, Upload, User, ChevronDown } from "lucide-react";
+import { useBilling } from "@/hooks/use-billing";
 
 interface CreateDropdownButtonProps {
   onSinglePersona?: () => void;
@@ -16,6 +17,20 @@ interface CreateDropdownButtonProps {
 }
 
 export function CreateDropdownButton({ onSinglePersona, onBatchPersonas, onImportFile }: CreateDropdownButtonProps) {
+  // Get billing summary to determine plan restrictions
+  const { summary, loading: billingLoading } = useBilling();
+
+  // Determine active plan name (defaults to Free)
+  const planName =
+    summary?.products && Array.isArray(summary.products) && summary.products.length > 0
+      ? (summary.products[0] as { name?: string; id?: string }).name ||
+        (summary.products[0] as { id?: string }).id
+      : "Free";
+
+  // Batch personas allowed only for non-Free and non-Hobby plans
+  const batchEnabled =
+    billingLoading || !["free", "hobby"].includes((planName ?? "").toLowerCase());
+
   return (
     <CustomDropdownMenu>
       <CustomDropdownMenuTrigger asChild>
@@ -27,9 +42,11 @@ export function CreateDropdownButton({ onSinglePersona, onBatchPersonas, onImpor
         <CustomDropdownMenuItem onSelect={onSinglePersona}>
           <User className="size-4 mr-2" /> Single persona
         </CustomDropdownMenuItem>
-        <CustomDropdownMenuItem onSelect={onBatchPersonas}>
-          <Users className="size-4 mr-2" /> Batch personas
-        </CustomDropdownMenuItem>
+        {batchEnabled && (
+          <CustomDropdownMenuItem onSelect={onBatchPersonas}>
+            <Users className="size-4 mr-2" /> Batch personas
+          </CustomDropdownMenuItem>
+        )}
         <CustomDropdownMenuItem onSelect={onImportFile}>
           <Upload className="size-4 mr-2" /> Import file
         </CustomDropdownMenuItem>
