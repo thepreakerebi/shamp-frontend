@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useBilling } from "@/hooks/use-billing";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 
 export function SubscriptionSection() {
-  const { summary, loading: billingLoading, getProduct, product } = useBilling();
+  const { summary, loading: billingLoading, getProduct, product, getBillingPortalUrl } = useBilling();
+
+  const [portalLoading, setPortalLoading] = useState(false);
 
   // ---------------------------------------------------------------------
   // Determine current plan and fetch full product details
@@ -123,12 +125,25 @@ export function SubscriptionSection() {
       {/* Manage subscription button */}
       <Button
         variant="secondary"
-        onClick={() => {
-          // Navigate to pricing page for upgrades / management
-          window.location.href = "/pricing";
+        disabled={portalLoading}
+        onClick={async () => {
+          if (portalLoading) return;
+          setPortalLoading(true);
+          try {
+            const { portal_url } = await getBillingPortalUrl();
+            if (portal_url) {
+              window.open(portal_url, "_blank");
+            }
+          } catch (err) {
+            console.error(err);
+            // fallback to pricing page in new tab
+            window.open("/pricing", "_blank");
+          } finally {
+            setPortalLoading(false);
+          }
         }}
       >
-        Manage subscription
+        {portalLoading ? "Opening…" : "Manage subscription"}
       </Button>
 
       {/* Current Plan Details */}

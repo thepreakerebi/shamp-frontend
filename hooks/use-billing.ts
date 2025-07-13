@@ -108,6 +108,27 @@ export function useBilling() {
     [token, currentWorkspaceId, loadSummary]
   );
 
+  const getBillingPortalUrl = useCallback(async (): Promise<{ portal_url?: string }> => {
+    if (!token || !currentWorkspaceId) {
+      throw new Error("Not authenticated or workspace missing");
+    }
+    const res = await fetch(`${API_BASE}/billing/portal-url`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "X-Workspace-ID": currentWorkspaceId,
+      },
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || "Failed to create billing portal session");
+    }
+    const json = await res.json();
+    return json as { portal_url?: string };
+  }, [token, currentWorkspaceId]);
+
   const getProduct = useCallback(
     async (productId: string) => {
       if (!token) {
@@ -125,6 +146,7 @@ export function useBilling() {
     refetch: loadSummary,
     allowed,
     attachProductCheckout,
+    getBillingPortalUrl,
     getProduct,
   };
 } 
