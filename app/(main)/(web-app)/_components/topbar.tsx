@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { StartTestRunModal } from '@/app/(main)/(web-app)/test-runs/_components/start-test-run-modal';
 import { useBilling } from '@/hooks/use-billing';
 import { Plus } from 'lucide-react';
+import CheckDialog from '@/components/autumn/check-dialog';
 
 // Force dynamic rendering since this component includes Breadcrumbs that uses useSearchParams
 export const dynamic = 'force-dynamic';
@@ -25,6 +26,7 @@ export function Topbar() {
   // const { setOpen: setBatchModalOpen } = useCreateBatchPersonasModal();
   const { setOpen: setImportModalOpen } = useImportPersonasModal();
   const [modalOpen, setModalOpen] = useState(false);
+  const [showPaywallTest, setShowPaywallTest] = useState(false);
   const [createLoading, setCreateLoading] = useState(false); // project
   const [editLoading, setEditLoading] = useState(false); // project
   const [createPersonaLoading, setCreatePersonaLoading] = useState(false);
@@ -32,7 +34,7 @@ export function Topbar() {
   const [createBatchLoading, setCreateBatchLoading] = useState(false);
 
   // Billing info to determine feature availability
-  const { summary, loading: billingLoading } = useBilling();
+  const { summary, loading: billingLoading, allowed } = useBilling();
 
   const planName =
     summary?.products && Array.isArray(summary.products) && summary.products.length > 0
@@ -47,8 +49,41 @@ export function Topbar() {
   const left = isExpandedDesktop ? '16rem' : '0';
   const width = isExpandedDesktop ? 'calc(100% - 16rem)' : '100%';
 
-  // TODO: Replace with real modal handlers when implemented
-  const handleSingleTest = () => router.push('/tests/create');
+  // Paywall preview builder for tests feature
+  const getTestPreview = () => {
+    const features: unknown = summary?.features;
+    let feature: unknown;
+    if (Array.isArray(features)) {
+      feature = features.find((f) => (f as { feature_id: string }).feature_id === 'tests');
+    } else if (features && typeof features === 'object') {
+      feature = (features as Record<string, unknown>)['tests'];
+    }
+    const bal = (feature as { balance?: number })?.balance;
+    const usageExhausted = typeof bal === 'number' && bal <= 0;
+
+    const nextProduct = {
+      id: 'hobby',
+      name: 'Hobby Plan',
+      is_add_on: false,
+      free_trial: undefined,
+    } as unknown as Record<string, unknown>;
+
+    return {
+      scenario: usageExhausted ? 'usage_limit' : 'feature_flag',
+      feature_id: 'tests',
+      feature_name: 'Tests',
+      product_id: 'hobby',
+      products: [nextProduct],
+    };
+  };
+
+  const handleSingleTest = () => {
+    if (allowed({ featureId: 'tests' })) {
+      router.push('/tests/create');
+    } else {
+      setShowPaywallTest(true);
+    }
+  };
   const handleBatchTests = () => router.push('/tests/create-batch');
   const handleStartTest = () => setModalOpen(true);
 
@@ -221,6 +256,10 @@ export function Topbar() {
           </Button>
         )}
         <StartTestRunModal open={modalOpen} onOpenChange={setModalOpen} />
+        {showPaywallTest && (
+          /* @ts-expect-error preview partial */
+          <CheckDialog open={showPaywallTest} setOpen={setShowPaywallTest} preview={getTestPreview()} />
+        )}
         {/* Add more buttons for other pages here as needed */}
       </section>
     </section>
