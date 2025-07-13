@@ -160,10 +160,11 @@ export function SubscriptionSection() {
                   const rec = item as Record<string, unknown>;
                   const included = rec.included_usage as number | undefined;
                   const label = (rec.feature_id as string | undefined) || "feature";
+                  const text = typeof included === "number" ? `${included} ${label}` : label;
                   return (
                     <li key={idx} className="flex items-start gap-2 text-sm">
                       <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5" />
-                      {included ? `${included} ${label}` : `Unlimited ${label}`}
+                      {text}
                     </li>
                   );
                 })
