@@ -1,5 +1,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useBilling } from "@/hooks/use-billing";
+import { Sparkles, Plus } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { useTestSchedules } from "@/hooks/use-test-schedules";
 import { ScheduleCard } from "./schedule-card";
 import { TestsCardSkeleton } from "./tests-card-skeleton";
@@ -7,6 +11,17 @@ import { SchedulesCardToolbar } from "./schedules-card-toolbar";
 
 export function SchedulesList() {
   const { schedules, schedulesLoading } = useTestSchedules();
+  const { summary, loading: billingLoading } = useBilling();
+
+  const planName =
+    summary?.products && Array.isArray(summary.products) && summary.products.length > 0
+      ? (summary.products[0] as { name?: string; id?: string }).name ||
+        (summary.products[0] as { id?: string }).id
+      : "Free";
+
+  const isFreeOrHobby = ["free", "hobby"].includes((planName ?? "").toLowerCase());
+
+  const canUseSchedules = billingLoading || !isFreeOrHobby;
 
   const [showTop, setShowTop] = useState(false);
   useEffect(() => {
@@ -20,6 +35,23 @@ export function SchedulesList() {
   }
 
   if (!schedules || schedules.length === 0) {
+    if (!canUseSchedules) {
+      return (
+        <section className="flex flex-col items-center justify-center w-full py-16 gap-4 bg-background rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800">
+          <Sparkles className="text-muted-foreground mb-2" size={40} />
+          <h2 className="text-xl font-semibold text-foreground mb-1">Schedules unavailable</h2>
+          <p className="text-muted-foreground text-sm mb-4 text-center max-w-xs">
+            Test scheduling is available on Pro and higher plans. Upgrade your plan to unlock this feature.
+          </p>
+          <Link href="/pricing">
+            <Button className="gap-2" variant="default">
+              <Plus className="size-4" /> Upgrade plan
+            </Button>
+          </Link>
+        </section>
+      );
+    }
+
     return (
       <section className="flex flex-col items-center justify-center w-full py-16 gap-4 bg-background rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800">
         <p className="text-muted-foreground text-sm">No schedules</p>
