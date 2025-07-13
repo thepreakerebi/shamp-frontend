@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { useBilling } from "@/hooks/use-billing";
 import { Check } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -34,23 +35,28 @@ export default function PricingPage() {
   const { attachProductCheckout, summary } = useBilling();
 
   const [billingCycle, setBillingCycle] = useState<'month' | 'year'>('month');
+  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
 
   const displayedPlans = billingCycle === 'month' ? monthlyPlans : annualPlans;
 
   const currentProductId = (summary?.products?.[0] as { id?: string })?.id ?? "free";
 
   const handleCheckout = async (productId: string) => {
+    if (loadingPlanId) return; // prevent double clicks
+    setLoadingPlanId(productId);
     try {
       const { checkout_url } = await attachProductCheckout({ productId });
       if (checkout_url) window.location.href = checkout_url;
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoadingPlanId(null);
     }
   };
 
   return (
     <section className="max-w-6xl mx-auto p-4 text-center">
-      <h1 className="text-3xl font-bold mb-10">Upgrade your plan</h1>
+      <h1 className="text-3xl font-medium mb-8">Upgrade your plan</h1>
 
       {/* Billing cycle toggle */}
       <section className="inline-flex mb-8 rounded-lg border overflow-hidden" role="tablist">
@@ -76,7 +82,7 @@ export default function PricingPage() {
                 plan.popular && "border ring-2 ring-secondary/30 shadow",
               )}
             >
-              <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
+              <h2 className="text-xl font-medium mb-2 flex items-center gap-2">
                 {plan.name}
                 {plan.popular && (
                   <span className="text-xs px-2 py-0.5 bg-secondary/20 text-neutral-700 dark:text-neutral-300 rounded-full">POPULAR</span>
@@ -94,15 +100,22 @@ export default function PricingPage() {
                 ))}
               </ul>
 
-              {isCurrent ? (
-                <Button variant="secondary" className="w-full" disabled>
-                  Your current plan
-                </Button>
-              ) : (
-                <Button variant={plan.popular ? "secondary" : "outline"} className="w-full" onClick={() => handleCheckout(plan.id)}>
-                  {plan.price === "$0" ? "Get started" : `Get ${plan.name}`}
-                </Button>
-              )}
+              <Button
+                variant={plan.popular ? "secondary" : isCurrent ? "secondary" : "outline"}
+                className="w-full"
+                disabled={isCurrent || loadingPlanId === plan.id}
+                onClick={isCurrent ? undefined : () => handleCheckout(plan.id)}
+              >
+                {isCurrent ? (
+                  "Your current plan"
+                ) : loadingPlanId === plan.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : plan.price === "$0" ? (
+                  "Get started"
+                ) : (
+                  `Get ${plan.name}`
+                )}
+              </Button>
             </article>
           );
         })}
