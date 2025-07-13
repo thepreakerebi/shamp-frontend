@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { StartTestRunModal } from '@/app/(main)/(web-app)/test-runs/_components/start-test-run-modal';
+import { useBilling } from '@/hooks/use-billing';
+import { Plus } from 'lucide-react';
 
 // Force dynamic rendering since this component includes Breadcrumbs that uses useSearchParams
 export const dynamic = 'force-dynamic';
@@ -28,6 +30,17 @@ export function Topbar() {
   const [createPersonaLoading, setCreatePersonaLoading] = useState(false);
   const [editPersonaLoading, setEditPersonaLoading] = useState(false);
   const [createBatchLoading, setCreateBatchLoading] = useState(false);
+
+  // Billing info to determine feature availability
+  const { summary, loading: billingLoading } = useBilling();
+
+  const planName =
+    summary?.products && Array.isArray(summary.products) && summary.products.length > 0
+      ? (summary.products[0] as { name?: string; id?: string }).name ||
+        (summary.products[0] as { id?: string }).id
+      : 'Free';
+
+  const isFreeOrHobby = !billingLoading && ['free', 'hobby'].includes((planName ?? '').toLowerCase());
 
   // Only shift when expanded on desktop
   const isExpandedDesktop = !isMobile && state === 'expanded';
@@ -136,17 +149,29 @@ export function Topbar() {
       <section className="flex flex-row items-center gap-4">
         {pathname === '/home' && <CreateProjectButton />}
         {pathname === '/personas' && (
-          <CreateDropdownButton
-            onSinglePersona={() => router.push('/personas/create')}
-            onBatchPersonas={() => router.push('/personas/batch/create')}
-            onImportFile={() => setImportModalOpen(true)}
-          />
+          isFreeOrHobby ? (
+            <Button variant="outline" className="gap-2" onClick={() => router.push('/personas/create')}>
+              <Plus className="size-4" /> Create persona
+            </Button>
+          ) : (
+            <CreateDropdownButton
+              onSinglePersona={() => router.push('/personas/create')}
+              onBatchPersonas={() => router.push('/personas/batch/create')}
+              onImportFile={() => setImportModalOpen(true)}
+            />
+          )
         )}
         {pathname === '/tests' && (
-          <CreateTestDropdownButton
-            onSingleTest={handleSingleTest}
-            onBatchTests={handleBatchTests}
-          />
+          isFreeOrHobby ? (
+            <Button variant="outline" className="gap-2" onClick={handleSingleTest}>
+              <Plus className="size-4" /> Create test
+            </Button>
+          ) : (
+            <CreateTestDropdownButton
+              onSingleTest={handleSingleTest}
+              onBatchTests={handleBatchTests}
+            />
+          )
         )}
         {pathname === '/test-runs' && (
           <Button variant="secondary" onClick={handleStartTest}>

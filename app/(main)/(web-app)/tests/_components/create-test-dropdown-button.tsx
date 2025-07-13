@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/custom-dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Plus, ListChecks, ListPlus, ChevronDown } from "lucide-react";
+import { useBilling } from "@/hooks/use-billing";
 
 interface CreateTestDropdownButtonProps {
   onSingleTest?: () => void;
@@ -17,6 +18,17 @@ interface CreateTestDropdownButtonProps {
 
 export function CreateTestDropdownButton({ onSingleTest, onBatchTests }: CreateTestDropdownButtonProps) {
   const router = useRouter();
+
+  const { summary, loading: billingLoading } = useBilling();
+
+  const planName =
+    summary?.products && Array.isArray(summary.products) && summary.products.length > 0
+      ? (summary.products[0] as { name?: string; id?: string }).name ||
+        (summary.products[0] as { id?: string }).id
+      : "Free";
+
+  const batchEnabled =
+    billingLoading || !["free", "hobby"].includes((planName ?? "").toLowerCase());
   return (
     <CustomDropdownMenu>
       <CustomDropdownMenuTrigger asChild>
@@ -28,9 +40,11 @@ export function CreateTestDropdownButton({ onSingleTest, onBatchTests }: CreateT
         <CustomDropdownMenuItem onSelect={onSingleTest ?? (()=>router.push("/tests/create"))}>
           <ListChecks className="size-4 mr-2" /> Single test
         </CustomDropdownMenuItem>
-        <CustomDropdownMenuItem onSelect={onBatchTests ?? (()=>router.push("/tests/create-batch"))}>
-          <ListPlus className="size-4 mr-2" /> Batch tests
-        </CustomDropdownMenuItem>
+        {batchEnabled && (
+          <CustomDropdownMenuItem onSelect={onBatchTests ?? (() => router.push("/tests/create-batch"))}>
+            <ListPlus className="size-4 mr-2" /> Batch tests
+          </CustomDropdownMenuItem>
+        )}
       </CustomDropdownMenuContent>
     </CustomDropdownMenu>
   );
