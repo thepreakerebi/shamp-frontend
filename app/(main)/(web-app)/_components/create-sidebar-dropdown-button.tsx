@@ -20,6 +20,7 @@ export function CreateSidebarDropdownButton() {
   const [runModalOpen, setRunModalOpen] = React.useState(false);
   const [showPaywallTest, setShowPaywallTest] = useState(false);
   const [showPaywallPersona, setShowPaywallPersona] = useState(false);
+  const [showPaywallRun, setShowPaywallRun] = useState(false);
 
   // Billing info to determine feature availability
   const { summary, loading: billingLoading, allowed } = useBilling();
@@ -90,6 +91,33 @@ export function CreateSidebarDropdownButton() {
     };
   };
 
+  const getCreditsPreview = () => {
+    const features: unknown = summary?.features;
+    let feature: unknown;
+    if (Array.isArray(features)) {
+      feature = features.find((f) => (f as { feature_id: string }).feature_id === "credits");
+    } else if (features && typeof features === "object") {
+      feature = (features as Record<string, unknown>)["credits"];
+    }
+    const bal = (feature as { balance?: number })?.balance;
+    const usageExhausted = typeof bal === "number" && bal < 20;
+
+    const nextProduct = {
+      id: "hobby",
+      name: "Hobby Plan",
+      is_add_on: false,
+      free_trial: undefined,
+    } as unknown as Record<string, unknown>;
+
+    return {
+      scenario: usageExhausted ? "usage_limit" : "feature_flag",
+      feature_id: "credits",
+      feature_name: "Credits",
+      product_id: "hobby",
+      products: [nextProduct],
+    };
+  };
+
   const handleCreateSingleTest = () => {
     if (allowed({ featureId: "tests" })) {
       router.push("/tests/create");
@@ -103,6 +131,14 @@ export function CreateSidebarDropdownButton() {
       router.push("/personas/create");
     } else {
       setShowPaywallPersona(true);
+    }
+  };
+
+  const handleStartTestRun = () => {
+    if (allowed({ featureId: 'credits', requiredBalance: 20 })) {
+      setRunModalOpen(true);
+    } else {
+      setShowPaywallRun(true);
     }
   };
 
@@ -153,7 +189,7 @@ export function CreateSidebarDropdownButton() {
           <CustomDropdownMenuSeparator />
 
           {/* Test Run */}
-          <CustomDropdownMenuItem onSelect={() => setRunModalOpen(true)}>
+          <CustomDropdownMenuItem onSelect={handleStartTestRun}>
             <PlayCircle className="size-4 mr-2" /> Test Run
           </CustomDropdownMenuItem>
         </CustomDropdownMenuContent>
@@ -169,6 +205,10 @@ export function CreateSidebarDropdownButton() {
       {showPaywallPersona && (
         /* @ts-expect-error preview partial */
         <CheckDialog open={showPaywallPersona} setOpen={setShowPaywallPersona} preview={getPersonaPreview()} />
+      )}
+      {showPaywallRun && (
+        /* @ts-expect-error preview partial */
+        <CheckDialog open={showPaywallRun} setOpen={setShowPaywallRun} preview={getCreditsPreview()} />
       )}
     </>
   );

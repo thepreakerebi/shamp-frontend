@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useTestRunsStore } from "@/lib/store/testruns";
 import { useTestsStore } from "@/lib/store/tests";
 import { useBilling } from "@/hooks/use-billing";
+import CheckDialog from "@/components/autumn/check-dialog";
 
 /**
  * DetailsSection
@@ -30,7 +31,8 @@ export default function DetailsSection({ test }: { test: Test }) {
   const router = useRouter();
 
   // Billing info to gate scheduling feature
-  const { summary, loading: billingLoading } = useBilling();
+  const { summary, loading: billingLoading, allowed } = useBilling();
+  const [showPaywallRun, setShowPaywallRun] = useState(false);
 
   const planName =
     summary?.products && Array.isArray(summary.products) && summary.products.length > 0
@@ -41,8 +43,40 @@ export default function DetailsSection({ test }: { test: Test }) {
   const scheduleEnabled =
     billingLoading || !["free", "hobby"].includes((planName ?? "").toLowerCase());
 
+  const getCreditsPreview = () => {
+    const features: unknown = summary?.features;
+    let feature: unknown;
+    if (Array.isArray(features)) {
+      feature = features.find((f) => (f as { feature_id: string }).feature_id === "credits");
+    } else if (features && typeof features === "object") {
+      feature = (features as Record<string, unknown>)["credits"];
+    }
+    const bal = (feature as { balance?: number })?.balance;
+    const usageExhausted = typeof bal === "number" && bal < 20;
+
+    const nextProduct = {
+      id: "hobby",
+      name: "Hobby Plan",
+      is_add_on: false,
+      free_trial: undefined,
+    } as unknown as Record<string, unknown>;
+
+    return {
+      scenario: usageExhausted ? "usage_limit" : "feature_flag",
+      feature_id: "credits",
+      feature_name: "Credits",
+      product_id: "hobby",
+      products: [nextProduct],
+    };
+  };
+
   const handleRun = async () => {
     if (running) return;
+
+    if (!allowed({ featureId: 'credits', requiredBalance: 20 })) {
+      setShowPaywallRun(true);
+      return;
+    }
     setRunning(true);
     const popup = typeof window !== 'undefined' ? window.open('', '_blank') : null;
     if (popup) {
@@ -141,6 +175,10 @@ export default function DetailsSection({ test }: { test: Test }) {
             {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Run test
           </Button>
+          {showPaywallRun && (
+            /* @ts-expect-error preview partial */
+            <CheckDialog open={showPaywallRun} setOpen={setShowPaywallRun} preview={getCreditsPreview()} />
+          )}
         </section>
       </header>
 
