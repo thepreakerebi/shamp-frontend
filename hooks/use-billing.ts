@@ -108,10 +108,23 @@ export function useBilling() {
     [token, currentWorkspaceId, loadSummary]
   );
 
+  const getProduct = useCallback(
+    async (productId: string) => {
+      if (!token) {
+        throw new Error("Not authenticated");
+      }
+      const product = await fetcher(`/billing/product/${productId}`, token);
+      store.setProduct(product);
+      return product;
+    },
+    [token, store]
+  );
+
   return {
     ...store,
     refetch: loadSummary,
     allowed,
     attachProductCheckout,
+    getProduct,
   };
 } 
