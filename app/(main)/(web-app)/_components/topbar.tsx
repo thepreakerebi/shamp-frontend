@@ -27,6 +27,7 @@ export function Topbar() {
   const { setOpen: setImportModalOpen } = useImportPersonasModal();
   const [modalOpen, setModalOpen] = useState(false);
   const [showPaywallTest, setShowPaywallTest] = useState(false);
+  const [showPaywallPersona, setShowPaywallPersona] = useState(false);
   const [createLoading, setCreateLoading] = useState(false); // project
   const [editLoading, setEditLoading] = useState(false); // project
   const [createPersonaLoading, setCreatePersonaLoading] = useState(false);
@@ -48,6 +49,34 @@ export function Topbar() {
   const isExpandedDesktop = !isMobile && state === 'expanded';
   const left = isExpandedDesktop ? '16rem' : '0';
   const width = isExpandedDesktop ? 'calc(100% - 16rem)' : '100%';
+
+  // Paywall preview builder for personas feature
+  const getPersonaPreview = () => {
+    const features: unknown = summary?.features;
+    let feature: unknown;
+    if (Array.isArray(features)) {
+      feature = features.find((f) => (f as { feature_id: string }).feature_id === 'personas');
+    } else if (features && typeof features === 'object') {
+      feature = (features as Record<string, unknown>)['personas'];
+    }
+    const bal = (feature as { balance?: number })?.balance;
+    const usageExhausted = typeof bal === 'number' && bal <= 0;
+
+    const nextProduct = {
+      id: 'hobby',
+      name: 'Hobby Plan',
+      is_add_on: false,
+      free_trial: undefined,
+    } as unknown as Record<string, unknown>;
+
+    return {
+      scenario: usageExhausted ? 'usage_limit' : 'feature_flag',
+      feature_id: 'personas',
+      feature_name: 'Personas',
+      product_id: 'hobby',
+      products: [nextProduct],
+    };
+  };
 
   // Paywall preview builder for tests feature
   const getTestPreview = () => {
@@ -82,6 +111,14 @@ export function Topbar() {
       router.push('/tests/create');
     } else {
       setShowPaywallTest(true);
+    }
+  };
+
+  const handleSinglePersona = () => {
+    if (allowed({ featureId: 'personas' })) {
+      router.push('/personas/create');
+    } else {
+      setShowPaywallPersona(true);
     }
   };
   const handleBatchTests = () => router.push('/tests/create-batch');
@@ -185,12 +222,12 @@ export function Topbar() {
         {pathname === '/home' && <CreateProjectButton />}
         {pathname === '/personas' && (
           isFreeOrHobby ? (
-            <Button variant="outline" className="gap-2" onClick={() => router.push('/personas/create')}>
+            <Button variant="outline" className="gap-2" onClick={handleSinglePersona}>
               <Plus className="size-4" /> Create persona
             </Button>
           ) : (
             <CreateDropdownButton
-              onSinglePersona={() => router.push('/personas/create')}
+              onSinglePersona={handleSinglePersona}
               onBatchPersonas={() => router.push('/personas/batch/create')}
               onImportFile={() => setImportModalOpen(true)}
             />
@@ -259,6 +296,10 @@ export function Topbar() {
         {showPaywallTest && (
           /* @ts-expect-error preview partial */
           <CheckDialog open={showPaywallTest} setOpen={setShowPaywallTest} preview={getTestPreview()} />
+        )}
+        {showPaywallPersona && (
+          /* @ts-expect-error preview partial */
+          <CheckDialog open={showPaywallPersona} setOpen={setShowPaywallPersona} preview={getPersonaPreview()} />
         )}
         {/* Add more buttons for other pages here as needed */}
       </section>

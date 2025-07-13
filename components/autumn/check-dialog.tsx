@@ -41,6 +41,16 @@ export default function CheckDialog(params?: CheckDialogProps) {
         <div className="px-6 my-2">{message}</div>
         <DialogFooter className="flex flex-col sm:flex-row justify-between gap-x-4 py-2 mt-4 pl-6 pr-3 bg-secondary border-t">
           <Button
+            variant="outline"
+            size="sm"
+            className="font-medium transition min-w-20"
+            onClick={() => {
+              window.location.href = "/pricing";
+            }}
+          >
+            Other plans
+          </Button>
+          <Button
             size="sm"
             className="font-medium shadow transition min-w-20"
             onClick={async () => {

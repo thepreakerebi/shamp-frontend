@@ -9,6 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus, Users, Upload, User, ChevronDown } from "lucide-react";
 import { useBilling } from "@/hooks/use-billing";
+import CheckDialog from "@/components/autumn/check-dialog";
+import { useState } from "react";
 
 interface CreateDropdownButtonProps {
   onSinglePersona?: () => void;
@@ -17,8 +19,8 @@ interface CreateDropdownButtonProps {
 }
 
 export function CreateDropdownButton({ onSinglePersona, onBatchPersonas, onImportFile }: CreateDropdownButtonProps) {
-  // Get billing summary to determine plan restrictions
-  const { summary, loading: billingLoading } = useBilling();
+  const { summary, loading: billingLoading, allowed } = useBilling();
+  const [showPaywallPersona, setShowPaywallPersona] = useState(false);
 
   // Determine active plan name (defaults to Free)
   const planName =
@@ -31,7 +33,44 @@ export function CreateDropdownButton({ onSinglePersona, onBatchPersonas, onImpor
   const batchEnabled =
     billingLoading || !["free", "hobby"].includes((planName ?? "").toLowerCase());
 
+  // Build preview
+  const getPersonaPreview = () => {
+    const features: unknown = summary?.features;
+    let feature: unknown;
+    if (Array.isArray(features)) {
+      feature = features.find((f) => (f as { feature_id: string }).feature_id === "personas");
+    } else if (features && typeof features === "object") {
+      feature = (features as Record<string, unknown>)["personas"];
+    }
+    const bal = (feature as { balance?: number })?.balance;
+    const usageExhausted = typeof bal === "number" && bal <= 0;
+
+    const nextProduct = {
+      id: "hobby",
+      name: "Hobby Plan",
+      is_add_on: false,
+      free_trial: undefined,
+    } as unknown as Record<string, unknown>;
+
+    return {
+      scenario: usageExhausted ? "usage_limit" : "feature_flag",
+      feature_id: "personas",
+      feature_name: "Personas",
+      product_id: "hobby",
+      products: [nextProduct],
+    };
+  };
+
+  const handleCreateSinglePersona = () => {
+    if (allowed({ featureId: "personas" })) {
+      onSinglePersona?.();
+    } else {
+      setShowPaywallPersona(true);
+    }
+  };
+
   return (
+    <>
     <CustomDropdownMenu>
       <CustomDropdownMenuTrigger asChild>
         <Button variant="outline" className="gap-2">
@@ -39,7 +78,7 @@ export function CreateDropdownButton({ onSinglePersona, onBatchPersonas, onImpor
         </Button>
       </CustomDropdownMenuTrigger>
       <CustomDropdownMenuContent align="end">
-        <CustomDropdownMenuItem onSelect={onSinglePersona}>
+        <CustomDropdownMenuItem onSelect={handleCreateSinglePersona}>
           <User className="size-4 mr-2" /> Single persona
         </CustomDropdownMenuItem>
         {batchEnabled && (
@@ -52,5 +91,10 @@ export function CreateDropdownButton({ onSinglePersona, onBatchPersonas, onImpor
         </CustomDropdownMenuItem>
       </CustomDropdownMenuContent>
     </CustomDropdownMenu>
+    {showPaywallPersona && (
+      /* @ts-expect-error preview partial */
+      <CheckDialog open={showPaywallPersona} setOpen={setShowPaywallPersona} preview={getPersonaPreview()} />
+    )}
+    </>
   );
 } 
