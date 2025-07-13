@@ -14,6 +14,7 @@ import { useTests } from "@/hooks/use-tests";
 import { useRouter } from "next/navigation";
 import { useTestRunsStore } from "@/lib/store/testruns";
 import { useTestsStore } from "@/lib/store/tests";
+import { useBilling } from "@/hooks/use-billing";
 
 /**
  * DetailsSection
@@ -27,6 +28,18 @@ export default function DetailsSection({ test }: { test: Test }) {
   const { moveTestToTrash, deleteTest, duplicateTest } = useTests();
   const [running, setRunning] = useState(false);
   const router = useRouter();
+
+  // Billing info to gate scheduling feature
+  const { summary, loading: billingLoading } = useBilling();
+
+  const planName =
+    summary?.products && Array.isArray(summary.products) && summary.products.length > 0
+      ? (summary.products[0] as { name?: string; id?: string }).name ||
+        (summary.products[0] as { id?: string }).id
+      : "Free";
+
+  const scheduleEnabled =
+    billingLoading || !["free", "hobby"].includes((planName ?? "").toLowerCase());
 
   const handleRun = async () => {
     if (running) return;
@@ -118,10 +131,12 @@ export default function DetailsSection({ test }: { test: Test }) {
             showOpen={false}
             showRun={false}
           />
-          <Button variant="outline" onClick={handleSchedule} className="flex items-center gap-1">
-            <CalendarClock className="w-4 h-4" />
-            Schedule run
-          </Button>
+          {scheduleEnabled && (
+            <Button variant="outline" onClick={handleSchedule} className="flex items-center gap-1">
+              <CalendarClock className="w-4 h-4" />
+              Schedule run
+            </Button>
+          )}
           <Button onClick={handleRun} variant="secondary" disabled={running}>
             {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Run test
