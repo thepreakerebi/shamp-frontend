@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useIssues } from "@/hooks/use-issues";
 import { IssueCard } from "./_components/issue-card";
 import { IssueCardSkeleton } from "./_components/issue-card-skeleton";
@@ -10,8 +10,7 @@ import IssuesFilter from "./_components/issues-filter";
 export default function IssuesPage() {
   const { issues: storeIssues } = useIssues();
   const [loading, setLoading] = useState(true);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerHeight, setContainerHeight] = useState(0);
+  // No custom container height needed with grid layout
   const [filters, setFilters] = useState({
     persona: "any",
     status: "any"
@@ -52,84 +51,7 @@ export default function IssuesPage() {
     }
   }, [storeIssues]);
 
-  const getColumnCount = useCallback(() => {
-    if (!containerRef.current) return 1;
-    const width = containerRef.current.offsetWidth;
-    if (width >= 1024) return 4;
-    if (width >= 768) return 3;
-    if (width >= 640) return 2;
-    return 1;
-  }, []);
-
-  const layoutMasonry = useCallback(() => {
-    if (!containerRef.current) return;
-
-    const container = containerRef.current;
-    const items = container.querySelectorAll('.masonry-item') as NodeListOf<HTMLElement>;
-    const columnCount = getColumnCount();
-    const gap = 16;
-    const columnWidth = (container.offsetWidth - (gap * (columnCount - 1))) / columnCount;
-
-    // Initialize column heights
-    const columnHeights = new Array(columnCount).fill(0);
-
-    items.forEach((item) => {
-      // Find shortest column
-      const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights));
-      
-      // Position the item
-      const x = shortestColumnIndex * (columnWidth + gap);
-      const y = columnHeights[shortestColumnIndex];
-
-      item.style.position = 'absolute';
-      item.style.left = `${x}px`;
-      item.style.top = `${y}px`;
-      item.style.width = `${columnWidth}px`;
-
-      // Update column height
-      columnHeights[shortestColumnIndex] += item.offsetHeight + gap;
-    });
-
-    // Set container height to the tallest column
-    const maxHeight = Math.max(...columnHeights) - gap;
-    setContainerHeight(maxHeight);
-  }, [getColumnCount]);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const timer = setTimeout(() => {
-      layoutMasonry();
-    }, 150);
-
-    const handleResize = () => {
-      setTimeout(layoutMasonry, 50);
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [filteredIssues, loading, layoutMasonry]);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const observer = new ResizeObserver(() => {
-      setTimeout(layoutMasonry, 50);
-    });
-
-    // Observe container width changes (sidebar collapse/expand)
-    observer.observe(containerRef.current);
-
-    // Observe individual items for height changes
-    const items = containerRef.current.querySelectorAll('.masonry-item');
-    items.forEach(item => observer.observe(item));
-
-    return () => observer.disconnect();
-  }, [filteredIssues, layoutMasonry, loading]);
+  // Removed custom layout useEffects – CSS grid handles layout automatically
 
   // LOADING STATE: Show skeletons
   if (loading) {
@@ -139,13 +61,11 @@ export default function IssuesPage() {
           <h1 className="text-2xl font-semibold">Issues</h1>
         </section>
 
-        <div 
-          ref={containerRef}
-          className="relative w-full"
-          style={{ height: containerHeight || 'auto' }}
-        >
+        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-x-4">
           {Array.from({ length: 8 }).map((_, i) => (
-            <IssueCardSkeleton key={i} />
+            <div key={i} className="mb-4 break-inside-avoid">
+              <IssueCardSkeleton />
+            </div>
           ))}
         </div>
       </section>
@@ -177,13 +97,9 @@ export default function IssuesPage() {
         />
       </section>
 
-      <div 
-        ref={containerRef}
-        className="relative w-full"
-        style={{ height: containerHeight || 'auto' }}
-      >
+      <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-x-4">
         {filteredIssues.map((issue) => (
-          <div key={issue._id ?? issue.createdAt} className="masonry-item">
+          <div key={issue._id ?? issue.createdAt} className="mb-4 break-inside-avoid">
             <IssueCard issue={issue} />
           </div>
         ))}
