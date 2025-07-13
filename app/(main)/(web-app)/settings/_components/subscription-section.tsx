@@ -158,9 +158,21 @@ export function SubscriptionSection() {
             {Array.isArray((product as Record<string, unknown>).items)
               ? ((product as Record<string, unknown>).items as unknown[]).map((item, idx) => {
                   const rec = item as Record<string, unknown>;
-                  const included = rec.included_usage as number | undefined;
-                  const label = (rec.feature_id as string | undefined) || "feature";
-                  const text = typeof included === "number" ? `${included} ${label}` : label;
+                  // Skip base price items (type === 'price')
+                  if (rec.type === 'price') return null;
+
+                  // Prefer display.primary_text if available
+                  const display = rec.display as { primary_text?: string } | undefined;
+                  let text: string | undefined = display?.primary_text;
+
+                  if (!text) {
+                    const included = rec.included_usage as number | undefined;
+                    const label = (rec.feature_id as string | undefined) || '';
+                    text = typeof included === 'number' ? `${included} ${label}` : label;
+                  }
+
+                  if (!text) return null;
+
                   return (
                     <li key={idx} className="flex items-start gap-2 text-sm">
                       <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5" />
