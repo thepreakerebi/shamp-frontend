@@ -4,7 +4,6 @@
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useBilling } from "@/hooks/use-billing";
-import { useAuth } from "@/lib/auth";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -12,11 +11,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 // Additionally shows included request credits usage progress.
 export function UpgradePlanCard() {
   const { summary, loading: billingLoading } = useBilling();
-  const { user, currentWorkspaceId } = useAuth();
-
-  // Determine if current user is admin in the active workspace
-  const currentWs = user?.workspaces?.find((w) => w._id === currentWorkspaceId);
-  const isAdmin = currentWs?.role === "admin";
 
   // Determine active plan name (defaults to Free when none attached)
   const planName =
@@ -34,8 +28,8 @@ export function UpgradePlanCard() {
     );
   }
 
-  // Guard: only show for admins on Free plan
-  if (!isAdmin || (planName ?? "").toLowerCase() !== "free") return null;
+  // Guard: only show on Free plan
+  if ((planName ?? "").toLowerCase() !== "free") return null;
 
   /* -------------------------------------------------------------------------- */
   /*            Attempt to extract usage / quota for included requests           */
