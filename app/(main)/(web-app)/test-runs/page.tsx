@@ -66,7 +66,13 @@ export default function TestRunsListPage() {
       </section>
 
       {filtered.length === 0 ? (
-          <TestRunsListEmpty />
+          (runs && runs.length > 0 ? (
+            <section className="flex flex-col items-center justify-center w-full py-16 gap-4 bg-background rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800">
+              <p className="text-muted-foreground text-sm">No test runs match your filters.</p>
+            </section>
+          ) : (
+            <TestRunsListEmpty />
+          ))
       ) : (
         <section className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filtered.map((run) => (
