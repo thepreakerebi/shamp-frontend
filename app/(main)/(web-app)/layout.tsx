@@ -2,6 +2,7 @@
 import React from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { BillingProvider } from '@/components/providers/billing-provider';
 import { AppSidebar } from './_components/sidebar';
 import { Toaster } from '@/components/ui/sonner';
 import { Topbar } from './_components/topbar';
@@ -24,14 +25,16 @@ export default function WebAppLayout({ children }: { children: React.ReactNode }
           <ImportPersonasModalProvider>
             <SidebarProvider>
               <ProtectedRoute>
-                <Toaster position="top-center" />
-                <AppSidebar />
-                <main className="min-h-screen w-full">
-                  <Topbar />
-                  <section className="flex flex-col w-full h-full pt-16">
-                    {children}
-                  </section>
-                </main>
+                <BillingProvider>
+                  <Toaster position="top-center" />
+                  <AppSidebar />
+                  <main className="min-h-screen w-full">
+                    <Topbar />
+                    <section className="flex flex-col w-full h-full pt-16">
+                      {children}
+                    </section>
+                  </main>
+                </BillingProvider>
               </ProtectedRoute>
             </SidebarProvider>
           </ImportPersonasModalProvider>

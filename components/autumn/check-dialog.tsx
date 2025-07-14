@@ -1,0 +1,81 @@
+"use client";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useBilling } from "@/hooks/use-billing";
+import { getCheckContent } from "@/lib/autumn/check-content";
+import { type CheckFeaturePreview } from "autumn-js";
+import { cn } from "@/lib/utils";
+
+export interface CheckDialogProps {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  preview: CheckFeaturePreview;
+}
+
+export default function CheckDialog(params?: CheckDialogProps) {
+  const { attachProductCheckout } = useBilling();
+  const [loading, setLoading] = useState(false);
+
+  if (!params || !params.preview) {
+    return <></>;
+  }
+
+  const { open, setOpen } = params;
+  const { products } = params.preview;
+  const { title, message } = getCheckContent(params.preview);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="p-0 pt-4 gap-0 text-foreground overflow-hidden text-sm">
+        <DialogTitle className={cn("font-bold text-xl px-6")}>
+          {title}
+        </DialogTitle>
+        <div className="px-6 my-2">{message}</div>
+        <DialogFooter className="flex flex-col sm:flex-row justify-between gap-x-4 py-2 mt-4 pl-6 pr-3 bg-secondary border-t">
+          <Button
+            variant="outline"
+            size="sm"
+            className="font-medium transition min-w-20"
+            onClick={() => {
+              window.location.href = "/pricing";
+            }}
+          >
+            Other plans
+          </Button>
+          <Button
+            size="sm"
+            className="font-medium shadow transition min-w-20"
+            onClick={async () => {
+              if (loading) return;
+              setLoading(true);
+              try {
+                if (products && products.length > 0) {
+                  const { id } = products[0] as { id: string };
+                  const { checkout_url } = await attachProductCheckout({ productId: id });
+                  if (checkout_url) {
+                    window.location.href = checkout_url;
+                    // window.open(checkout_url, "_blank");
+                  }
+                }
+              } catch (e) {
+                console.error(e);
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Upgrade"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

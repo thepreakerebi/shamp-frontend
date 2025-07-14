@@ -39,7 +39,7 @@ interface AuthContextType {
   currentWorkspaceId: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  signup: (data: SignupData) => Promise<void>;
+  signup: (data: SignupData) => Promise<string | undefined>;
   refresh: () => Promise<void>;
   getUser: () => Promise<User | null>;
   updateProfile: (changes: { firstName?: string; lastName?: string }) => Promise<void>;
@@ -203,6 +203,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [token]);
 
+  // Keep the 'ws' cookie in sync with the current workspace – this is used by server components
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    if (currentWorkspaceId) {
+      // 1-year expiry, SameSite Lax so it’s sent on same-site navigation and API calls
+      document.cookie = `ws=${currentWorkspaceId}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+    } else {
+      // Clear cookie
+      document.cookie = 'ws=; path=/; max-age=0; SameSite=Lax';
+    }
+  }, [currentWorkspaceId]);
+
   // Login method
   const login = async (email: string, password: string) => {
     setLoading(true);
@@ -285,7 +298,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Signup method
-  const signup = async (data: SignupData) => {
+  const signup = async (data: SignupData): Promise<string | undefined> => {
     setLoading(true);
     const res = await fetch(`${API_BASE}/users/create-account`, {
       method: 'POST',
@@ -296,8 +309,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       throw new Error((await res.json()).error || 'Signup failed');
     }
-    // Optionally, auto-login or prompt for email verification
+    const json = await res.json();
     setLoading(false);
+    const checkoutUrl: string | undefined = json?.checkoutUrl;
+    return checkoutUrl;
   };
 
   // Update profile (first & last name)

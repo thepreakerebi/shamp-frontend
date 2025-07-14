@@ -4,6 +4,7 @@ import io from "socket.io-client";
 import { useTestRunsStore } from "@/lib/store/testruns";
 import { useTestsStore } from "@/lib/store/tests";
 import { useBatchTestsStore } from "@/lib/store/batchTests";
+import { useBilling } from "@/hooks/use-billing";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
@@ -88,6 +89,7 @@ const fetcher = (url: string, token: string, workspaceId?: string | null): Promi
 export function useTestRuns() {
   const { token, currentWorkspaceId } = useAuth();
   const store = useTestRunsStore();
+  const { refetch: refetchBilling } = useBilling();
   const {
     setSuccessfulCount,
     setFailedCount,
@@ -266,6 +268,8 @@ export function useTestRuns() {
       } catch {/* ignore */}
       // No fetch? We already optimistically set finished flag; counts refresh
       fetchCounts();
+      // Refresh billing summary (credits) across tabs
+      refetchBilling();
     });
     socket.on("testRun:paused", async ({ testRunId, workspace }: { testRunId: string; workspace?: string }) => {
       if (workspace && workspace !== currentWorkspaceId) return;
@@ -388,6 +392,8 @@ export function useTestRuns() {
             const updated = { ...existingAfterOpt, ...run } as TestRun;
             updateTestRunInList(updated);
             syncRunToTestCache(updated);
+            // Refresh billing now that credits have been deducted
+            refetchBilling();
             // Batch-test run caches will refresh later; skip direct insertion.
             return;
           }
@@ -395,6 +401,8 @@ export function useTestRuns() {
       } catch {/* ignore */}
       // No fetch? We already optimistically set finished flag; counts refresh
       fetchCounts();
+      // Refresh billing in fallback path too
+      refetchBilling();
     });
     socket.on(
       "testRun:artifact",

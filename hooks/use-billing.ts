@@ -1,0 +1,152 @@
+import { useCallback, useEffect } from "react";
+import { useBillingStore } from "@/lib/store/billing";
+import { useAuth } from "@/lib/auth";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+
+const fetcher = async (
+  endpoint: string,
+  token: string,
+  workspaceId?: string | null
+) => {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    credentials: "include",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(workspaceId ? { "X-Workspace-ID": workspaceId } : {}),
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || "Failed to fetch");
+  }
+  return res.json();
+};
+
+export function useBilling() {
+  const { token, currentWorkspaceId } = useAuth();
+  const store = useBillingStore();
+
+  const loadSummary = useCallback(async () => {
+    if (!token || !currentWorkspaceId) return;
+    const initialLoad = !useBillingStore.getState().summary;
+    if (initialLoad) {
+      store.setLoading(true);
+    }
+    store.setError(null);
+    try {
+      const summary = await fetcher(
+        "/billing/summary",
+        token,
+        currentWorkspaceId
+      );
+      store.setSummary(summary);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to fetch";
+      store.setError(message);
+    } finally {
+      if (initialLoad) {
+        store.setLoading(false);
+      }
+    }
+  }, [token, currentWorkspaceId, store]);
+
+  // auto fetch on mount or workspace change
+  useEffect(() => {
+    loadSummary();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, currentWorkspaceId]);
+
+  // helper: check allowed
+  const allowed = useCallback(
+    ({ featureId, requiredBalance = 1 }: { featureId: string; requiredBalance?: number }) => {
+      const { summary } = useBillingStore.getState();
+      const features: unknown = summary?.features;
+      let feature: unknown;
+      if (Array.isArray(features)) {
+        feature = features.find((f) => (f as { feature_id: string }).feature_id === featureId);
+      } else if (features && typeof features === "object") {
+        // record lookup
+        feature = (features as Record<string, unknown>)[featureId];
+      }
+      if (!feature) return false;
+      const f = feature as Record<string, unknown>;
+      if (f.unlimited) return true;
+      if (typeof f.balance === 'number') return f.balance >= requiredBalance;
+      if ('allowed' in f && typeof f.allowed === 'boolean') {
+        return Boolean(f.allowed);
+      }
+      return false;
+    },
+    []
+  );
+
+  const attachProductCheckout = useCallback(
+    async ({ productId }: { productId: string }): Promise<{ checkout_url?: string }> => {
+      if (!token || !currentWorkspaceId) {
+        throw new Error("Not authenticated or workspace missing");
+      }
+      const res = await fetch(`${API_BASE}/billing/attach-product`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "X-Workspace-ID": currentWorkspaceId,
+        },
+        body: JSON.stringify({ productId }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Failed to create checkout session");
+      }
+      const json = await res.json();
+      // After attaching, refresh summary to reflect new plan
+      loadSummary();
+      return json as { checkout_url?: string };
+    },
+    [token, currentWorkspaceId, loadSummary]
+  );
+
+  const getBillingPortalUrl = useCallback(async (): Promise<{ portal_url?: string }> => {
+    if (!token || !currentWorkspaceId) {
+      throw new Error("Not authenticated or workspace missing");
+    }
+    const res = await fetch(`${API_BASE}/billing/portal-url`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "X-Workspace-ID": currentWorkspaceId,
+      },
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || "Failed to create billing portal session");
+    }
+    const json = await res.json();
+    return json as { portal_url?: string };
+  }, [token, currentWorkspaceId]);
+
+  const getProduct = useCallback(
+    async (productId: string) => {
+      if (!token) {
+        throw new Error("Not authenticated");
+      }
+      const product = await fetcher(`/billing/product/${productId}`, token);
+      store.setProduct(product);
+      return product;
+    },
+    [token, store]
+  );
+
+  return {
+    ...store,
+    refetch: loadSummary,
+    allowed,
+    attachProductCheckout,
+    getBillingPortalUrl,
+    getProduct,
+  };
+} 

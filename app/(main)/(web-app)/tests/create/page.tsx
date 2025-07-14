@@ -11,14 +11,22 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import ProjectCommand from "./_components/project-command";
 import PersonaCommand from "./_components/persona-command";
+import { useBilling } from "@/hooks/use-billing";
 
 export default function CreateTestPage() {
   const { createTest } = useTests();
+  const { summary } = useBilling();
   const router = useRouter();
 
   const [form, setForm] = useState({ name: "", description: "", projectId: "", personaId: "", device: "" });
   const [errors, setErrors] = useState<{ name?: string; description?: string; projectId?: string; personaId?: string; device?: string }>({});
   const [loading, setLoading] = useState(false);
+
+  const planName = summary?.products && Array.isArray(summary.products) && summary.products.length > 0
+    ? ((summary.products[0] as { name?: string; id?: string }).name || (summary.products[0] as { id?: string }).id || '').toLowerCase()
+    : 'free';
+
+  const deviceSelectionEnabled = planName === 'pro' || planName === 'ultra';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +35,7 @@ export default function CreateTestPage() {
     if (!form.description) errs.description = "Description is required";
     if (!form.projectId) errs.projectId = "Project is required";
     if (!form.personaId) errs.personaId = "Persona is required";
-    if (!form.device) errs.device = "Device type is required";
+    if (deviceSelectionEnabled && !form.device) errs.device = "Device type is required";
     if (Object.keys(errs).length) {
       setErrors(errs);
       return;
@@ -39,7 +47,7 @@ export default function CreateTestPage() {
         tablet: { w: 820, h: 1180 },
         mobile: { w: 800, h: 1280 },
       };
-      const vp = viewportMap[form.device as keyof typeof viewportMap];
+      const vp = deviceSelectionEnabled ? viewportMap[form.device as keyof typeof viewportMap] : viewportMap["desktop"];
       await createTest({
         name: form.name,
         description: form.description,
@@ -87,6 +95,7 @@ export default function CreateTestPage() {
           }} />
           {errors.projectId && <p className="text-destructive text-xs mt-1">{errors.projectId}</p>}
         </section>
+        {deviceSelectionEnabled && (
         <section>
           <label className="block text-sm font-medium mb-1">Device type</label>
           <RadioGroup value={form.device} onValueChange={(v)=>{setForm({...form, device:v}); setErrors({...errors, device:undefined});}} className="grid grid-cols-3 gap-2 md:max-w-xs">
@@ -108,6 +117,7 @@ export default function CreateTestPage() {
           </RadioGroup>
           {errors.device && <p className="text-destructive text-xs mt-1">{errors.device}</p>}
         </section>
+        )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={()=>router.back()}>Cancel</Button>
           <Button type="submit" variant="default" disabled={loading} className="flex items-center gap-2">

@@ -4,7 +4,7 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
+  // SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -12,7 +12,6 @@ import {
   SidebarHeader,
   sidebarMenuButtonVariants,
 } from "@/components/ui/sidebar";
-import Link from "next/link";
 import { useAuth } from '@/lib/auth';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Notifications } from "./notifications";
@@ -24,6 +23,11 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { SidebarSearchDropdown } from "./sidebar-search";
 import { WorkspaceSwitcher } from "./workspace-switcher";
+import { useBilling } from "@/hooks/use-billing";
+import { Badge } from "@/components/ui/badge";
+import { UpgradePlanCard } from "./upgrade-plan-card";
+import { CreditsUsageCard } from "./credits-usage-card";
+import Link from "next/link";
 
 const items = [
   {
@@ -115,7 +119,7 @@ export function AppSidebar() {
           {loading ? (
             <Skeleton className="h-4 w-32 mb-2" />
           ) : (
-            <WorkspaceSwitcher />
+            <WorkspaceAndPlan />
           )}
           <CreateSidebarDropdownButton />
           {/* <CreateProjectButton /> */}
@@ -127,7 +131,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          {/* <SidebarGroupLabel>Navigation</SidebarGroupLabel> */}
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => {
@@ -149,6 +153,8 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        <UpgradePlanCard />
+        <CreditsUsageCard />
       </SidebarContent>
       <SidebarFooter className="mt-auto flex flex-col gap-2 border-t pt-4">
         <ThemeSwitcher />
@@ -179,5 +185,36 @@ export function AppSidebar() {
         </section>
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+// Composite of workspace switcher and current plan badge
+function WorkspaceAndPlan() {
+  const { summary, loading: billingLoading } = useBilling();
+  const { user, currentWorkspaceId } = useAuth();
+  const currentWs = user?.workspaces?.find(w => w._id === currentWorkspaceId);
+  const isAdmin = currentWs?.role === 'admin';
+
+  if (billingLoading) {
+    return (
+      <section className="flex items-center gap-2">
+        <Skeleton className="h-8 w-32 rounded-md" />
+      </section>
+    );
+  }
+
+  return (
+    <section className="flex items-center gap-2">
+      <WorkspaceSwitcher />
+      {isAdmin && (
+        <Link href="/pricing" className="group">
+          <Badge className="text-xs py-0.5 px-2 whitespace-nowrap bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 cursor-pointer group-hover:opacity-80 transition">
+            {summary?.products && Array.isArray(summary.products) && summary.products.length > 0
+              ? (summary.products[0] as { name?: string; id?: string }).name || (summary.products[0] as { id?: string }).id
+              : "Free"}
+          </Badge>
+        </Link>
+      )}
+    </section>
   );
 } 

@@ -42,11 +42,17 @@ export default function CreateAccountPage() {
     setSuccess(null);
     setFieldErrors({});
     setLoading(true);
-    // Custom required field validation
+    // Custom required field + format validation
     const newFieldErrors: FieldErrors = {};
     if (!form.firstName) newFieldErrors.firstName = 'First name is required.';
     if (!form.lastName) newFieldErrors.lastName = 'Last name is required.';
     if (!form.email) newFieldErrors.email = 'Email is required.';
+    else {
+      const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+      if (!emailRegex.test(form.email)) {
+        newFieldErrors.email = 'Please enter a valid email address. (e.g. name@example.com)';
+      }
+    }
     if (!form.password) newFieldErrors.password = 'Password is required.';
     if (Object.keys(newFieldErrors).length > 0) {
       setFieldErrors(newFieldErrors);
@@ -54,7 +60,11 @@ export default function CreateAccountPage() {
       return;
     }
     try {
-      await signup(form);
+      const checkoutUrl = await signup(form);
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+        return;
+      }
       router.push('/account-created?created=1');
     } catch (err: unknown) {
       let message = 'Signup failed. Please try again.';

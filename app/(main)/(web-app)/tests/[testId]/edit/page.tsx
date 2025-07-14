@@ -11,11 +11,19 @@ import ProjectCommand from "../../create/_components/project-command";
 import PersonaCommand from "../../create/_components/persona-command";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useBilling } from "@/hooks/use-billing";
 
 export default function EditTestPage() {
   const { testId } = useParams<{ testId: string }>();
   const { tests, updateTest, getTestById } = useTests();
   const router = useRouter();
+
+  // Billing summary to determine plan capabilities
+  const { summary } = useBilling();
+  const planName = summary?.products && Array.isArray(summary.products) && summary.products.length > 0
+    ? ((summary.products[0] as { name?: string; id?: string }).name || (summary.products[0] as { id?: string }).id || "").toLowerCase()
+    : "free";
+  const deviceSelectionEnabled = planName === "pro" || planName === "ultra";
 
   const existing = tests?.find(t => t._id === testId);
 
@@ -103,12 +111,12 @@ export default function EditTestPage() {
     if (!form.description) errs.description = "Description is required";
     if (!form.projectId) errs.projectId = "Project is required";
     if (!form.personaId) errs.personaId = "Persona is required";
-    if (!form.device) errs.device = "Device type is required";
+    if (deviceSelectionEnabled && !form.device) errs.device = "Device type is required";
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setSaving(true);
     try{
       const viewportMap: Record<string,{w:number;h:number}> = {desktop:{w:1280,h:720}, tablet:{w:820,h:1180}, mobile:{w:800,h:1280}};
-      const vp = viewportMap[form.device as keyof typeof viewportMap];
+      const vp = deviceSelectionEnabled ? viewportMap[form.device as keyof typeof viewportMap] : viewportMap["desktop"];
       await updateTest(testId, { name: form.name, description: form.description, project: form.projectId, persona: form.personaId, browserViewportWidth: vp.w, browserViewportHeight: vp.h });
       toast.success("Test updated");
       router.push(`/tests/${testId}`);
@@ -145,6 +153,7 @@ export default function EditTestPage() {
           <PersonaCommand value={form.personaId} onChange={(id: string)=>{ setForm({...form, personaId:id}); setErrors({...errors, personaId: undefined}); }} />
           {errors.personaId && <p className="text-destructive text-xs mt-1">{errors.personaId}</p>}
         </section>
+        {deviceSelectionEnabled && (
         <section>
           <label className="block text-sm font-medium mb-1">Device type</label>
           <RadioGroup value={form.device} onValueChange={(v)=>{setForm({...form, device:v}); setErrors({...errors, device:undefined});}} className="grid grid-cols-3 gap-2 md:max-w-xs">
@@ -166,6 +175,7 @@ export default function EditTestPage() {
           </RadioGroup>
           {errors.device && <p className="text-destructive text-xs mt-1">{errors.device}</p>}
         </section>
+        )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={()=>router.back()}>Cancel</Button>
           <Button type="submit" disabled={saving} className="flex items-center gap-2">

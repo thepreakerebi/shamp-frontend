@@ -12,6 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { StartTestRunModal } from '@/app/(main)/(web-app)/test-runs/_components/start-test-run-modal';
+import { useBilling } from '@/hooks/use-billing';
+import { Plus } from 'lucide-react';
+import CheckDialog from '@/components/autumn/check-dialog';
 
 // Force dynamic rendering since this component includes Breadcrumbs that uses useSearchParams
 export const dynamic = 'force-dynamic';
@@ -23,21 +26,137 @@ export function Topbar() {
   // const { setOpen: setBatchModalOpen } = useCreateBatchPersonasModal();
   const { setOpen: setImportModalOpen } = useImportPersonasModal();
   const [modalOpen, setModalOpen] = useState(false);
+  const [showPaywallTest, setShowPaywallTest] = useState(false);
+  const [showPaywallPersona, setShowPaywallPersona] = useState(false);
+  const [showPaywallRun, setShowPaywallRun] = useState(false);
   const [createLoading, setCreateLoading] = useState(false); // project
   const [editLoading, setEditLoading] = useState(false); // project
   const [createPersonaLoading, setCreatePersonaLoading] = useState(false);
   const [editPersonaLoading, setEditPersonaLoading] = useState(false);
   const [createBatchLoading, setCreateBatchLoading] = useState(false);
 
+  // Billing info to determine feature availability
+  const { summary, loading: billingLoading, allowed } = useBilling();
+
+  const planName =
+    summary?.products && Array.isArray(summary.products) && summary.products.length > 0
+      ? (summary.products[0] as { name?: string; id?: string }).name ||
+        (summary.products[0] as { id?: string }).id
+      : 'Free';
+
+  const isFreeOrHobby = !billingLoading && ['free', 'hobby', 'pro'].includes((planName ?? '').toLowerCase());
+
   // Only shift when expanded on desktop
   const isExpandedDesktop = !isMobile && state === 'expanded';
   const left = isExpandedDesktop ? '16rem' : '0';
   const width = isExpandedDesktop ? 'calc(100% - 16rem)' : '100%';
 
-  // TODO: Replace with real modal handlers when implemented
-  const handleSingleTest = () => router.push('/tests/create');
+  // Paywall preview builder for personas feature
+  const getPersonaPreview = () => {
+    const features: unknown = summary?.features;
+    let feature: unknown;
+    if (Array.isArray(features)) {
+      feature = features.find((f) => (f as { feature_id: string }).feature_id === 'personas');
+    } else if (features && typeof features === 'object') {
+      feature = (features as Record<string, unknown>)['personas'];
+    }
+    const bal = (feature as { balance?: number })?.balance;
+    const usageExhausted = typeof bal === 'number' && bal <= 0;
+
+    const nextProduct = {
+      id: 'hobby',
+      name: 'Hobby Plan',
+      is_add_on: false,
+      free_trial: undefined,
+    } as unknown as Record<string, unknown>;
+
+    return {
+      scenario: usageExhausted ? 'usage_limit' : 'feature_flag',
+      feature_id: 'personas',
+      feature_name: 'Personas',
+      product_id: 'hobby',
+      products: [nextProduct],
+    };
+  };
+
+  // Paywall preview builder for tests feature
+  const getTestPreview = () => {
+    const features: unknown = summary?.features;
+    let feature: unknown;
+    if (Array.isArray(features)) {
+      feature = features.find((f) => (f as { feature_id: string }).feature_id === 'tests');
+    } else if (features && typeof features === 'object') {
+      feature = (features as Record<string, unknown>)['tests'];
+    }
+    const bal = (feature as { balance?: number })?.balance;
+    const usageExhausted = typeof bal === 'number' && bal <= 0;
+
+    const nextProduct = {
+      id: 'hobby',
+      name: 'Hobby Plan',
+      is_add_on: false,
+      free_trial: undefined,
+    } as unknown as Record<string, unknown>;
+
+    return {
+      scenario: usageExhausted ? 'usage_limit' : 'feature_flag',
+      feature_id: 'tests',
+      feature_name: 'Tests',
+      product_id: 'hobby',
+      products: [nextProduct],
+    };
+  };
+
+  const getCreditsRunPreview = () => {
+    const features: unknown = summary?.features;
+    let feature: unknown;
+    if (Array.isArray(features)) {
+      feature = features.find((f) => (f as { feature_id: string }).feature_id === 'credits');
+    } else if (features && typeof features === 'object') {
+      feature = (features as Record<string, unknown>)['credits'];
+    }
+    const bal = (feature as { balance?: number })?.balance;
+    const usageExhausted = typeof bal === 'number' && bal < 20;
+
+    const nextProduct = {
+      id: 'hobby',
+      name: 'Hobby Plan',
+      is_add_on: false,
+      free_trial: undefined,
+    } as unknown as Record<string, unknown>;
+
+    return {
+      scenario: usageExhausted ? 'usage_limit' : 'feature_flag',
+      feature_id: 'credits',
+      feature_name: 'Credits',
+      product_id: 'hobby',
+      products: [nextProduct],
+    };
+  };
+
+  const handleSingleTest = () => {
+    if (allowed({ featureId: 'tests' })) {
+      router.push('/tests/create');
+    } else {
+      setShowPaywallTest(true);
+    }
+  };
+
+  const handleSinglePersona = () => {
+    if (allowed({ featureId: 'personas' })) {
+      router.push('/personas/create');
+    } else {
+      setShowPaywallPersona(true);
+    }
+  };
   const handleBatchTests = () => router.push('/tests/create-batch');
-  const handleStartTest = () => setModalOpen(true);
+  const handleStartTest = () => {
+    if (allowed({ featureId: 'credits', requiredBalance: 20 })) {
+      setModalOpen(true);
+    } else {
+      setShowPaywallRun(true);
+    }
+  };
 
   // Submit create-project form when on /home/create
   const handleSubmitProject = () => {
@@ -136,17 +255,29 @@ export function Topbar() {
       <section className="flex flex-row items-center gap-4">
         {pathname === '/home' && <CreateProjectButton />}
         {pathname === '/personas' && (
-          <CreateDropdownButton
-            onSinglePersona={() => router.push('/personas/create')}
-            onBatchPersonas={() => router.push('/personas/batch/create')}
-            onImportFile={() => setImportModalOpen(true)}
-          />
+          isFreeOrHobby ? (
+            <Button variant="outline" className="gap-2" onClick={handleSinglePersona}>
+              <Plus className="size-4" /> Create persona
+            </Button>
+          ) : (
+            <CreateDropdownButton
+              onSinglePersona={handleSinglePersona}
+              onBatchPersonas={() => router.push('/personas/batch/create')}
+              onImportFile={() => setImportModalOpen(true)}
+            />
+          )
         )}
         {pathname === '/tests' && (
-          <CreateTestDropdownButton
-            onSingleTest={handleSingleTest}
-            onBatchTests={handleBatchTests}
-          />
+          isFreeOrHobby ? (
+            <Button variant="outline" className="gap-2" onClick={handleSingleTest}>
+              <Plus className="size-4" /> Create test
+            </Button>
+          ) : (
+            <CreateTestDropdownButton
+              onSingleTest={handleSingleTest}
+              onBatchTests={handleBatchTests}
+            />
+          )
         )}
         {pathname === '/test-runs' && (
           <Button variant="secondary" onClick={handleStartTest}>
@@ -196,6 +327,18 @@ export function Topbar() {
           </Button>
         )}
         <StartTestRunModal open={modalOpen} onOpenChange={setModalOpen} />
+        {showPaywallTest && (
+          /* @ts-expect-error preview partial */
+          <CheckDialog open={showPaywallTest} setOpen={setShowPaywallTest} preview={getTestPreview()} />
+        )}
+        {showPaywallPersona && (
+          /* @ts-expect-error preview partial */
+          <CheckDialog open={showPaywallPersona} setOpen={setShowPaywallPersona} preview={getPersonaPreview()} />
+        )}
+        {showPaywallRun && (
+          /* @ts-expect-error preview partial */
+          <CheckDialog open={showPaywallRun} setOpen={setShowPaywallRun} preview={getCreditsRunPreview()} />
+        )}
         {/* Add more buttons for other pages here as needed */}
       </section>
     </section>

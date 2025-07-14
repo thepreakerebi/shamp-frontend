@@ -11,6 +11,8 @@ import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import React, { useState } from "react";
 import { toast } from "sonner";
+import { useBilling } from "@/hooks/use-billing";
+import CheckDialog from "@/components/autumn/check-dialog";
 import { MoveTestToTrashModal } from "./move-test-to-trash-modal";
 import { DeleteTestModal } from "./delete-test-modal";
 
@@ -45,6 +47,36 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions, showOp
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const { summary, allowed } = useBilling();
+  const [showPaywallDuplicate, setShowPaywallDuplicate] = useState(false);
+
+  const getTestPreview = () => {
+    const features: unknown = summary?.features;
+    let feature: unknown;
+    if (Array.isArray(features)) {
+      feature = features.find((f) => (f as { feature_id: string }).feature_id === "tests");
+    } else if (features && typeof features === "object") {
+      feature = (features as Record<string, unknown>)["tests"];
+    }
+    const bal = (feature as { balance?: number })?.balance;
+    const usageExhausted = typeof bal === "number" && bal <= 0;
+
+    const nextProduct = {
+      id: "hobby",
+      name: "Hobby Plan",
+      is_add_on: false,
+      free_trial: undefined,
+    } as unknown as Record<string, unknown>;
+
+    return {
+      scenario: usageExhausted ? "usage_limit" : "feature_flag",
+      feature_id: "tests",
+      feature_name: "Tests",
+      product_id: "hobby",
+      products: [nextProduct],
+    };
+  };
+
   // Check if dropdown should be shown (user has any actionable options)
   const hasActionableOptions = showEdit || showTrash;
   
@@ -67,6 +99,10 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions, showOp
   };
 
   const handleDuplicate = async () => {
+    if (!allowed({ featureId: "tests" })) {
+      setShowPaywallDuplicate(true);
+      return;
+    }
     try {
       await duplicateTest(testId);
       toast.success("Test duplicated");
@@ -171,6 +207,11 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions, showOp
         onConfirm={confirmDelete}
         loading={deleteLoading}
       />
+
+      {showPaywallDuplicate && (
+        /* @ts-expect-error preview partial */
+        <CheckDialog open={showPaywallDuplicate} setOpen={setShowPaywallDuplicate} preview={getTestPreview()} />
+      )}
     </>
   );
 }
