@@ -166,7 +166,7 @@ export function CreateSidebarDropdownButton() {
 
           {/* Personas */}
           <CustomDropdownMenuItem onSelect={handleCreateSinglePersona}>
-            <User className="size-4 mr-2" /> Single Persona
+            <User className="size-4 mr-2" /> {batchFeaturesEnabled ? 'Single Persona' : 'Persona'}
           </CustomDropdownMenuItem>
           {batchFeaturesEnabled && (
             <CustomDropdownMenuItem onSelect={() => router.push('/personas/batch/create')}>
@@ -178,7 +178,7 @@ export function CreateSidebarDropdownButton() {
 
           {/* Tests */}
           <CustomDropdownMenuItem onSelect={handleCreateSingleTest}>
-            <ListChecks className="size-4 mr-2" /> Test
+            <ListChecks className="size-4 mr-2" /> {batchFeaturesEnabled ? 'Single Test' : 'Test'}
           </CustomDropdownMenuItem>
           {batchFeaturesEnabled && (
             <CustomDropdownMenuItem onSelect={() => router.push('/tests/create-batch')}>
