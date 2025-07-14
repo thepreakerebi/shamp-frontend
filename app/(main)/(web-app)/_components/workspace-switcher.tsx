@@ -22,9 +22,15 @@ export function WorkspaceSwitcher() {
     );
   }
 
-  // Find current workspace details; fallback to first workspace if none selected
+  // Sort so that the workspace the user owns is always first
+  const sortedWorkspaces = [...user.workspaces].sort((a, b) => {
+    if (a.isOwner === b.isOwner) return 0;
+    return a.isOwner ? -1 : 1; // Owner workspace first
+  });
+
+  // Find current workspace; fallback to first (which is owner if exists)
   const currentWorkspace =
-    user.workspaces.find((ws) => ws._id === currentWorkspaceId) || user.workspaces[0];
+    sortedWorkspaces.find((ws) => ws._id === currentWorkspaceId) || sortedWorkspaces[0];
   const isOwner = currentWorkspace?.isOwner || false;
 
   // Display text for the current workspace
@@ -55,7 +61,7 @@ export function WorkspaceSwitcher() {
       </CustomDropdownMenuTrigger>
       
       <CustomDropdownMenuContent align="start" className="w-64">
-        {user.workspaces.map((workspace) => {
+        {sortedWorkspaces.map((workspace) => {
           const isCurrentWorkspace = workspace._id === currentWorkspaceId;
           const isWorkspaceOwner = workspace.isOwner;
           
