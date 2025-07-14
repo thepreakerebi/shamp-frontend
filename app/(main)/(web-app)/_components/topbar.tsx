@@ -44,7 +44,7 @@ export function Topbar() {
         (summary.products[0] as { id?: string }).id
       : 'Free';
 
-  const isFreeOrHobby = !billingLoading && ['free', 'hobby'].includes((planName ?? '').toLowerCase());
+  const isFreeOrHobby = !billingLoading && ['free', 'hobby', 'pro'].includes((planName ?? '').toLowerCase());
 
   // Only shift when expanded on desktop
   const isExpandedDesktop = !isMobile && state === 'expanded';

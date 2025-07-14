@@ -34,7 +34,7 @@ export function CreateSidebarDropdownButton() {
 
   // Features permitted only on paid plans (Pro/Ultra etc.)
   const batchFeaturesEnabled =
-    billingLoading || !["free", "hobby"].includes((planName ?? "").toLowerCase());
+    billingLoading || !["free", "hobby", "pro"].includes((planName ?? "").toLowerCase());
 
   // Preview builder for paywall
   const getTestPreview = () => {
@@ -182,7 +182,7 @@ export function CreateSidebarDropdownButton() {
           </CustomDropdownMenuItem>
           {batchFeaturesEnabled && (
             <CustomDropdownMenuItem onSelect={() => router.push('/tests/create-batch')}>
-              <ListPlus className="size-4 mr-2" /> Batch Test
+              <ListPlus className="size-4 mr-2" /> Batch Tests
             </CustomDropdownMenuItem>
           )}
 
