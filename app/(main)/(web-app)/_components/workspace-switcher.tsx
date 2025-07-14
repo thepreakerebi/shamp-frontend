@@ -22,8 +22,9 @@ export function WorkspaceSwitcher() {
     );
   }
 
-  // Find current workspace details
-  const currentWorkspace = user.workspaces.find(ws => ws._id === currentWorkspaceId);
+  // Find current workspace details; fallback to first workspace if none selected
+  const currentWorkspace =
+    user.workspaces.find((ws) => ws._id === currentWorkspaceId) || user.workspaces[0];
   const isOwner = currentWorkspace?.isOwner || false;
 
   // Display text for the current workspace
@@ -36,7 +37,7 @@ export function WorkspaceSwitcher() {
 
   // Handle workspace selection
   const handleWorkspaceSelect = (workspaceId: string) => {
-    if (workspaceId !== currentWorkspaceId) {
+    if (workspaceId !== (currentWorkspaceId ?? currentWorkspace._id)) {
       switchWorkspace(workspaceId);
     }
   };
