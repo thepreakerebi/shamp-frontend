@@ -1,5 +1,6 @@
 "use client";
 import { ArrowLeftIcon, RefreshCwIcon } from "lucide-react";
+import { PlayIcon, PauseIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,7 @@ import { TestRunCardActionsDropdown } from "@/app/(main)/(web-app)/tests/[testId
 import { useTestRuns, canTrashTestRun } from "@/hooks/use-testruns";
 import { useAuth } from "@/lib/auth";
 import { SummaryDetailsSkeleton } from "./summary-panel-content-skeleton";
+import { useNarrationAudio } from "@/hooks/use-narration-audio";
 
 interface Props {
   run: TestRunStatus;
@@ -154,6 +156,9 @@ export function SummaryPanel({ run, personaName }: Props) {
     narration = active.browserUseOutput.trim();
   }
 
+  // Narration audio hook
+  const { playing: narrationPlaying, loading: narrationLoading, toggle: toggleNarration } = useNarrationAudio(run._id);
+
   // Pull additional analysis data for prominent display
   const analysisSummary = (() => {
     if (!active.analysis || typeof active.analysis !== "object") return undefined;
@@ -232,7 +237,24 @@ export function SummaryPanel({ run, personaName }: Props) {
           <>
             {narration && (
               <section>
-                <h3 className="font-semibold mb-1">Narration</h3>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-semibold">Narration</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={narrationPlaying ? "Pause narration" : "Play narration"}
+                    onClick={toggleNarration}
+                    disabled={narrationLoading}
+                  >
+                    {narrationLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : narrationPlaying ? (
+                      <PauseIcon className="w-4 h-4" />
+                    ) : (
+                      <PlayIcon className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
                 <p className="whitespace-pre-line text-sm text-muted-foreground">{narration}</p>
               </section>
             )}
