@@ -251,7 +251,7 @@ export function SummaryPanel({ run, personaName }: Props) {
                     ) : narrationPlaying ? (
                       <PauseIcon className="w-4 h-4" />
                     ) : (
-                      <PlayIcon className="w-4 h-4" />
+                      <PlayIcon className="w-4 h-4 hidden" />
                     )}
                   </Button>
                 </div>
