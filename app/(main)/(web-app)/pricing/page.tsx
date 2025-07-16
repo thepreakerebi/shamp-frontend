@@ -55,11 +55,15 @@ export default function PricingPage() {
 
   const activePrice = parsePrice((displayedPlans.find(p=>p.id===activeProductId)?.price) || '0');
 
-  const handleCheckout = async (productId: string, isCancelScheduled: boolean = false) => {
+  const handleCheckout = async (
+    clickedPlanId: string,
+    productIdToAttach: string = clickedPlanId,
+    isCancelScheduled: boolean = false,
+  ) => {
     if (loadingPlanId) return; // prevent double clicks
-    setLoadingPlanId(productId);
+    setLoadingPlanId(clickedPlanId);
     try {
-      const { checkout_url } = await attachProductCheckout({ productId });
+      const { checkout_url } = await attachProductCheckout({ productId: productIdToAttach });
       if (checkout_url) {
         toast.success('Redirecting to secure checkout…');
         window.location.href = checkout_url;
@@ -72,7 +76,7 @@ export default function PricingPage() {
       if (isCancelScheduled) {
         toast.success('Scheduled change cancelled – your current plan will remain active.');
       } else {
-        const selected = displayedPlans.find(p=>p.id===productId) as Plan | undefined;
+        const selected = displayedPlans.find(p=>p.id===productIdToAttach) as Plan | undefined;
         const isDowngrade = selected ? parsePrice(selected.price) < activePrice : false;
         if (isDowngrade) {
           toast.success('Downgrade scheduled for next billing cycle.');
@@ -147,9 +151,11 @@ export default function PricingPage() {
               <Button
                 variant={plan.popular ? "secondary" : isCurrent ? "secondary" : isScheduled ? "outline" : "outline"}
                 className="w-full"
-                disabled={isCurrent || loadingPlanId === plan.id}
+                disabled={isCurrent || loadingPlanId !== null}
                 onClick={isCurrent ? undefined : (
-                  isScheduled ? () => handleCheckout(activeProductId, true) : () => handleCheckout(plan.id)
+                  isScheduled
+                    ? () => handleCheckout(plan.id, activeProductId, true)
+                    : () => handleCheckout(plan.id)
                 )}
               >
                 {isCurrent ? (
@@ -159,7 +165,7 @@ export default function PricingPage() {
                 ) : loadingPlanId === plan.id ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  plan.price === "$0" ? "Get started" : `Select ${plan.name}`
+                  plan.price === "$0" ? "Get started" : `Get ${plan.name}`
                 )}
               </Button>
             </article>
