@@ -105,11 +105,11 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
 
   return (
     <section className="flex flex-col items-center justify-center max-w-[420px] border rounded-lg bg-card shadow relative">
-      {!hasVideo && (
+      {/* {!hasVideo && (
         <div className="w-full h-48 flex items-center justify-center text-muted-foreground text-sm bg-muted rounded-lg">
           No recording yet
         </div>
-      )}
+      )} */}
       {hasVideo && (
         <video
           ref={videoRef}
