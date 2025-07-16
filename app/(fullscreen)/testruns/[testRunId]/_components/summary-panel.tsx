@@ -13,6 +13,7 @@ import { useTestRuns, canTrashTestRun } from "@/hooks/use-testruns";
 import { useAuth } from "@/lib/auth";
 import { SummaryDetailsSkeleton } from "./summary-panel-content-skeleton";
 import { useNarrationAudio } from "@/hooks/use-narration-audio";
+import NarrationModal from "./narration-modal";
 
 interface Props {
   run: TestRunStatus;
@@ -180,6 +181,9 @@ export function SummaryPanel({ run, personaName }: Props) {
     router.push('/test-runs');
   };
 
+  const [narrationOpen, setNarrationOpen] = React.useState(false);
+  const avatarUrl = (run as { personaAvatarUrl?: string }).personaAvatarUrl;
+
   return (
     <aside className="flex flex-col h-full overflow-hidden border-r">
       {/* Header */}
@@ -240,7 +244,7 @@ export function SummaryPanel({ run, personaName }: Props) {
                     variant="ghost"
                     size="icon"
                     aria-label={narrationPlaying ? "Pause narration" : "Play narration"}
-                    onClick={toggleNarration}
+                    onClick={() => setNarrationOpen(true)}
                     disabled={narrationLoading}
                   >
                     {narrationLoading ? (
@@ -248,7 +252,7 @@ export function SummaryPanel({ run, personaName }: Props) {
                     ) : narrationPlaying ? (
                       <PauseIcon className="w-4 h-4" />
                     ) : (
-                      <PlayIcon className="w-4 h-4 hidden" />
+                      <PlayIcon className="w-4 h-4" />
                     )}
                   </Button>
                 </div>
@@ -339,6 +343,13 @@ export function SummaryPanel({ run, personaName }: Props) {
       <footer className="p-4 border-t">
         <ThemeSwitcher />
       </footer>
+      <NarrationModal open={narrationOpen} onOpenChange={open=>{
+        setNarrationOpen(open);
+        if(!open) {
+          // stop any playing from hook
+          if(narrationPlaying) toggleNarration();
+        }
+      }} runId={run._id} avatarUrl={avatarUrl} personaName={personaName} />
     </aside>
   );
 } 
