@@ -392,7 +392,8 @@ export function useTestRuns() {
             const updated = { ...existingAfterOpt, ...run } as TestRun;
             updateTestRunInList(updated);
             syncRunToTestCache(updated);
-            // Refresh billing now that credits have been deducted
+            // Refresh counts (successful/failed) and billing now that run is done
+            fetchCounts();
             refetchBilling();
             // Batch-test run caches will refresh later; skip direct insertion.
             return;
