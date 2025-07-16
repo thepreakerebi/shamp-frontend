@@ -10,22 +10,39 @@ import { useOnboardingChecklist } from "@/hooks/use-onboarding-checklist";
 import { cn } from "@/lib/utils";
 
 const LOCAL_KEY = "onboarding_checklist_collapsed";
+const DONE_KEY = "onboarding_checklist_done";
 
 export function OnboardingChecklist() {
   const { ready, hasProject, hasPersona, hasTest, hasRun, allDone } = useOnboardingChecklist();
   const router = useRouter();
   const [runModalOpen, setRunModalOpen] = React.useState(false);
 
-  const [collapsed, setCollapsed] = React.useState(() => {
+  // Track whether the user has ever completed the checklist
+  const [done, setDone] = React.useState(() => {
     if (typeof window === "undefined") return false;
-    return localStorage.getItem(LOCAL_KEY) === "1";
+    return localStorage.getItem(DONE_KEY) === "1";
   });
 
+  // Determine collapsed state after we know whether the checklist is complete
+  const [collapsed, setCollapsed] = React.useState(false);
+
+  // Sync collapsed state with localStorage based on completion status
   React.useEffect(() => {
+    if (!ready) return;
+
     if (allDone) {
-      localStorage.setItem(LOCAL_KEY, "1");
+      // Mark onboarding as permanently done
+      setDone(true);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(DONE_KEY, "1");
+        localStorage.setItem(LOCAL_KEY, "1"); // collapse as well
+      }
+    } else {
+      // Ensure checklist starts expanded for incomplete onboarding (unless previously done)
+      setCollapsed(false);
     }
-  }, [allDone]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, allDone]);
 
   const handleToggle = () => {
     const next = !collapsed;
@@ -35,7 +52,7 @@ export function OnboardingChecklist() {
     }
   };
 
-  if (!ready || allDone) return null;
+  if (!ready || done) return null;
 
   return (
     <aside

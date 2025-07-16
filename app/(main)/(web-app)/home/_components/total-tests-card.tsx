@@ -13,7 +13,15 @@ interface TotalTestsCardProps {
 export function TotalTestsCard({ href }: TotalTestsCardProps) {
   const { count, countLoading, countError } = useTests();
 
-  if (countLoading && count === 0) return <CountCardSkeleton />;
+  // Only show skeleton on the initial load, not on subsequent background refreshes
+  const firstLoad = React.useRef(true);
+  React.useEffect(() => {
+    if (!countLoading) firstLoad.current = false;
+  }, [countLoading]);
+
+  if (countLoading && firstLoad.current) {
+    return <CountCardSkeleton />;
+  }
 
   const card = (
     <Card className="w-full md:max-w-sm bg-card/90 p-0">
