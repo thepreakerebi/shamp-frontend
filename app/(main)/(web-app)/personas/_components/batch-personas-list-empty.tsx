@@ -15,7 +15,11 @@ export function BatchPersonasListEmpty({ onCreate }: { onCreate?: () => void }) 
         (summary.products[0] as { id?: string }).id
       : "Free";
 
-  const isFreeOrHobby = ["free", "hobby", "pro"].includes((planName ?? "").toLowerCase());
+  // Treat annual variants (e.g. hobby_annual, Hobby - Annual) the same as the base plan
+  const normalizedPlan = (planName ?? '')
+    .toLowerCase()
+    .replace(/(_annual$|\s-\s*annual$)/, '');
+  const isFreeOrHobby = !billingLoading && ['free', 'hobby', 'pro'].includes(normalizedPlan);
 
   // If billing info still loading, assume feature available to avoid flicker
   const canCreateBatch = billingLoading || !isFreeOrHobby;
