@@ -154,7 +154,10 @@ export default function PricingPage() {
 
               <Button
                 variant={highlightPopular ? "secondary" : isCurrent ? "secondary" : isScheduled ? "outline" : "outline"}
-                className="w-full"
+                className={cn(
+                  "w-full",
+                  isCurrent && "bg-neutral-300 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-300 dark:hover:bg-neutral-800"
+                )}
                 disabled={isCurrent || loadingPlanId !== null}
                 onClick={isCurrent ? undefined : (
                   isScheduled
