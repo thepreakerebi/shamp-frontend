@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useTestRuns, TestRunStatus } from "@/hooks/use-testruns";
 import { PauseIcon, PlayIcon, StopCircleIcon } from "lucide-react";
 import { toast } from "sonner";
+import React from "react";
 
 interface Props {
   run: TestRunStatus;
@@ -11,6 +12,7 @@ interface Props {
 
 export function TestRunToolbar({ run }: Props) {
   const { pauseTestRun, resumeTestRun, stopTestRun, testRuns } = useTestRuns();
+  const [loading, setLoading] = React.useState<"pausing" | "resuming" | "stopping" | null>(null);
 
   const liveRun = (testRuns ?? []).find(r => r._id === run._id) as TestRunStatus | undefined;
   const active = liveRun ?? run;
@@ -60,32 +62,46 @@ export function TestRunToolbar({ run }: Props) {
 
   // Control handlers
   const onPause = async () => {
+    setLoading("pausing");
     try {
       await pauseTestRun(run._id);
       toast.success("Test run paused");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to pause test run");
+    } finally {
+      setLoading(null);
     }
   };
   const onResume = async () => {
+    setLoading("resuming");
     try {
       await resumeTestRun(run._id);
       toast.success("Test run resumed");
     } catch {
       toast.error("Failed to resume test run");
+    } finally {
+      setLoading(null);
     }
   };
   const onStop = async () => {
+    setLoading("stopping");
     try {
       await stopTestRun(run._id);
       toast.success("Test run stopped");
     } catch {
       toast.error("Failed to stop test run");
+    } finally {
+      setLoading(null);
     }
   };
 
   return (
     <section className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-6 bg-card/90 border rounded-full px-4 py-2 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/60">
+      {loading && (
+        <Badge variant="secondary" className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs">
+          {loading === "pausing" ? "Pausing run..." : loading === "resuming" ? "Resuming run..." : "Stopping run..."}
+        </Badge>
+      )}
       {/* Status section */}
       <div className="flex items-center gap-2">
         {( ["finished", "stopped"].includes(active.browserUseStatus ?? "") ) && statusBadge(active.status)}

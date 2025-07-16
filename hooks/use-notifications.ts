@@ -21,8 +21,13 @@ const fetcher = (url: string, token: string, workspaceId?: string | null) =>
 export function useNotifications({ enabled = true, scope = 'current' }: { enabled?: boolean; scope?: 'current' | 'all' } = {}) {
   const { token, currentWorkspaceId } = useAuth();
   const store = useNotificationsStore();
-  const prevKey = useRef<string>('');
+  const key = scope === 'all' ? 'all' : currentWorkspaceId ?? '';
+  // Track last workspace key across hook instances to avoid clearing store on initial mount
+  const prevKey = useRef<string>(key);
   const effectiveWorkspaceId = scope === 'all' ? null : currentWorkspaceId;
+
+  // Queue notifications received before workspace ID is known
+  const pendingNotifsRef = useRef<Notification[]>([]);
 
   // Initial fetch
   useEffect(() => {
@@ -44,7 +49,6 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
   }, [token, currentWorkspaceId, enabled, scope]);
 
   // Reset store when workspace scope changes to avoid showing stale notifications
-  const key = scope === 'all' ? 'all' : currentWorkspaceId ?? '';
   useEffect(() => {
     if (prevKey.current !== key) {
       store.setNotifications(null);
@@ -60,7 +64,7 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
 
   // Socket real-time updates
   useEffect(() => {
-    if (!enabled || !token || (scope === 'current' && !currentWorkspaceId)) return;
+    if (!enabled || !token) return; // connect as soon as we have token
     const socketAuth: { token: string; workspaceId?: string } = { token };
     if (effectiveWorkspaceId) socketAuth.workspaceId = effectiveWorkspaceId;
     const socket = io(SOCKET_URL, { transports: ["websocket"], auth: socketAuth });
@@ -69,11 +73,26 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
       const currentWs = workspaceIdRef.current;
       if (scope === 'all') {
         store.addNotification(notif);
-      } else if (!notif.workspace) {
-        // Ignore notifications lacking workspace to avoid cross-spill
-        return;
-      } else if (notif.workspace === currentWs) {
-        store.addNotification(notif);
+      } else {
+        // Normalise workspace (could be ObjectId, string, or undefined)
+        let ws: string | null = null;
+        if (notif.workspace) {
+          if (typeof notif.workspace === 'string') {
+            ws = notif.workspace;
+          } else if (typeof (notif.workspace as unknown as { toString: () => string }).toString === 'function') {
+            ws = (notif.workspace as unknown as { toString: () => string }).toString();
+          }
+        }
+        // If current workspace not yet known, queue for later
+        if (!currentWs) {
+          pendingNotifsRef.current.push(notif as Notification);
+          return;
+        }
+
+        // Accept if workspace absent or matches current
+        if (!ws || ws === currentWs) {
+          store.addNotification(notif);
+        }
       }
     };
 
@@ -85,6 +104,12 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
       }
     });
 
+    socket.on("notification:read", ({ id, workspace }: { id: string; workspace?: string }) => {
+      if (scope === 'all' || !workspace || workspace === currentWorkspaceId) {
+        store.markReadLocally(id);
+      }
+    });
+
     socket.on("notifications:cleared", ({ workspace }: { workspace?: string }) => {
       if (scope === 'all' || !workspace || workspace === currentWorkspaceId) {
         store.clearAllLocally();
@@ -93,11 +118,59 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
 
     return () => {
       socket.off("notification:created", createdHandler);
+      socket.off("notification:read");
       socket.off("notifications:markAllRead");
       socket.off("notifications:cleared");
       socket.disconnect();
     };
-  }, [token, currentWorkspaceId, enabled, scope]);
+  }, [token, currentWorkspaceId, enabled, scope, effectiveWorkspaceId]);
+
+  // Flush pending notifications once workspace ID becomes available
+  useEffect(() => {
+    if (scope !== 'current') return;
+    const currentWs = workspaceIdRef.current;
+    if (!currentWs) return;
+
+    if (pendingNotifsRef.current.length) {
+      const remaining: Notification[] = [];
+      pendingNotifsRef.current.forEach((notif) => {
+        let ws: string | null = null;
+        if (notif.workspace) {
+          if (typeof notif.workspace === 'string') ws = notif.workspace;
+          else if (typeof (notif.workspace as unknown as { toString: () => string }).toString === 'function') ws = (notif.workspace as unknown as { toString: () => string }).toString();
+        }
+        if (!ws || ws === currentWs) {
+          store.addNotification(notif);
+        } else {
+          remaining.push(notif);
+        }
+      });
+      pendingNotifsRef.current = remaining;
+    }
+  }, [currentWorkspaceId, scope]);
+
+  // API mutation – mark a single notification as read
+  const markNotificationAsRead = useCallback(async (id: string) => {
+    if (!id) return;
+
+    // Optimistically update locally
+    store.markReadLocally(id);
+
+    if (!token || (scope === 'current' && !currentWorkspaceId)) return;
+    const endpoint = `/notifications/${id}/read`;
+    try {
+      await fetch(`${API_BASE}${endpoint}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(effectiveWorkspaceId ? { 'X-Workspace-ID': effectiveWorkspaceId } : {}),
+        },
+      });
+    } catch {
+      // ignore, backend will sync later
+    }
+  }, [token, currentWorkspaceId, scope, effectiveWorkspaceId]);
 
   // API mutations
   const markAllAsRead = useCallback(async () => {
@@ -134,6 +207,7 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
     notificationsLoading: store.notificationsLoading,
     markAllAsRead,
     clearAll,
+    markNotificationAsRead,
     hasWorkspaceContext: !!currentWorkspaceId,
   };
 } 

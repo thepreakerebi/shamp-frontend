@@ -20,6 +20,7 @@ interface NotificationsState {
   setNotificationsError: (error: string | null) => void;
   addNotification: (notification: Notification) => void;
   markAllReadLocally: () => void;
+  markReadLocally: (id: string) => void;
   clearAllLocally: () => void;
 }
 
@@ -31,7 +32,28 @@ export const useNotificationsStore = create<NotificationsState>((set) => ({
   setNotificationsLoading: (notificationsLoading) => set({ notificationsLoading }),
   setNotificationsError: (notificationsError) => set({ notificationsError }),
   addNotification: (notification) =>
-    set((state) => ({ notifications: [notification, ...(state.notifications ?? [])] })),
+    set((state) => {
+      const exists = state.notifications?.some((n) => n._id === notification._id);
+      if (exists) {
+        // If duplicate, replace the existing one (preserving order)
+        return {
+          notificationsLoading: false,
+          notifications: (state.notifications ?? []).map((n) =>
+            n._id === notification._id ? { ...n, ...notification } : n,
+          ),
+        };
+      }
+      return {
+        notificationsLoading: false,
+        notifications: [notification, ...(state.notifications ?? [])],
+      };
+    }),
+  markReadLocally: (id) =>
+    set((state) => ({
+      notifications: state.notifications
+        ? state.notifications.map((n) => (n._id === id ? { ...n, read: true } : n))
+        : null,
+    })),
   markAllReadLocally: () =>
     set((state) => ({
       notifications: state.notifications

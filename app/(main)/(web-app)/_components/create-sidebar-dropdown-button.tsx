@@ -32,9 +32,13 @@ export function CreateSidebarDropdownButton() {
         (summary.products[0] as { id?: string }).id
       : "Free";
 
-  // Features permitted only on paid plans (Pro/Ultra etc.)
-  const batchFeaturesEnabled =
-    billingLoading || !["free", "hobby", "pro"].includes((planName ?? "").toLowerCase());
+  // Features permitted only on higher tiers (Ultra etc.).
+  // Treat annual variants of Hobby/Pro as the same low tier.
+  const normalizedPlan = (planName ?? "")
+    .toLowerCase()
+    .replace(/(_annual$|\s-\s*annual$)/, "");
+
+  const batchFeaturesEnabled = billingLoading || !["free", "hobby", "pro"].includes(normalizedPlan);
 
   // Preview builder for paywall
   const getTestPreview = () => {

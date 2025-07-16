@@ -262,13 +262,16 @@ export function useTestRuns() {
           } as TestRun;
           updateTestRunInList(updated);
           syncRunToTestCache(updated);
+          // Refresh counters and billing summary now that credits were consumed
+          fetchCounts();
+          refetchBilling();
           // Batch-test run caches will pick up this run on the next explicit fetch.
           return;
         }
       } catch {/* ignore */}
       // No fetch? We already optimistically set finished flag; counts refresh
       fetchCounts();
-      // Refresh billing summary (credits) across tabs
+      // Refresh billing in fallback path too
       refetchBilling();
     });
     socket.on("testRun:paused", async ({ testRunId, workspace }: { testRunId: string; workspace?: string }) => {
@@ -392,7 +395,8 @@ export function useTestRuns() {
             const updated = { ...existingAfterOpt, ...run } as TestRun;
             updateTestRunInList(updated);
             syncRunToTestCache(updated);
-            // Refresh billing now that credits have been deducted
+            // Refresh counts (successful/failed) and billing now that run is done
+            fetchCounts();
             refetchBilling();
             // Batch-test run caches will refresh later; skip direct insertion.
             return;

@@ -28,6 +28,7 @@ export function TestRunCard({ run }: { run: MinimalRun }) {
     deleteTestRun,
     moveTestRunToTrash,
   } = useTestRuns();
+  const [loading, setLoading] = React.useState<"pausing" | "resuming" | "stopping" | null>(null);
 
   // Look up persona avatar URL (backend may also provide it directly on the run)
   const personaAvatarUrlFromStore = usePersonasStore(
@@ -121,26 +122,37 @@ export function TestRunCard({ run }: { run: MinimalRun }) {
   // Control handlers
   const onPause = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    setLoading("pausing");
     try {
       await pauseTestRun(run._id);
       toast.success("Test run paused");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to pause test run");
+    } finally {
+      setLoading(null);
     }
   };
   const onResume = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    setLoading("resuming");
     try {
       await resumeTestRun(run._id);
       toast.success("Test run resumed");
-    } catch {}
+    } catch {
+    } finally {
+      setLoading(null);
+    }
   };
   const onStop = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    setLoading("stopping");
     try {
       await stopTestRun(run._id);
       toast.success("Test run stopped");
-    } catch {}
+    } catch {
+    } finally {
+      setLoading(null);
+    }
   };
 
   const runWithTest = run as unknown as { test?: string; createdBy?: string };
@@ -155,6 +167,11 @@ export function TestRunCard({ run }: { run: MinimalRun }) {
       onClick={handleOpen}
       className={cn("rounded-3xl border dark:border-0 bg-card/80 transition-all flex flex-col p-4 gap-3 relative", run.status === 'pending' ? 'cursor-default' : 'hover:bg-muted/50 cursor-pointer')}
     >
+      {loading && (
+        <Badge variant="secondary" className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs">
+          {loading === "pausing" ? "Pausing run..." : loading === "resuming" ? "Resuming run..." : "Stopping run..."}
+        </Badge>
+      )}
       {/* Header */}
       <header className="flex items-start gap-3">
         {/* Persona avatar */}

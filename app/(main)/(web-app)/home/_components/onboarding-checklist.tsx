@@ -9,12 +9,20 @@ import { StartTestRunModal } from "@/app/(main)/(web-app)/test-runs/_components/
 import { useOnboardingChecklist } from "@/hooks/use-onboarding-checklist";
 import { cn } from "@/lib/utils";
 
+// Persist completion so returning users don't see flash of checklist
+const COMPLETED_KEY = "onboarding_checklist_completed";
 const LOCAL_KEY = "onboarding_checklist_collapsed";
 
 export function OnboardingChecklist() {
   const { ready, hasProject, hasPersona, hasTest, hasRun, allDone } = useOnboardingChecklist();
   const router = useRouter();
   const [runModalOpen, setRunModalOpen] = React.useState(false);
+
+  // Skip rendering entirely if previously completed
+  const [completed, setCompleted] = React.useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(COMPLETED_KEY) === "1";
+  });
 
   const [collapsed, setCollapsed] = React.useState(() => {
     if (typeof window === "undefined") return false;
@@ -24,6 +32,8 @@ export function OnboardingChecklist() {
   React.useEffect(() => {
     if (allDone) {
       localStorage.setItem(LOCAL_KEY, "1");
+      localStorage.setItem(COMPLETED_KEY, "1");
+      setCompleted(true);
     }
   }, [allDone]);
 
@@ -35,7 +45,7 @@ export function OnboardingChecklist() {
     }
   };
 
-  if (!ready || allDone) return null;
+  if (!ready || allDone || completed) return null;
 
   return (
     <aside
