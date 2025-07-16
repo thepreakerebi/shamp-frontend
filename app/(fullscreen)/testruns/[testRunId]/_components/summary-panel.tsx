@@ -24,20 +24,14 @@ export function SummaryPanel({ run, personaName }: Props) {
   const { deleteTestRun, moveTestRunToTrash, testRuns } = useTestRuns();
   const { user } = useAuth();
 
-  // Refresh button visibility – shown only once when status is "stopped" and
-  // the user hasn't already clicked it.
-  const [showRefresh, setShowRefresh] = React.useState(() => {
-    if (typeof window === "undefined") return true;
-    return !sessionStorage.getItem(`run_refresh_${run._id}`);
-  });
-
-  // Persist dismissal whenever the button is hidden (user clicked) for this run
+  // Refresh button visibility
+  const [showRefresh, setShowRefresh] = React.useState<boolean | null>(null);
+  // Determine visibility after mount to avoid SSR mismatch
   React.useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!showRefresh) {
-      sessionStorage.setItem(`run_refresh_${run._id}`, "done");
-    }
-  }, [run._id, showRefresh]);
+    const already = localStorage.getItem(`run_refresh_${run._id}`);
+    setShowRefresh(!already);
+  }, [run._id]);
 
   // Pick latest run data from store if available, but preserve rich fields from initial run
   const liveRun = (testRuns ?? []).find(r => r._id === run._id) as TestRunStatus | undefined;
@@ -213,14 +207,17 @@ export function SummaryPanel({ run, personaName }: Props) {
         <section className="flex items-center gap-2">
           {( ["finished", "stopped"].includes(active.browserUseStatus ?? "") && ["succeeded", "failed", "cancelled"].includes(active.status) ) && statusBadge(active.status)}
           {browserStatusBadge(active.browserUseStatus)}
-          {active.browserUseStatus === "stopped" && active.status !== "cancelled" && showRefresh && (
+          {active.browserUseStatus === "stopped" && active.status !== "cancelled" && showRefresh === true && (
             <Button
               variant="ghost"
               size="icon"
               aria-label="Refresh"
               onClick={() => {
-                setShowRefresh(false);
-                if (typeof window !== "undefined") window.location.reload();
+                if (typeof window !== "undefined") {
+                  localStorage.setItem(`run_refresh_${run._id}`, "done");
+                  setShowRefresh(false);
+                  window.location.reload();
+                }
               }}
             >
               <RefreshCwIcon className="w-4 h-4" />
