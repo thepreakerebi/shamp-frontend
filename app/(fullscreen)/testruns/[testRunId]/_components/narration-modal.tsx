@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogOverlay, DialogHeader, DialogTitle } from 
 import { Button } from "@/components/ui/button";
 import { PlayIcon, PauseIcon, RotateCcw, RotateCw } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth";
 
 interface Props {
@@ -23,6 +24,7 @@ export default function NarrationModal({ open, onOpenChange, runId, avatarUrl, p
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
   const [rateIdx, setRateIdx] = useState(0);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   // Load audio once modal opens
   useEffect(() => {
@@ -104,8 +106,18 @@ export default function NarrationModal({ open, onOpenChange, runId, avatarUrl, p
         <DialogHeader>
           <DialogTitle className="sr-only">Narration</DialogTitle>
         </DialogHeader>
-        <Avatar className="size-24 mx-auto">
-          {avatarUrl ? <AvatarImage src={avatarUrl} alt={personaName || "avatar"} /> : <AvatarFallback>{personaName?.charAt(0)}</AvatarFallback>}
+        <Avatar className="size-24 mx-auto relative">
+          {!imgLoaded && avatarUrl && <Skeleton className="absolute inset-0 rounded-full size-24" />}
+          {avatarUrl ? (
+            <AvatarImage
+              src={avatarUrl}
+              alt={personaName || "avatar"}
+              onLoad={() => setImgLoaded(true)}
+              onError={() => setImgLoaded(true)}
+            />
+          ) : (
+            <AvatarFallback>{personaName?.charAt(0)}</AvatarFallback>
+          )}
         </Avatar>
         {/* Controls */}
         {audioReady ? (
