@@ -115,12 +115,16 @@ export default function PricingPage() {
         {displayedPlans.map((plan) => {
           const isCurrent = plan.id === activeProductId;
           const isScheduled = scheduledProduct && scheduledProduct.id === plan.id;
+          const highlightPopular = plan.popular && (
+            (billingCycle === 'month' && activeProductId !== 'ultra') ||
+            (billingCycle === 'year' && activeProductId !== 'ultra_annual')
+          );
           return (
             <article
               key={plan.id}
               className={cn(
                 "rounded-3xl border p-6 flex flex-col items-stretch text-left",
-                plan.popular && "border ring-2 ring-secondary/30 shadow",
+                highlightPopular && "border ring-2 ring-secondary/30 shadow",
               )}
             >
               <h2 className="text-xl font-medium mb-2 flex items-center gap-2">
@@ -149,7 +153,7 @@ export default function PricingPage() {
               </ul>
 
               <Button
-                variant={plan.popular ? "secondary" : isCurrent ? "secondary" : isScheduled ? "outline" : "outline"}
+                variant={highlightPopular ? "secondary" : isCurrent ? "secondary" : isScheduled ? "outline" : "outline"}
                 className="w-full"
                 disabled={isCurrent || loadingPlanId !== null}
                 onClick={isCurrent ? undefined : (
