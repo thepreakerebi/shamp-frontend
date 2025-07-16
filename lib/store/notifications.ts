@@ -36,12 +36,14 @@ export const useNotificationsStore = create<NotificationsState>((set) => ({
       if (exists) {
         // If duplicate, replace the existing one (preserving order)
         return {
+          notificationsLoading: false,
           notifications: (state.notifications ?? []).map((n) =>
             n._id === notification._id ? { ...n, ...notification } : n,
           ),
         };
       }
       return {
+        notificationsLoading: false,
         notifications: [notification, ...(state.notifications ?? [])],
       };
     }),
