@@ -2,6 +2,7 @@
 import { NodeProps } from "reactflow";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
+import { useTestRuns } from "@/hooks/use-testruns";
 
 interface RecordingData {
   url?: string | null;
@@ -14,6 +15,13 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
   const [videoUrl, setVideoUrl] = useState<string | null>(data.url?.trim() || null);
   const hasVideo = !!videoUrl;
   const { token, currentWorkspaceId } = useAuth();
+  const { testRuns } = useTestRuns();
+
+  const browserStopped = (() => {
+    if (!data.testRunId) return false;
+    const run = (testRuns ?? []).find(r => r._id === data.testRunId);
+    return run?.browserUseStatus === 'stopped';
+  })();
 
   // Helper to set loaded from multiple events
   const handleLoaded = () => {
@@ -105,11 +113,11 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
 
   return (
     <section className="flex flex-col items-center justify-center max-w-[420px] border rounded-lg bg-card shadow relative">
-      {/* {!hasVideo && (
-        <div className="w-full h-48 flex items-center justify-center text-muted-foreground text-sm bg-muted rounded-lg">
-          No recording yet
+      {!hasVideo && (
+        <div className="w-full h-48 flex items-center justify-center text-muted-foreground text-sm bg-muted rounded-lg text-center px-2">
+          {browserStopped ? 'Refresh to see recording' : 'No recording yet'}
         </div>
-      )} */}
+      )}
       {hasVideo && (
         <video
           ref={videoRef}
