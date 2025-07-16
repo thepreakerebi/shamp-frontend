@@ -69,11 +69,11 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
       const currentWs = workspaceIdRef.current;
       if (scope === 'all') {
         store.addNotification(notif);
-      } else if (!notif.workspace) {
-        // Ignore notifications lacking workspace to avoid cross-spill
-        return;
-      } else if (notif.workspace === currentWs) {
-        store.addNotification(notif);
+      } else {
+        // If backend omits workspace, assume it belongs to current workspace
+        if (!notif.workspace || notif.workspace === currentWs) {
+          store.addNotification(notif);
+        }
       }
     };
 
