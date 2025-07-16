@@ -23,6 +23,12 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
     return run?.browserUseStatus === 'stopped';
   })();
 
+  const statusCancelled = (() => {
+    if (!data.testRunId) return false;
+    const run = (testRuns ?? []).find(r => r._id === data.testRunId);
+    return run?.status === 'cancelled';
+  })();
+
   // Helper to set loaded from multiple events
   const handleLoaded = () => {
     setLoaded(true);
@@ -113,9 +119,9 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
 
   return (
     <section className="flex flex-col items-center justify-center max-w-[420px] border rounded-lg bg-card shadow relative">
-      {!hasVideo && (
+      { browserStopped && !hasVideo && !statusCancelled && (
         <div className="w-full h-48 flex items-center justify-center text-muted-foreground text-sm bg-muted rounded-lg text-center px-2">
-          {browserStopped ? 'Refresh to see recording' : 'No recording yet'}
+          Refresh to see recording
         </div>
       )}
       {hasVideo && (

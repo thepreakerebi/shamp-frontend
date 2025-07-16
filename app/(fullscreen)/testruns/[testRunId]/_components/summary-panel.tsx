@@ -213,7 +213,7 @@ export function SummaryPanel({ run, personaName }: Props) {
         <section className="flex items-center gap-2">
           {( ["finished", "stopped"].includes(active.browserUseStatus ?? "") && ["succeeded", "failed", "cancelled"].includes(active.status) ) && statusBadge(active.status)}
           {browserStatusBadge(active.browserUseStatus)}
-          {active.browserUseStatus === "stopped" && showRefresh && (
+          {active.browserUseStatus === "stopped" && active.status !== "cancelled" && showRefresh && (
             <Button
               variant="ghost"
               size="icon"
