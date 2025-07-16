@@ -6,7 +6,7 @@ import { useBilling } from "@/hooks/use-billing";
 import { Check } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 interface Plan {
@@ -38,8 +38,10 @@ export default function PricingPage() {
 
   const [billingCycle, setBillingCycle] = useState<'month' | 'year'>('month');
 
-  // Set default tab depending on current active product (monthly vs annual)
+  // Initialise default tab once, based on current active product
+  const initRef = useRef(false);
   useEffect(() => {
+    if (initRef.current) return; // already initialised – don't override user choice
     if (!summary?.products || !Array.isArray(summary.products)) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const active = (summary.products as any[]).find((p: any) => p.status === 'active');
@@ -50,6 +52,7 @@ export default function PricingPage() {
     } else {
       setBillingCycle('month');
     }
+    initRef.current = true;
   }, [summary]);
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
 
@@ -121,7 +124,9 @@ export default function PricingPage() {
           <button
             key={c}
             className={cn('px-4 py-2 text-sm font-normal', billingCycle===c ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-medium' : 'bg-background text-foreground hover:bg-muted')}
-            onClick={() => setBillingCycle(c)}
+            onClick={() => {
+              setBillingCycle(c);
+            }}
           >
             {c === 'month' ? 'Monthly' : 'Annual (save 15%)'}
           </button>
