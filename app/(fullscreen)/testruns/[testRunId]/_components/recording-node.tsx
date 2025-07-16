@@ -10,6 +10,7 @@ interface RecordingData {
 }
 
 export default function RecordingNode({ data }: NodeProps<RecordingData>) {
+  const START_OFFSET = 11;
   const [loaded, setLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(data.url?.trim() || null);
@@ -116,6 +117,76 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
       vid.removeEventListener('error', onError);
     };
   }, [hasVideo, data.testRunId, videoUrl, token, currentWorkspaceId]);
+
+  // Seek to 10-second mark once metadata is available so playback starts at 00:10
+  useEffect(() => {
+    if (!hasVideo) return;
+    const vid = videoRef.current;
+    if (!vid) return;
+
+    const seek = () => {
+      try {
+        if (vid.duration && vid.duration > START_OFFSET) {
+          vid.currentTime = START_OFFSET;
+        }
+      } catch {/* ignore seek failures */}
+    };
+
+    if (vid.readyState >= 1) seek();
+    vid.addEventListener('loadedmetadata', seek);
+    return () => vid.removeEventListener('loadedmetadata', seek);
+  }, [hasVideo, videoUrl]);
+
+  // Prevent viewing final 9 seconds: pause and clamp playback position
+  const [cutOff, setCutOff] = useState<number | null>(null);
+
+  // Determine cutoff once metadata is available
+  useEffect(() => {
+    if (!hasVideo) return;
+    const vid = videoRef.current;
+    if (!vid) return;
+
+    const computeCutOff = () => {
+      if (vid.duration && vid.duration > 11) {
+        setCutOff(Math.max(0, vid.duration - 11));
+      }
+    };
+
+    if (vid.readyState >= 1) computeCutOff();
+    vid.addEventListener('loadedmetadata', computeCutOff);
+    return () => vid.removeEventListener('loadedmetadata', computeCutOff);
+  }, [hasVideo, videoUrl]);
+
+  // Enforce cutoff during playback and seeking
+  useEffect(() => {
+    if (cutOff === null) return;
+    const vid = videoRef.current;
+    if (!vid) return;
+
+    const clampTime = () => {
+      if (vid.currentTime < START_OFFSET) {
+        vid.currentTime = START_OFFSET;
+      } else if (vid.currentTime >= cutOff) {
+        vid.currentTime = cutOff;
+        vid.pause();
+      }
+    };
+
+    const handleSeeking = () => {
+      if (vid.currentTime < START_OFFSET) {
+        vid.currentTime = START_OFFSET;
+      } else if (vid.currentTime > cutOff - 0.1) {
+        vid.currentTime = Math.max(START_OFFSET, cutOff - 0.1);
+      }
+    };
+
+    vid.addEventListener('timeupdate', clampTime);
+    vid.addEventListener('seeking', handleSeeking);
+    return () => {
+      vid.removeEventListener('timeupdate', clampTime);
+      vid.removeEventListener('seeking', handleSeeking);
+    };
+  }, [cutOff]);
 
   return (
     <section className="flex flex-col items-center justify-center max-w-[420px] border rounded-lg bg-card shadow relative">
