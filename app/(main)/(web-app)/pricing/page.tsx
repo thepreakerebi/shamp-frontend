@@ -6,7 +6,7 @@ import { useBilling } from "@/hooks/use-billing";
 import { Check } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 
 interface Plan {
@@ -37,6 +37,20 @@ export default function PricingPage() {
   const { attachProductCheckout, summary, refetch } = useBilling();
 
   const [billingCycle, setBillingCycle] = useState<'month' | 'year'>('month');
+
+  // Set default tab depending on current active product (monthly vs annual)
+  useEffect(() => {
+    if (!summary?.products || !Array.isArray(summary.products)) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const active = (summary.products as any[]).find((p: any) => p.status === 'active');
+    if (!active) return;
+    const idOrName = (active.id ?? active.name ?? '') as string;
+    if (/(_annual$|\s-\s*annual$)/i.test(idOrName)) {
+      setBillingCycle('year');
+    } else {
+      setBillingCycle('month');
+    }
+  }, [summary]);
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
 
   const displayedPlans = billingCycle === 'month' ? monthlyPlans : annualPlans;
@@ -66,6 +80,9 @@ export default function PricingPage() {
       const { checkout_url } = await attachProductCheckout({ productId: productIdToAttach });
       if (checkout_url) {
         toast.success('Redirecting to secure checkout…');
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('showPlanToast', '1');
+        }
         window.location.href = checkout_url;
         return;
       }

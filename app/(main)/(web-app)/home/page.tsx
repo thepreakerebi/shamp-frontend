@@ -15,6 +15,10 @@ export default function HomePage() {
       toast.success('You are logged in');
       localStorage.removeItem('showLoggedInToast');
     }
+    if (typeof window !== 'undefined' && localStorage.getItem('showPlanToast') === '1') {
+      toast.success('Your subscription was updated successfully!');
+      localStorage.removeItem('showPlanToast');
+    }
   }, []);
 
   return (
