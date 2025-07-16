@@ -31,7 +31,20 @@ export const useNotificationsStore = create<NotificationsState>((set) => ({
   setNotificationsLoading: (notificationsLoading) => set({ notificationsLoading }),
   setNotificationsError: (notificationsError) => set({ notificationsError }),
   addNotification: (notification) =>
-    set((state) => ({ notifications: [notification, ...(state.notifications ?? [])] })),
+    set((state) => {
+      const exists = state.notifications?.some((n) => n._id === notification._id);
+      if (exists) {
+        // If duplicate, replace the existing one (preserving order)
+        return {
+          notifications: (state.notifications ?? []).map((n) =>
+            n._id === notification._id ? { ...n, ...notification } : n,
+          ),
+        };
+      }
+      return {
+        notifications: [notification, ...(state.notifications ?? [])],
+      };
+    }),
   markAllReadLocally: () =>
     set((state) => ({
       notifications: state.notifications

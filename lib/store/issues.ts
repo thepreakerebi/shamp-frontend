@@ -36,7 +36,16 @@ export const useIssuesStore = create<IssuesState>((set) => ({
   setIssues: (issues) => set({ issues }),
   setIssuesLoading: (issuesLoading) => set({ issuesLoading }),
   setIssuesError: (issuesError) => set({ issuesError }),
-  addIssue: (issue) => set((state) => ({ issues: [issue, ...(state.issues ?? [])] })),
+  addIssue: (issue) =>
+    set((state) => {
+      const exists = state.issues?.some((i) => i._id === issue._id);
+      if (exists) {
+        return {
+          issues: (state.issues ?? []).map((i) => (i._id === issue._id ? { ...i, ...issue } : i)),
+        };
+      }
+      return { issues: [issue, ...(state.issues ?? [])] };
+    }),
   updateIssue: (issue) =>
     set((state) => ({
       issues: state.issues ? state.issues.map((i) => (i._id === issue._id ? issue : i)) : null,
