@@ -1,6 +1,8 @@
 "use client";
 import { NodeProps } from "reactflow";
 import { useState, useRef, useEffect } from "react";
+import { PlayIcon, PauseIcon, MaximizeIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { useTestRuns } from "@/hooks/use-testruns";
 
@@ -196,19 +198,116 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
         </div>
       )}
       {hasVideo && (
-        <video
-          ref={videoRef}
-          src={videoUrl!}
-          controls
-          onLoadedData={handleLoaded}
-          onLoadedMetadata={handleLoaded}
-          onCanPlay={handleLoaded}
-          className="w-full rounded-lg bg-black"
-        />
+        <div className="relative w-full">
+          <video
+            ref={videoRef}
+            src={videoUrl!}
+            onLoadedData={handleLoaded}
+            onLoadedMetadata={handleLoaded}
+            onCanPlay={handleLoaded}
+            className="w-full rounded-lg bg-black"
+            playsInline
+          />
+          {/* Custom controls overlay */}
+          <VideoControls videoRef={videoRef} startOffset={START_OFFSET} cutOff={cutOff} />
+        </div>
       )}
       {!loaded && hasVideo && (
         <div className="w-full h-48 animate-pulse bg-muted absolute inset-0 rounded-lg" />
       )}
     </section>
+  );
+}
+
+interface ControlsProps {
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  startOffset: number;
+  cutOff: number | null;
+}
+
+function VideoControls({ videoRef, startOffset, cutOff }: ControlsProps) {
+  const [playing, setPlaying] = useState(false);
+  const [currentRel, setCurrentRel] = useState(0); // seconds relative
+  const [durationRel, setDurationRel] = useState(0);
+  const rates = [1, 1.25, 1.5, 2];
+  const [rateIndex, setRateIndex] = useState(0); // index into rates
+
+  // Sync state from video events
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+
+    const updateTime = () => {
+      const rel = Math.max(0, vid.currentTime - startOffset);
+      setCurrentRel(rel);
+    };
+
+    const updatePlay = () => setPlaying(!vid.paused);
+
+    const updateDuration = () => {
+      if (cutOff !== null) {
+        setDurationRel(Math.max(0, cutOff - startOffset));
+      }
+    };
+
+    updateDuration();
+    vid.addEventListener("timeupdate", updateTime);
+    vid.addEventListener("play", updatePlay);
+    vid.addEventListener("pause", updatePlay);
+    vid.addEventListener("loadedmetadata", updateDuration);
+    return () => {
+      vid.removeEventListener("timeupdate", updateTime);
+      vid.removeEventListener("play", updatePlay);
+      vid.removeEventListener("pause", updatePlay);
+      vid.removeEventListener("loadedmetadata", updateDuration);
+    };
+  }, [videoRef, cutOff, startOffset]);
+
+  const togglePlay = () => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    if (vid.paused) vid.play(); else vid.pause();
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const vid = videoRef.current;
+    if (!vid || cutOff === null) return;
+    const rel = Number(e.target.value);
+    vid.currentTime = startOffset + rel;
+  };
+
+  const changeRate = () => {
+    const nextIndex = (rateIndex + 1) % rates.length;
+    setRateIndex(nextIndex);
+    const vid = videoRef.current;
+    if (vid) vid.playbackRate = rates[nextIndex];
+  };
+
+  const enterFullscreen = () => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    if (vid.requestFullscreen) vid.requestFullscreen();
+  };
+
+  const fmt = (s: number) => {
+    const m = Math.floor(s / 60).toString().padStart(1, "0");
+    const sec = Math.floor(s % 60).toString().padStart(2, "0");
+    return `${m}:${sec}`;
+  };
+
+  return (
+    <div className="absolute inset-x-0 bottom-0 bg-black/60 text-white flex items-center gap-2 px-2 py-1 text-xs">
+      <Button variant="ghost" size="icon" onClick={togglePlay} className="text-white">
+        {playing ? <PauseIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4" />}
+      </Button>
+      <span>{fmt(currentRel)} / {fmt(durationRel)}</span>
+      <input type="range" min={0} max={durationRel} step={0.1} value={currentRel} onChange={handleSeek} className="flex-1 mx-2" />
+      <Button variant="ghost" size="icon" onClick={changeRate} className="text-white text-xs w-8">
+        {rates[rateIndex]}x
+      </Button>
+      <Button variant="ghost" size="icon" onClick={enterFullscreen} className="text-white">
+        <MaximizeIcon className="w-4 h-4" />
+      </Button>
+    </div>
   );
 } 
