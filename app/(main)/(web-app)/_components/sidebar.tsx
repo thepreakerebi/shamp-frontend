@@ -209,9 +209,21 @@ function WorkspaceAndPlan() {
       {isAdmin && (
         <Link href="/pricing" className="group">
           <Badge className="text-xs py-0.5 px-2 whitespace-nowrap bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 cursor-pointer group-hover:opacity-80 transition">
-            {summary?.products && Array.isArray(summary.products) && summary.products.length > 0
-              ? (summary.products[0] as { name?: string; id?: string }).name || (summary.products[0] as { id?: string }).id
-              : "Free"}
+            {(() => {
+              if (!summary?.products || !Array.isArray(summary.products) || summary.products.length === 0) {
+                return 'Free';
+              }
+              const prod = summary.products[0] as { name?: string; id?: string };
+              let label = prod.name ?? prod.id ?? 'Free';
+              // Remove " - annual" suffix in names
+              label = label.replace(/\s*-\s*annual$/i, '');
+              // Convert id like "hobby_annual" to "Hobby"
+              if (/^.+_annual$/i.test(label)) {
+                label = label.replace(/_annual$/i, '');
+                label = label.charAt(0).toUpperCase() + label.slice(1);
+              }
+              return label;
+            })()}
           </Badge>
         </Link>
       )}
