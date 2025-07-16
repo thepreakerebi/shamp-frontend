@@ -70,8 +70,9 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
       if (scope === 'all') {
         store.addNotification(notif);
       } else {
-        // If backend omits workspace, assume it belongs to current workspace
-        if (!notif.workspace || notif.workspace === currentWs) {
+        const ws = notif.workspace ? String(notif.workspace) : null;
+        // If backend omits workspace, or matches current, accept
+        if (!ws || ws === currentWs) {
           store.addNotification(notif);
         }
       }
