@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -118,11 +118,7 @@ export default function ResetPasswordPage() {
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
                 onClick={() => setPasswordVisible(v => !v)}
               >
-                {passwordVisible ? (
-                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.94 17.94A10.06 10.06 0 0 1 12 20c-5 0-9.27-3.11-10-7.5a9.96 9.96 0 0 1 4.24-6.19m3.13-1.32A9.93 9.93 0 0 1 12 4c5 0 9.27 3.11 10 7.5a9.97 9.97 0 0 1-4.21 6.17M9.88 9.88A3 3 0 0 1 12 9c1.66 0 3 1.34 3 3 0 .42-.09.82-.24 1.18m-1.06 1.06A3 3 0 0 1 12 15a3 3 0 0 1-3-3c0-.42.09-.82.24-1.18m7.06 7.06L4 4"/></svg>
-                ) : (
-                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 1l22 22M17.94 17.94A10.06 10.06 0 0 1 12 20c-5 0-9.27-3.11-10-7.5a9.96 9.96 0 0 1 4.24-6.19m3.13-1.32A9.93 9.93 0 0 1 12 4c5 0 9.27 3.11 10 7.5a9.97 9.97 0 0 1-4.21 6.17"/></svg>
-                )}
+                {passwordVisible ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
               </button>
             </div>
           </section>
