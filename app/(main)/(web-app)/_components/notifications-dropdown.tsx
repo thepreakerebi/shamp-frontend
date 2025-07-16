@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Dot } from "lucide-react";
 import type { Notification as Notif } from "@/lib/store/notifications";
-import { useNotificationsStore } from "@/lib/store/notifications";
 import { Trash } from "lucide-react";
 
 export default function NotificationsDropdown() {
@@ -116,7 +115,7 @@ interface NotificationRowProps {
 
 function NotificationRow({ notification }: NotificationRowProps) {
   const router = useRouter();
-  const { setNotifications } = useNotificationsStore();
+  const { markNotificationAsRead } = useNotifications({ enabled: false });
 
   // Create click handler based on type
   const handleClick = () => {
@@ -126,7 +125,6 @@ function NotificationRow({ notification }: NotificationRowProps) {
         const id = (notification.data as any).testRunId as string | undefined;
         if (id) {
           window.open(`/testruns/${id}`, "_blank");
-          return;
         }
         break;
       }
@@ -148,14 +146,8 @@ function NotificationRow({ notification }: NotificationRowProps) {
       router.push(path);
     }
 
-    // Mark this notification as read locally for instant feedback
-    const current = useNotificationsStore.getState().notifications;
-    if (current) {
-      const updated = current.map((n) =>
-        n._id === notification._id ? { ...n, read: true } : n,
-      );
-      setNotifications(updated);
-    }
+    // Mark as read (optimistic + backend sync)
+    markNotificationAsRead(notification._id);
   };
 
   return (

@@ -20,6 +20,7 @@ interface NotificationsState {
   setNotificationsError: (error: string | null) => void;
   addNotification: (notification: Notification) => void;
   markAllReadLocally: () => void;
+  markReadLocally: (id: string) => void;
   clearAllLocally: () => void;
 }
 
@@ -47,6 +48,12 @@ export const useNotificationsStore = create<NotificationsState>((set) => ({
         notifications: [notification, ...(state.notifications ?? [])],
       };
     }),
+  markReadLocally: (id) =>
+    set((state) => ({
+      notifications: state.notifications
+        ? state.notifications.map((n) => (n._id === id ? { ...n, read: true } : n))
+        : null,
+    })),
   markAllReadLocally: () =>
     set((state) => ({
       notifications: state.notifications

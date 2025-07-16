@@ -21,7 +21,9 @@ const fetcher = (url: string, token: string, workspaceId?: string | null) =>
 export function useNotifications({ enabled = true, scope = 'current' }: { enabled?: boolean; scope?: 'current' | 'all' } = {}) {
   const { token, currentWorkspaceId } = useAuth();
   const store = useNotificationsStore();
-  const prevKey = useRef<string>('');
+  const key = scope === 'all' ? 'all' : currentWorkspaceId ?? '';
+  // Track last workspace key across hook instances to avoid clearing store on initial mount
+  const prevKey = useRef<string>(key);
   const effectiveWorkspaceId = scope === 'all' ? null : currentWorkspaceId;
 
   // Initial fetch
@@ -44,7 +46,6 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
   }, [token, currentWorkspaceId, enabled, scope]);
 
   // Reset store when workspace scope changes to avoid showing stale notifications
-  const key = scope === 'all' ? 'all' : currentWorkspaceId ?? '';
   useEffect(() => {
     if (prevKey.current !== key) {
       store.setNotifications(null);
@@ -86,6 +87,12 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
       }
     });
 
+    socket.on("notification:read", ({ id, workspace }: { id: string; workspace?: string }) => {
+      if (scope === 'all' || !workspace || workspace === currentWorkspaceId) {
+        store.markReadLocally(id);
+      }
+    });
+
     socket.on("notifications:cleared", ({ workspace }: { workspace?: string }) => {
       if (scope === 'all' || !workspace || workspace === currentWorkspaceId) {
         store.clearAllLocally();
@@ -94,11 +101,35 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
 
     return () => {
       socket.off("notification:created", createdHandler);
+      socket.off("notification:read");
       socket.off("notifications:markAllRead");
       socket.off("notifications:cleared");
       socket.disconnect();
     };
   }, [token, currentWorkspaceId, enabled, scope]);
+
+  // API mutation – mark a single notification as read
+  const markNotificationAsRead = useCallback(async (id: string) => {
+    if (!id) return;
+
+    // Optimistically update locally
+    store.markReadLocally(id);
+
+    if (!token || (scope === 'current' && !currentWorkspaceId)) return;
+    const endpoint = `/notifications/${id}/read`;
+    try {
+      await fetch(`${API_BASE}${endpoint}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(effectiveWorkspaceId ? { 'X-Workspace-ID': effectiveWorkspaceId } : {}),
+        },
+      });
+    } catch {
+      // ignore, backend will sync later
+    }
+  }, [token, currentWorkspaceId, scope, effectiveWorkspaceId]);
 
   // API mutations
   const markAllAsRead = useCallback(async () => {
@@ -135,6 +166,7 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
     notificationsLoading: store.notificationsLoading,
     markAllAsRead,
     clearAll,
+    markNotificationAsRead,
     hasWorkspaceContext: !!currentWorkspaceId,
   };
 } 
