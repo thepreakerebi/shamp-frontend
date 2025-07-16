@@ -1,11 +1,13 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Button } from "@/components/ui/button";
 import { useBilling } from "@/hooks/use-billing";
 import { Check } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { toast } from "sonner";
 
 interface Plan {
   id: string;
@@ -32,25 +34,59 @@ const annualPlans: Plan[] = [
 ];
 
 export default function PricingPage() {
-  const { attachProductCheckout, summary } = useBilling();
+  const { attachProductCheckout, summary, refetch } = useBilling();
 
   const [billingCycle, setBillingCycle] = useState<'month' | 'year'>('month');
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
 
   const displayedPlans = billingCycle === 'month' ? monthlyPlans : annualPlans;
 
-  const currentProductId = (summary?.products?.[0] as { id?: string })?.id ?? "free";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const activeProduct = useMemo(() => (summary?.products as any[])?.find((p: any) => p.status === 'active'), [summary]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const scheduledProduct = useMemo(() => (summary?.products as any[])?.find((p: any) => p.status === 'scheduled'), [summary]);
 
-  const handleCheckout = async (productId: string) => {
+  const activeProductId = activeProduct?.id ?? 'free';
+
+  const parsePrice = (price: string) => {
+    const match = price.match(/\d+(?:\.\d+)?/);
+    return match ? parseFloat(match[0]) : 0;
+  };
+
+  const activePrice = parsePrice((displayedPlans.find(p=>p.id===activeProductId)?.price) || '0');
+
+  const handleCheckout = async (productId: string, isCancelScheduled: boolean = false) => {
     if (loadingPlanId) return; // prevent double clicks
     setLoadingPlanId(productId);
     try {
       const { checkout_url } = await attachProductCheckout({ productId });
-      if (checkout_url) window.location.href = checkout_url;
-    } catch (err) {
+      if (checkout_url) {
+        toast.success('Redirecting to secure checkout…');
+        window.location.href = checkout_url;
+        return;
+      }
+
+      // No checkout URL returned ⇒ either downgrade scheduled or cancel action.
+      await refetch();
+
+      if (isCancelScheduled) {
+        toast.success('Scheduled change cancelled – your current plan will remain active.');
+      } else {
+        const selected = displayedPlans.find(p=>p.id===productId) as Plan | undefined;
+        const isDowngrade = selected ? parsePrice(selected.price) < activePrice : false;
+        if (isDowngrade) {
+          toast.success('Downgrade scheduled for next billing cycle.');
+        } else {
+          toast.success('Plan upgraded successfully!');
+        }
+      }
+    } catch (err: any) {
       console.error(err);
+      toast.error(err?.message || 'Something went wrong');
     } finally {
       setLoadingPlanId(null);
+      // refresh summary regardless
+      try { await refetch(); } catch {}
     }
   };
 
@@ -63,7 +99,7 @@ export default function PricingPage() {
         {(['month','year'] as const).map(c => (
           <button
             key={c}
-            className={cn('px-4 py-2 text-sm font-medium', billingCycle===c ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground hover:bg-muted')}
+            className={cn('px-4 py-2 text-sm font-normal', billingCycle===c ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-medium' : 'bg-background text-foreground hover:bg-muted')}
             onClick={() => setBillingCycle(c)}
           >
             {c === 'month' ? 'Monthly' : 'Annual (save 15%)'}
@@ -73,7 +109,8 @@ export default function PricingPage() {
 
       <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4" role="list">
         {displayedPlans.map((plan) => {
-          const isCurrent = plan.id === currentProductId;
+          const isCurrent = plan.id === activeProductId;
+          const isScheduled = scheduledProduct && scheduledProduct.id === plan.id;
           return (
             <article
               key={plan.id}
@@ -92,6 +129,13 @@ export default function PricingPage() {
               {plan.secondary && <p className="text-sm text-muted-foreground mb-4">{plan.secondary}</p>}
               <p className="text-sm mb-6 text-muted-foreground min-h-[48px]">{plan.description}</p>
 
+              {/* Scheduled info */}
+              {isScheduled && scheduledProduct?.started_at && (
+                <p className="text-sm mb-2 text-secondary font-medium">
+                  Starts on {new Date(scheduledProduct.started_at).toLocaleDateString()}
+                </p>
+              )}
+
               <ul className="flex-1 mb-6 space-y-2">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm">
@@ -101,19 +145,21 @@ export default function PricingPage() {
               </ul>
 
               <Button
-                variant={plan.popular ? "secondary" : isCurrent ? "secondary" : "outline"}
+                variant={plan.popular ? "secondary" : isCurrent ? "secondary" : isScheduled ? "outline" : "outline"}
                 className="w-full"
                 disabled={isCurrent || loadingPlanId === plan.id}
-                onClick={isCurrent ? undefined : () => handleCheckout(plan.id)}
+                onClick={isCurrent ? undefined : (
+                  isScheduled ? () => handleCheckout(activeProductId, true) : () => handleCheckout(plan.id)
+                )}
               >
                 {isCurrent ? (
                   "Your current plan"
+                ) : isScheduled ? (
+                  loadingPlanId === plan.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "Cancel scheduled"
                 ) : loadingPlanId === plan.id ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
-                ) : plan.price === "$0" ? (
-                  "Get started"
                 ) : (
-                  `Get ${plan.name}`
+                  plan.price === "$0" ? "Get started" : `Select ${plan.name}`
                 )}
               </Button>
             </article>
