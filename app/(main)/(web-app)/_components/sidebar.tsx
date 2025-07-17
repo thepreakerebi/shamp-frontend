@@ -112,16 +112,19 @@ export function AppSidebar() {
               )}
             </section>
           </section>
-          {loading ? <Skeleton className="size-8 rounded-full" /> : <Notifications />}
+          {/* {loading ? <Skeleton className="size-8 rounded-full" /> : <Notifications />} */}
         </section>
         {/* Create buttons */}
-        <section className="flex flex-col gap-4 mt-3">
+        <section className="flex flex-col gap-4 mt-2">
           {loading ? (
             <Skeleton className="h-4 w-32 mb-2" />
           ) : (
             <WorkspaceAndPlan />
           )}
-          <CreateSidebarDropdownButton />
+          <section className="flex w-full gap-4">
+            <CreateSidebarDropdownButton />
+            {loading ? <Skeleton className="size-8 rounded-full" /> : <Notifications />}
+          </section>
           {/* <CreateProjectButton /> */}
         </section>
         {/* Search input */}
