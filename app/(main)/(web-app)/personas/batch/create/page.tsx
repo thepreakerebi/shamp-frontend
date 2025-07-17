@@ -43,8 +43,9 @@ export default function CreateBatchPersonaPage() {
       return;
     }
     setLoading(true);
-    // Trigger loading modal
+    // Trigger loading modal and topbar button spinner
     window.dispatchEvent(new CustomEvent('create-persona-loading', { detail: true }));
+    window.dispatchEvent(new CustomEvent('create-batch-persona-loading', { detail: true }));
     try {
       const res = await createBatchPersona({
         count: Number(form.count),
@@ -59,8 +60,9 @@ export default function CreateBatchPersonaPage() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to create batch personas");
     } finally {
-      setLoading(false);
       window.dispatchEvent(new CustomEvent('create-persona-loading', { detail: false }));
+      window.dispatchEvent(new CustomEvent('create-batch-persona-loading', { detail: false }));
+      setLoading(false);
     }
   };
 
@@ -69,7 +71,17 @@ export default function CreateBatchPersonaPage() {
       <LoadingBenefitsModal />
       <h1 className="text-2xl font-semibold mb-6">Create Batch Personas</h1>
       {error && <div className="text-destructive text-sm mb-4">{error}</div>}
-      <form id="create-batch-persona-form" onSubmit={handleSubmit} className="space-y-6">
+      <form
+        id="create-batch-persona-form"
+        onSubmit={handleSubmit}
+        className="space-y-6"
+        onKeyDown={(e) => {
+          if ((e.key === "Enter" || e.key === "Return") && e.target instanceof HTMLElement && e.target.tagName !== "TEXTAREA") {
+            e.preventDefault();
+            handleSubmit(e);
+          }
+        }}
+      >
         <section>
           <label htmlFor="count" className="block text-sm font-medium mb-1">Count</label>
           <span className="block text-xs text-muted-foreground mb-1">How many unique personas do you want to generate in this batch? 3–10 recommended.</span>
