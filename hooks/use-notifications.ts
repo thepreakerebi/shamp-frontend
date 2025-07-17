@@ -86,12 +86,12 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
         // If current workspace not yet known, queue for later
         if (!currentWs) {
           pendingNotifsRef.current.push(notif as Notification);
-          return;
+        return;
         }
 
         // Accept if workspace absent or matches current
         if (!ws || ws === currentWs) {
-          store.addNotification(notif);
+        store.addNotification(notif);
         }
       }
     };

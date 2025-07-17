@@ -265,7 +265,8 @@ export function Breadcrumbs() {
           if (segment === pathIdEdit && pathIdEdit) {
             return null;
           }
-          if (segment === "personas" && batchQueryName) {
+          // Insert breadcrumb link to batch persona only on individual persona detail inside a batch
+          if (segment === "personas" && batchQueryId && personaId) {
             return (
               <React.Fragment key={segment + "batch"}>
                 {idx > 0 && <BreadcrumbSeparator />}
@@ -277,7 +278,7 @@ export function Breadcrumbs() {
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
-                    <Link href={`/personas/batch/${batchQueryId}`}>{batchQueryName}</Link>
+                    <Link href={`/personas/batch/${batchQueryId}`}>{batchQueryName ?? "Batch"}</Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
               </React.Fragment>

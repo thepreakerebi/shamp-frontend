@@ -199,15 +199,15 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
       )}
       {hasVideo && (
         <div className="relative w-full">
-          <video
-            ref={videoRef}
-            src={videoUrl!}
-            onLoadedData={handleLoaded}
-            onLoadedMetadata={handleLoaded}
-            onCanPlay={handleLoaded}
-            className="w-full rounded-lg bg-black"
+        <video
+          ref={videoRef}
+          src={videoUrl!}
+          onLoadedData={handleLoaded}
+          onLoadedMetadata={handleLoaded}
+          onCanPlay={handleLoaded}
+          className="w-full rounded-lg bg-black"
             playsInline
-          />
+        />
           {/* Custom controls overlay */}
           <VideoControls videoRef={videoRef} startOffset={START_OFFSET} cutOff={cutOff} />
         </div>
