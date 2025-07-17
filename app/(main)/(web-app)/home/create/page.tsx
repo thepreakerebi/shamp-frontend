@@ -134,7 +134,9 @@ export default function CreateProjectPage() {
           <fieldset className="border rounded-md p-3">
             <legend className="text-sm font-medium px-1">Auth Credentials <span className="text-muted-foreground">(optional)</span></legend>
             <div className="flex items-center justify-between mb-1 mt-2">
-              <span className="block text-xs text-muted-foreground">Add authentication keys and values for this project.</span>
+              <span className="block text-xs text-muted-foreground">
+                Add authentication keys and values for this project. <em>(Press Enter to add another)</em>
+              </span>
               <Button type="button" size="icon" variant="ghost" onClick={() => addCred("auth")} disabled={loading}>
                 <Plus className="size-4" />
                 <span className="sr-only">Add Auth Credential</span>
@@ -148,6 +150,14 @@ export default function CreateProjectPage() {
                   placeholder="Key"
                   value={cred.key}
                   onChange={e => handleCredChange(idx, "auth", "key", e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === "Return") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      addCred("auth");
+                    }
+                  }}
+                  autoFocus={idx === authCredentials.length - 1}
                   disabled={loading}
                 />
                 <label className="sr-only" htmlFor={`auth-value-${idx}`}>Value</label>
@@ -156,6 +166,13 @@ export default function CreateProjectPage() {
                   placeholder="Value"
                   value={cred.value}
                   onChange={e => handleCredChange(idx, "auth", "value", e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === "Return") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      addCred("auth");
+                    }
+                  }}
                   disabled={loading}
                 />
                 <Button type="button" size="icon" variant="ghost" onClick={() => removeCred("auth", idx)} disabled={loading}>
@@ -170,7 +187,9 @@ export default function CreateProjectPage() {
           <fieldset className="border rounded-md p-3">
             <legend className="text-sm font-medium px-1">Payment Credentials <span className="text-muted-foreground">(optional)</span></legend>
             <div className="flex items-center justify-between mb-1 mt-2">
-              <span className="block text-xs text-muted-foreground">Add payment keys and values for this project.</span>
+              <span className="block text-xs text-muted-foreground">
+                Add payment keys and values for this project. <em>(Press Enter to add another)</em>
+              </span>
               <Button type="button" size="icon" variant="ghost" onClick={() => addCred("payment")} disabled={loading}>
                 <Plus className="size-4" />
                 <span className="sr-only">Add Payment Credential</span>
@@ -184,6 +203,14 @@ export default function CreateProjectPage() {
                   placeholder="Key"
                   value={cred.key}
                   onChange={e => handleCredChange(idx, "payment", "key", e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === "Return") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      addCred("payment");
+                    }
+                  }}
+                  autoFocus={idx === paymentCredentials.length - 1}
                   disabled={loading}
                 />
                 <label className="sr-only" htmlFor={`payment-value-${idx}`}>Value</label>
@@ -192,6 +219,13 @@ export default function CreateProjectPage() {
                   placeholder="Value"
                   value={cred.value}
                   onChange={e => handleCredChange(idx, "payment", "value", e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === "Return") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      addCred("payment");
+                    }
+                  }}
                   disabled={loading}
                 />
                 <Button type="button" size="icon" variant="ghost" onClick={() => removeCred("payment", idx)} disabled={loading}>

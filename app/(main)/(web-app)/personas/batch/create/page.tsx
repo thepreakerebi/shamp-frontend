@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash } from "lucide-react";
 import { useBatchPersonas } from "@/hooks/use-batch-personas";
 import { toast } from "sonner";
+import { LoadingBenefitsModal } from "../../_components/loading-benefits-modal";
 import { useRouter } from "next/navigation";
 
 export default function CreateBatchPersonaPage() {
@@ -42,6 +43,8 @@ export default function CreateBatchPersonaPage() {
       return;
     }
     setLoading(true);
+    // Trigger loading modal and topbar button spinner
+    window.dispatchEvent(new CustomEvent('create-persona-loading', { detail: true }));
     window.dispatchEvent(new CustomEvent('create-batch-persona-loading', { detail: true }));
     try {
       const res = await createBatchPersona({
@@ -57,16 +60,28 @@ export default function CreateBatchPersonaPage() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to create batch personas");
     } finally {
-      setLoading(false);
+      window.dispatchEvent(new CustomEvent('create-persona-loading', { detail: false }));
       window.dispatchEvent(new CustomEvent('create-batch-persona-loading', { detail: false }));
+      setLoading(false);
     }
   };
 
   return (
-    <div className="mx-auto max-w-lg py-10">
+    <section className="mx-auto max-w-lg py-10">
+      <LoadingBenefitsModal />
       <h1 className="text-2xl font-semibold mb-6">Create Batch Personas</h1>
       {error && <div className="text-destructive text-sm mb-4">{error}</div>}
-      <form id="create-batch-persona-form" onSubmit={handleSubmit} className="space-y-6">
+      <form
+        id="create-batch-persona-form"
+        onSubmit={handleSubmit}
+        className="space-y-6"
+        onKeyDown={(e) => {
+          if ((e.key === "Enter" || e.key === "Return") && e.target instanceof HTMLElement && e.target.tagName !== "TEXTAREA") {
+            e.preventDefault();
+            handleSubmit(e);
+          }
+        }}
+      >
         <section>
           <label htmlFor="count" className="block text-sm font-medium mb-1">Count</label>
           <span className="block text-xs text-muted-foreground mb-1">How many unique personas do you want to generate in this batch? 3–10 recommended.</span>
@@ -90,7 +105,9 @@ export default function CreateBatchPersonaPage() {
         <fieldset className="border rounded-md p-3">
           <legend className="text-sm font-medium px-1">Diversity <span className="text-muted-foreground">(optional)</span></legend>
           <div className="flex items-center justify-between mb-1 mt-2">
-            <span className="block text-xs text-muted-foreground">Add diversity requirements for this batch. (e.g. gender, age, background, etc.)</span>
+            <span className="block text-xs text-muted-foreground">
+              Add diversity requirements for this batch. (e.g. gender, age, background, etc.) <em>(Press Enter to add another)</em>
+            </span>
             <Button type="button" size="icon" variant="ghost" onClick={addDiversityItem} disabled={loading}>
               <Plus className="size-4" />
               <span className="sr-only">Add Diversity</span>
@@ -98,7 +115,20 @@ export default function CreateBatchPersonaPage() {
           </div>
           {diversity.map((item, idx) => (
             <section key={idx} className="flex gap-2 mb-2">
-              <Input placeholder="Diversity requirement" value={item} onChange={e => handleDiversityChange(idx, e.target.value)} disabled={loading} />
+              <Input
+                placeholder="Diversity requirement"
+                value={item}
+                onChange={e => handleDiversityChange(idx, e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === "Return") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    addDiversityItem();
+                  }
+                }}
+                autoFocus={idx === diversity.length - 1}
+                disabled={loading}
+              />
               <Button type="button" size="icon" variant="ghost" onClick={() => removeDiversityItem(idx)} disabled={loading}>
                 <span className="sr-only">Remove</span>
                 <Trash className="size-4" />
@@ -112,6 +142,6 @@ export default function CreateBatchPersonaPage() {
           <Textarea id="additionalContext" name="additionalContext" value={form.additionalContext} onChange={handleChange} disabled={loading} />
         </section>
       </form>
-    </div>
+    </section>
   );
 } 

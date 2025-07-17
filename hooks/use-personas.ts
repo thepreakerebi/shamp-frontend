@@ -249,6 +249,26 @@ export function usePersonas() {
     });
     if (!res.ok) throw new Error("Failed to delete persona");
     store.removePersonaFromList(id);
+    // Decrement count just like the socket handler would
+    store.setCount(Math.max(0, store.count - 1));
+    return res.json();
+  };
+
+  // Stop (cancel) a persona that is currently being created
+  const stopPersonaCreation = async (id: string) => {
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    const res = await fetch(`${API_BASE}/personas/${id}/stop`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId,
+      },
+    });
+    if (!res.ok) throw new Error("Failed to stop persona creation");
+    // Treat as deletion locally
+    store.removePersonaFromList(id);
+    store.setCount(Math.max(0, store.count - 1));
     return res.json();
   };
 
@@ -296,6 +316,7 @@ export function usePersonas() {
     createPersona,
     updatePersona,
     deletePersona,
+    stopPersonaCreation,
     getPersonaById,
     refetch,
     uploadPersonaDocument,

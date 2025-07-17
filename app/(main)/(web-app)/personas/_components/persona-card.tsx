@@ -41,7 +41,11 @@ export function PersonaCard({ persona, onEdit, onOpen, onDelete }: PersonaCardPr
         <h3 className="font-semibold text-lg truncate w-full" title={persona.name}>{persona.name}</h3>
         <p className="text-sm text-muted-foreground truncate w-full" title={persona.gender}>{persona.gender || "-"}</p>
       </section>
-      <nav onClick={(e)=>e.stopPropagation()} data-stop-row>
+      <nav
+        onClick={(e)=>e.stopPropagation()}
+        onPointerDown={(e)=>e.stopPropagation()}
+        data-stop-row
+      >
         <PersonaCardDropdown
           onOpen={onOpen}
           onEdit={onEdit}

@@ -157,6 +157,20 @@ export function useBatchPersonas(enabled: boolean = true) {
     return res.json();
   };
 
+  const stopBatchPersonaCreation = async (id: string) => {
+    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    const res = await fetch(`${API_BASE}/batchpersonas/${id}/stop`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'X-Workspace-ID': currentWorkspaceId,
+      },
+    });
+    if (!res.ok) throw new Error("Failed to stop batch persona creation");
+    return res.json();
+  };
+
   const updateBatchPersonaName = async (id: string, name: string): Promise<BatchPersona> => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await fetch(`${API_BASE}/batchpersonas/${id}`, {
@@ -182,6 +196,7 @@ export function useBatchPersonas(enabled: boolean = true) {
     getBatchPersonaById,
     createBatchPersona,
     deleteBatchPersona,
+    stopBatchPersonaCreation,
     updateBatchPersonaName,
     hasWorkspaceContext: !!currentWorkspaceId,
   };

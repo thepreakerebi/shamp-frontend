@@ -5,6 +5,8 @@ import { usePersonasStore } from "@/lib/store/personas";
 import Image from "next/image";
 import { PersonaCardDropdown } from "../_components/persona-card-dropdown";
 import { DeletePersonaModal } from "../_components/delete-persona-modal";
+import { usePersonas } from "@/hooks/use-personas";
+import { toast } from "sonner";
 import { PersonaDetailsSkeleton } from "./_components/persona-details-skeleton";
 import PersonaNotFound from "./not-found";
 import { useRouter } from "next/navigation";
@@ -16,7 +18,9 @@ export default function PersonaPage() {
   const persona = personas?.find((p) => p._id === personaId) || null;
 
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [justDeleted, setJustDeleted] = useState(false);
+  const { deletePersona } = usePersonas();
 
   const router = useRouter();
 
@@ -33,6 +37,9 @@ export default function PersonaPage() {
       </div>
     );
   }
+
+  // If persona was just deleted, skip rendering to avoid not-found flash
+  if (justDeleted) return null;
 
   // If store is loaded and persona is not found, show not-found page
   if (!persona) {
@@ -157,7 +164,26 @@ export default function PersonaPage() {
       )}
 
       {/* Delete Persona Modal */}
-      <DeletePersonaModal open={deleteOpen} setOpen={setDeleteOpen} persona={persona} onConfirm={() => {}} loading={deleteLoading} />
+      <DeletePersonaModal
+        open={deleteOpen}
+        setOpen={setDeleteOpen}
+        persona={persona}
+        loading={deleteLoading}
+        onConfirm={async () => {
+          if (!persona) return;
+          setDeleteLoading(true);
+          try {
+            await deletePersona(persona._id);
+            toast.success("Persona deleted!");
+            setJustDeleted(true);
+            router.push("/personas");
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to delete persona");
+          } finally {
+            setDeleteLoading(false);
+          }
+        }}
+      />
     </main>
   );
 }

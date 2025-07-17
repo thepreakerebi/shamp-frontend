@@ -191,7 +191,9 @@ export default function EditPersonaPage() {
             Goals <span className="text-muted-foreground">(optional)</span>
           </legend>
           <div className="flex items-center justify-between mb-1 mt-2">
-            <span className="block text-xs text-muted-foreground">What outcomes does this persona want to achieve when using the product?</span>
+            <span className="block text-xs text-muted-foreground">
+              What outcomes does this persona want to achieve when using the product? <em>(Press Enter to add another)</em>
+            </span>
             <Button type="button" size="icon" variant="ghost" onClick={() => addListItem(setGoals)} disabled={loading}>
               <Plus className="size-4" />
               <span className="sr-only">Add Goal</span>
@@ -199,7 +201,20 @@ export default function EditPersonaPage() {
           </div>
           {goals.map((goal, idx) => (
             <section key={idx} className="flex gap-2 mb-2">
-              <Input placeholder="Goal" value={goal} onChange={(e) => handleListChange(setGoals, idx, e.target.value)} disabled={loading} />
+              <Input
+                placeholder="Goal"
+                value={goal}
+                onChange={(e) => handleListChange(setGoals, idx, e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === "Return") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    addListItem(setGoals);
+                  }
+                }}
+                autoFocus={idx === goals.length - 1}
+                disabled={loading}
+              />
               <Button type="button" size="icon" variant="ghost" onClick={() => removeListItem(setGoals, idx)} disabled={loading}>
                 <span className="sr-only">Remove</span>
                 <Trash className="size-4" />
@@ -213,7 +228,9 @@ export default function EditPersonaPage() {
             Frustrations <span className="text-muted-foreground">(optional)</span>
           </legend>
           <div className="flex items-center justify-between mb-1 mt-2">
-            <span className="block text-xs text-muted-foreground">Which pain points or obstacles does this persona face today?</span>
+            <span className="block text-xs text-muted-foreground">
+              Which pain points or obstacles does this persona face today? <em>(Press Enter to add another)</em>
+            </span>
             <Button type="button" size="icon" variant="ghost" onClick={() => addListItem(setFrustrations)} disabled={loading}>
               <Plus className="size-4" />
               <span className="sr-only">Add Frustration</span>
@@ -221,7 +238,20 @@ export default function EditPersonaPage() {
           </div>
           {frustrations.map((frustration, idx) => (
             <section key={idx} className="flex gap-2 mb-2">
-              <Input placeholder="Frustration" value={frustration} onChange={(e) => handleListChange(setFrustrations, idx, e.target.value)} disabled={loading} />
+              <Input
+                placeholder="Frustration"
+                value={frustration}
+                onChange={(e) => handleListChange(setFrustrations, idx, e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === "Return") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    addListItem(setFrustrations);
+                  }
+                }}
+                autoFocus={idx === frustrations.length - 1}
+                disabled={loading}
+              />
               <Button type="button" size="icon" variant="ghost" onClick={() => removeListItem(setFrustrations, idx)} disabled={loading}>
                 <span className="sr-only">Remove</span>
                 <Trash className="size-4" />
@@ -235,7 +265,9 @@ export default function EditPersonaPage() {
             Traits <span className="text-muted-foreground">(optional)</span>
           </legend>
           <div className="flex items-center justify-between mb-1 mt-2">
-            <span className="block text-xs text-muted-foreground">What are the key characteristics or personality traits of this persona?</span>
+            <span className="block text-xs text-muted-foreground">
+              What are the key characteristics or personality traits of this persona? <em>(Press Enter to add another)</em>
+            </span>
             <Button type="button" size="icon" variant="ghost" onClick={() => addListItem(setTraits)} disabled={loading}>
               <Plus className="size-4" />
               <span className="sr-only">Add Trait</span>
@@ -243,7 +275,20 @@ export default function EditPersonaPage() {
           </div>
           {traits.map((trait, idx) => (
             <section key={idx} className="flex gap-2 mb-2">
-              <Input placeholder="Trait" value={trait} onChange={(e) => handleListChange(setTraits, idx, e.target.value)} disabled={loading} />
+              <Input
+                placeholder="Trait"
+                value={trait}
+                onChange={(e) => handleListChange(setTraits, idx, e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === "Return") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    addListItem(setTraits);
+                  }
+                }}
+                autoFocus={idx === traits.length - 1}
+                disabled={loading}
+              />
               <Button type="button" size="icon" variant="ghost" onClick={() => removeListItem(setTraits, idx)} disabled={loading}>
                 <span className="sr-only">Remove</span>
                 <Trash className="size-4" />
