@@ -2,12 +2,12 @@
 
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { AlertTriangle, CheckCircle, DollarSign, RefreshCcw, XCircle } from "lucide-react";
-import { usePersonas } from "@/hooks/use-personas";
-import { useBatchPersonas } from "@/hooks/use-batch-personas";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+// import { Button } from "@/components/ui/button"; // Stop button disabled
+import { AlertTriangle, CheckCircle, DollarSign, RefreshCcw } from "lucide-react";
+// import { usePersonas } from "@/hooks/use-personas";
+// import { useBatchPersonas } from "@/hooks/use-batch-personas";
+// import { useRouter } from "next/navigation";
+// import { toast } from "sonner";
 
 const slides = [
   {
@@ -39,13 +39,13 @@ const slides = [
 export function LoadingBenefitsModal() {
   const [open, setOpen] = React.useState(false);
   const [index, setIndex] = React.useState(0);
-  const [currentId, setCurrentId] = React.useState<string | null>(null);
-  const [stopping, setStopping] = React.useState(false);
-  const [mode, setMode] = React.useState<"single" | "batch" | null>(null);
+  // const [currentId, setCurrentId] = React.useState<string | null>(null);
+  // const [stopping, setStopping] = React.useState(false); // Commented out – stop button disabled for now
+  // const [mode, setMode] = React.useState<"single" | "batch" | null>(null);
 
-  const { stopPersonaCreation } = usePersonas();
-  const { stopBatchPersonaCreation } = useBatchPersonas(false);
-  const router = useRouter();
+  // const { stopPersonaCreation } = usePersonas();
+  // const { stopBatchPersonaCreation } = useBatchPersonas(false);
+  // const router = useRouter();
 
   // Cycle slides every 3 seconds
   React.useEffect(() => {
@@ -65,18 +65,18 @@ export function LoadingBenefitsModal() {
       if (typeof detail === "boolean") {
         setOpen(detail);
         if (detail) {
-          setMode(e.type === "create-persona-loading" ? "single" : "batch");
+          // setMode(e.type === "create-persona-loading" ? "single" : "batch");
         } else {
-          setCurrentId(null);
-          setMode(null);
+          // setCurrentId(null);
+          // setMode(null);
         }
       } else if (detail && typeof detail === "object") {
         setOpen(Boolean(detail.loading));
-        setCurrentId(detail.id ?? null);
-        setMode(detail.type ?? null);
+        // setCurrentId(detail.id ?? null);
+        // setMode(detail.type ?? null);
         if (!detail.loading) {
-          setCurrentId(null);
-          setMode(null);
+          // setCurrentId(null);
+          // setMode(null);
         }
       }
     };
@@ -88,44 +88,9 @@ export function LoadingBenefitsModal() {
     };
   }, []);
 
-  const onStop = async () => {
-    if (!currentId && !mode) {
-      // Fallback: just close modal and broadcast stop
-      setOpen(false);
-      window.dispatchEvent(new CustomEvent("create-persona-loading", { detail: false }));
-      window.dispatchEvent(new CustomEvent("create-batch-persona-loading", { detail: false }));
-      return;
-    }
-    if (stopping) return;
-    setStopping(true);
-    try {
-      if (mode === "single") {
-        if (currentId) await stopPersonaCreation(currentId);
-      } else {
-        if (currentId) await stopBatchPersonaCreation(currentId);
-      }
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error(err);
-    } finally {
-      setStopping(false);
-      // Close modal
-      setOpen(false);
-      setCurrentId(null);
-      setMode(null);
-      // Notify listeners to hide any loaders
-      window.dispatchEvent(new CustomEvent(mode === "single" ? "create-persona-loading" : "create-batch-persona-loading", { detail: false }));
-
-      // Toast & navigate
-      if (mode === "single") {
-        toast.success("Persona creation stopped");
-        router.push("/personas?tab=individuals");
-      } else if (mode === "batch") {
-        toast.success("Batch persona creation stopped");
-        router.push("/personas?tab=groups");
-      }
-    }
-  };
+  // const onStop = async () => {
+  //   /* Stop button disabled */
+  // };
 
   const slide = slides[index];
 
@@ -139,18 +104,7 @@ export function LoadingBenefitsModal() {
         <slide.Icon className={`${slide.anim} text-secondary`} size={40} />
         <h2 className="text-lg font-semibold px-4">{slide.title}</h2>
         <p className="text-sm text-muted-foreground px-6">{slide.description}</p>
-        {open && mode && (
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            className="mt-2 text-xs"
-            onClick={onStop}
-            disabled={stopping}
-          >
-            <XCircle size={14} className="mr-1" /> {stopping ? "Stopping..." : "Stop creation"}
-          </Button>
-        )}
+        {/* Stop button temporarily disabled */}
       </DialogContent>
     </Dialog>
   );
