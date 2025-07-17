@@ -105,7 +105,9 @@ export default function CreateBatchPersonaPage() {
         <fieldset className="border rounded-md p-3">
           <legend className="text-sm font-medium px-1">Diversity <span className="text-muted-foreground">(optional)</span></legend>
           <div className="flex items-center justify-between mb-1 mt-2">
-            <span className="block text-xs text-muted-foreground">Add diversity requirements for this batch. (e.g. gender, age, background, etc.)</span>
+            <span className="block text-xs text-muted-foreground">
+              Add diversity requirements for this batch. (e.g. gender, age, background, etc.) <em>(Press Enter to add another)</em>
+            </span>
             <Button type="button" size="icon" variant="ghost" onClick={addDiversityItem} disabled={loading}>
               <Plus className="size-4" />
               <span className="sr-only">Add Diversity</span>
@@ -113,7 +115,20 @@ export default function CreateBatchPersonaPage() {
           </div>
           {diversity.map((item, idx) => (
             <section key={idx} className="flex gap-2 mb-2">
-              <Input placeholder="Diversity requirement" value={item} onChange={e => handleDiversityChange(idx, e.target.value)} disabled={loading} />
+              <Input
+                placeholder="Diversity requirement"
+                value={item}
+                onChange={e => handleDiversityChange(idx, e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === "Return") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    addDiversityItem();
+                  }
+                }}
+                autoFocus={idx === diversity.length - 1}
+                disabled={loading}
+              />
               <Button type="button" size="icon" variant="ghost" onClick={() => removeDiversityItem(idx)} disabled={loading}>
                 <span className="sr-only">Remove</span>
                 <Trash className="size-4" />
