@@ -19,6 +19,7 @@ export default function PersonaPage() {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [justDeleted, setJustDeleted] = useState(false);
   const { deletePersona } = usePersonas();
 
   const router = useRouter();
@@ -36,6 +37,9 @@ export default function PersonaPage() {
       </div>
     );
   }
+
+  // If persona was just deleted, skip rendering to avoid not-found flash
+  if (justDeleted) return null;
 
   // If store is loaded and persona is not found, show not-found page
   if (!persona) {
@@ -171,6 +175,7 @@ export default function PersonaPage() {
           try {
             await deletePersona(persona._id);
             toast.success("Persona deleted!");
+            setJustDeleted(true);
             router.push("/personas");
           } catch (err) {
             toast.error(err instanceof Error ? err.message : "Failed to delete persona");

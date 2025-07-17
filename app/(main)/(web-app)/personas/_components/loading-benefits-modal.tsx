@@ -40,7 +40,7 @@ export function LoadingBenefitsModal() {
     if (!open) return;
     const id = setInterval(() => {
       setIndex((i) => (i + 1) % slides.length);
-    }, 3000);
+    }, 5000);
     return () => clearInterval(id);
   }, [open]);
 
