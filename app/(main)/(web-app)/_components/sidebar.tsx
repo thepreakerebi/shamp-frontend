@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { UpgradePlanCard } from "./upgrade-plan-card";
 import { CreditsUsageCard } from "./credits-usage-card";
 import Link from "next/link";
+import { NeedHelpDropdown } from "./need-help-dropdown";
 
 const items = [
   {
@@ -81,7 +82,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="gap-4 border-b pb-4 mb-2">
         {/* User info and notifications */}
-        <section className="flex flex-row items-center justify-between gap-2">
+        <section className="flex items-center justify-between">
           {/* <section className="flex flex-row items-center gap-3">
             {loading ? (
               <Skeleton className="size-8 rounded-full" />
@@ -112,7 +113,7 @@ export function AppSidebar() {
               )}
             </section>
           </section> */}
-          <section className="w-full flex px-2 mt-2">
+          <section className="flex items-center gap-2">
             <Image
               src="/Shamp-logo-light.svg"
               alt="Shamp Logo"
@@ -127,8 +128,8 @@ export function AppSidebar() {
               height={32}
               className="hidden dark:block"
             />
-        </section>
-          {/* {loading ? <Skeleton className="size-8 rounded-full" /> : <Notifications />} */}
+          </section>
+          <NeedHelpDropdown />
         </section>
         {/* Create buttons */}
         <section className="flex flex-col gap-4 mt-2">
