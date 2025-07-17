@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash } from "lucide-react";
 import { useBatchPersonas } from "@/hooks/use-batch-personas";
 import { toast } from "sonner";
+import { LoadingBenefitsModal } from "../../_components/loading-benefits-modal";
 import { useRouter } from "next/navigation";
 
 export default function CreateBatchPersonaPage() {
@@ -42,7 +43,8 @@ export default function CreateBatchPersonaPage() {
       return;
     }
     setLoading(true);
-    window.dispatchEvent(new CustomEvent('create-batch-persona-loading', { detail: true }));
+    // Trigger loading modal
+    window.dispatchEvent(new CustomEvent('create-persona-loading', { detail: true }));
     try {
       const res = await createBatchPersona({
         count: Number(form.count),
@@ -58,12 +60,13 @@ export default function CreateBatchPersonaPage() {
       setError(err instanceof Error ? err.message : "Failed to create batch personas");
     } finally {
       setLoading(false);
-      window.dispatchEvent(new CustomEvent('create-batch-persona-loading', { detail: false }));
+      window.dispatchEvent(new CustomEvent('create-persona-loading', { detail: false }));
     }
   };
 
   return (
-    <div className="mx-auto max-w-lg py-10">
+    <section className="mx-auto max-w-lg py-10">
+      <LoadingBenefitsModal />
       <h1 className="text-2xl font-semibold mb-6">Create Batch Personas</h1>
       {error && <div className="text-destructive text-sm mb-4">{error}</div>}
       <form id="create-batch-persona-form" onSubmit={handleSubmit} className="space-y-6">
@@ -112,6 +115,6 @@ export default function CreateBatchPersonaPage() {
           <Textarea id="additionalContext" name="additionalContext" value={form.additionalContext} onChange={handleChange} disabled={loading} />
         </section>
       </form>
-    </div>
+    </section>
   );
 } 

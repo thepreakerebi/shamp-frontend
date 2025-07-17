@@ -8,6 +8,7 @@ import { Plus, Trash } from "lucide-react";
 import { usePersonas } from "@/hooks/use-personas";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { LoadingBenefitsModal } from "../_components/loading-benefits-modal";
 
 export default function CreatePersonaPage() {
   const { createPersona } = usePersonas();
@@ -86,7 +87,8 @@ export default function CreatePersonaPage() {
   };
 
   return (
-    <div className="mx-auto max-w-lg py-10">
+    <section className="mx-auto max-w-lg py-10">
+      <LoadingBenefitsModal />
       <h1 className="text-2xl font-semibold mb-6">Create Persona</h1>
       {error && <div className="text-destructive text-sm mb-4">{error}</div>}
       <form
@@ -246,6 +248,6 @@ export default function CreatePersonaPage() {
         </fieldset>
         {/* Note: submission button now lives in Topbar */}
       </form>
-    </div>
+    </section>
   );
 } 
