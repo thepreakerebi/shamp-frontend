@@ -8,6 +8,7 @@ import { TotalFailedTestRunsCard } from "./_components/total-failed-test-runs-ca
 import { TotalPersonasCard } from "./_components/total-personas-card";
 import { ProjectsList } from '@/app/(main)/(web-app)/home/_components/projects-list';
 import { OnboardingChecklist } from "./_components/onboarding-checklist";
+import { WorkspaceGreetingHeader } from "./_components/workspace-greeting-header";
 
 export default function HomePage() {
   useEffect(() => {
@@ -23,6 +24,8 @@ export default function HomePage() {
 
   return (
     <main className="flex flex-col bg-background p-4 gap-4 h-screen w-full">
+      <WorkspaceGreetingHeader />
+
       <section className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 w-full">
         <TotalProjectsCard />
         <TotalPersonasCard href="/personas" />
