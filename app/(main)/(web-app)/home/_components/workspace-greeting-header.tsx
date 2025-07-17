@@ -26,13 +26,13 @@ export function WorkspaceGreetingHeader() {
   const workspaceLabel = currentWs?.isOwner ? "My workspace" : currentWs?.name ?? "My workspace";
 
   return (
-    <section className="flex flex-col gap-1">
+    <section className="flex flex-col gap-2">
       {loading ? (
         <Skeleton className="h-4 w-40" />
       ) : (
         <span className="text-sm text-muted-foreground">{workspaceLabel}</span>
       )}
-      <div className="flex items-center gap-3">
+      <section className="flex items-center gap-3">
         {loading ? (
           <Skeleton className="size-8 rounded-full" />
         ) : (
@@ -56,7 +56,7 @@ export function WorkspaceGreetingHeader() {
             {greeting}, {user?.firstName || ""} {user?.lastName || ""}
           </span>
         )}
-      </div>
+      </section>
     </section>
   );
 } 

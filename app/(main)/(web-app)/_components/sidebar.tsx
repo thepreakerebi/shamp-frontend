@@ -13,7 +13,7 @@ import {
   sidebarMenuButtonVariants,
 } from "@/components/ui/sidebar";
 import { useAuth } from '@/lib/auth';
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+// import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Notifications } from "./notifications";
 import { ThemeSwitcher } from "./theme-switcher";
 import { CreateSidebarDropdownButton } from "./create-sidebar-dropdown-button";
@@ -67,22 +67,22 @@ const items = [
   },
 ];
 
-function getInitials(firstName?: string, lastName?: string, email?: string) {
-  if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
-  if (firstName) return firstName[0].toUpperCase();
-  if (email) return email[0].toUpperCase();
-  return '?';
-}
+// function getInitials(firstName?: string, lastName?: string, email?: string) {
+//   if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
+//   if (firstName) return firstName[0].toUpperCase();
+//   if (email) return email[0].toUpperCase();
+//   return '?';
+// }
 
 export function AppSidebar() {
-  const { user, logout, loading } = useAuth();
+  const { logout, loading } = useAuth();
   const pathname = usePathname();
   return (
     <Sidebar>
       <SidebarHeader className="gap-4 border-b pb-4 mb-2">
         {/* User info and notifications */}
         <section className="flex flex-row items-center justify-between gap-2">
-          <section className="flex flex-row items-center gap-3">
+          {/* <section className="flex flex-row items-center gap-3">
             {loading ? (
               <Skeleton className="size-8 rounded-full" />
             ) : (
@@ -111,7 +111,23 @@ export function AppSidebar() {
                 </>
               )}
             </section>
-          </section>
+          </section> */}
+          <section className="w-full flex px-2 mt-2">
+            <Image
+              src="/Shamp-logo-light.svg"
+              alt="Shamp Logo"
+              width={80}
+              height={32}
+              className="dark:hidden"
+            />
+            <Image
+              src="/Shamp-logo-dark.svg"
+              alt="Shamp Logo"
+              width={80}
+              height={32}
+              className="hidden dark:block"
+            />
+        </section>
           {/* {loading ? <Skeleton className="size-8 rounded-full" /> : <Notifications />} */}
         </section>
         {/* Create buttons */}
@@ -170,7 +186,7 @@ export function AppSidebar() {
           <LogOut className="size-5 mr-2" />
           <span>Logout</span>
         </button>
-        <section className="w-full flex px-2 mt-2">
+        {/* <section className="w-full flex px-2 mt-2">
           <Image
             src="/Shamp-logo-light.svg"
             alt="Shamp Logo"
@@ -185,7 +201,7 @@ export function AppSidebar() {
             height={32}
             className="hidden dark:block"
           />
-        </section>
+        </section> */}
       </SidebarFooter>
     </Sidebar>
   );
