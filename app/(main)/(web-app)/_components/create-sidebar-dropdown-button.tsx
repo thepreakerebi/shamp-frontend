@@ -147,9 +147,9 @@ export function CreateSidebarDropdownButton() {
   };
 
   return (
-    <>
-      <CustomDropdownMenu>
-        <CustomDropdownMenuTrigger asChild>
+    <section className="w-full">
+      <CustomDropdownMenu className="w-full">
+        <CustomDropdownMenuTrigger className="w-full" asChild>
           <Button
             variant="default"
             size="sm"
@@ -214,6 +214,6 @@ export function CreateSidebarDropdownButton() {
         /* @ts-expect-error preview partial */
         <CheckDialog open={showPaywallRun} setOpen={setShowPaywallRun} preview={getCreditsPreview()} />
       )}
-    </>
+    </section>
   );
 } 
