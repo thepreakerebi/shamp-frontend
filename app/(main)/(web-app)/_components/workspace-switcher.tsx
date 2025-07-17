@@ -36,7 +36,7 @@ export function WorkspaceSwitcher() {
   // Display text for the current workspace
   const getWorkspaceDisplayText = () => {
     if (isOwner) {
-      return 'Your workspace';
+      return 'My workspace';
     }
     return currentWorkspace?.name || 'Workspace';
   };
@@ -85,7 +85,7 @@ export function WorkspaceSwitcher() {
                   
                   {isWorkspaceOwner && (
                     <Badge variant="secondary" className="text-xs">
-                      Your workspace
+                      My workspace
                     </Badge>
                   )}
                 </div>
