@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { useBilling } from "@/hooks/use-billing";
 import { Check } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -133,6 +133,7 @@ export default function PricingPage() {
         ))}
       </section>
 
+      {/* Plans */}
       <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4" role="list">
         {displayedPlans.map((plan) => {
           const isCurrent = plan.id === activeProductId;
@@ -202,6 +203,34 @@ export default function PricingPage() {
             </article>
           );
         })}
+      </section>
+
+      {/* Team banner */}
+      <section className="mt-12" aria-label="Team plan banner">
+        <section className="flex items-center justify-between gap-4 rounded-3xl bg-muted/70 dark:bg-muted/50 px-6 py-4 text-left">
+          {/* Left content */}
+          <section className="flex items-center gap-4">
+            <span className="inline-flex items-center justify-center rounded-lg bg-background/60 border p-2">
+              <Building2 className="w-5 h-5 text-foreground" />
+            </span>
+            <section>
+              <h3 className="text-lg font-medium">Enterprise</h3>
+              <p className="text-sm text-muted-foreground">Scale your product&apos;s human experience with Shamp</p>
+            </section>
+          </section>
+
+          {/* Action */}
+          <Button
+            variant="secondary"
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                window.open("https://cal.com/shamp/custom-plan", "_blank", "noopener,noreferrer");
+              }
+            }}
+          >
+            Contact us
+          </Button>
+        </section>
       </section>
     </section>
   );
