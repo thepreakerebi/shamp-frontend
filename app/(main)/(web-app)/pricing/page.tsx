@@ -20,14 +20,14 @@ interface Plan {
 }
 
 const monthlyPlans: Plan[] = [
-  { id: "free", name: "Free", price: "$0", secondary: "", description: "Explore how Shamp helps with basic testing", features: ["150 credits / mo", "2 tests", "1 project", "2 personas", "Issues board", "AI insights"], },
+  { id: "free", name: "Free", price: "$0", secondary: "per month", description: "Explore how Shamp helps with basic testing", features: ["150 credits / mo", "2 tests", "1 project", "2 personas", "Issues board", "AI insights"], },
   { id: "hobby", name: "Hobby", price: "$14.99", secondary: "per month", description: "Expanded limits for hobby projects", features: ["1,200 credits / mo (then $0.06 ea)", "10 tests", "5 projects", "15 personas", "Chat personas", "Issues board", "AI insights"], },
   { id: "pro", name: "Pro", price: "$49.99", secondary: "per month", popular: true, description: "Advanced features & higher limits", features: ["3,000 credits / mo", "35 tests", "15 projects", "30 personas", "Batch personas & tests", "Scheduled & recurring runs", "Custom device types", "Chat personas", "AI insights"], },
   { id: "ultra", name: "Ultra", price: "$99.99", secondary: "per month", description: "Unlimited scale and full capabilities", features: ["8,000 credits / mo", "Unlimited tests", "Unlimited projects", "Unlimited personas", "Batch personas & tests", "Scheduled & recurring runs", "Device types", "AI insights"], },
 ];
 
 const annualPlans: Plan[] = [
-  { id: "free", name: "Free", price: "$0", secondary: "", description: monthlyPlans[0].description, features: monthlyPlans[0].features },
+  { id: "free", name: "Free", price: "$0", secondary: "$0 / mo", description: monthlyPlans[0].description, features: monthlyPlans[0].features },
   { id: "hobby_annual", name: "Hobby", price: "$152.90", secondary: "$12.74 / mo (billed yearly)", description: monthlyPlans[1].description, features: monthlyPlans[1].features },
   { id: "pro_annual", name: "Pro", price: "$509.93", secondary: "$42.38 / mo (billed yearly)", popular: true, description: monthlyPlans[2].description, features: monthlyPlans[2].features },
   { id: "ultra_annual", name: "Ultra", price: "$1,019.89", secondary: "$84.75 / mo (billed yearly)", description: monthlyPlans[3].description, features: monthlyPlans[3].features },
@@ -159,21 +159,6 @@ export default function PricingPage() {
               {plan.secondary && <p className="text-sm text-muted-foreground mb-4">{plan.secondary}</p>}
               <p className="text-sm mb-6 text-muted-foreground min-h-[48px]">{plan.description}</p>
 
-              {/* Scheduled info */}
-              {isScheduled && scheduledProduct?.started_at && (
-                <p className="text-sm mb-2 text-secondary font-medium">
-                  Starts on {new Date(scheduledProduct.started_at).toLocaleDateString()}
-                </p>
-              )}
-
-              <ul className="flex-1 mb-6 space-y-2">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm">
-                    <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5" /> {f}
-                  </li>
-                ))}
-              </ul>
-
               <Button
                 variant={highlightPopular ? "secondary" : isCurrent ? "secondary" : isScheduled ? "outline" : "outline"}
                 className={cn(
@@ -197,6 +182,23 @@ export default function PricingPage() {
                   plan.price === "$0" ? "Get started" : `Get ${plan.name}`
                 )}
               </Button>
+
+              {/* Scheduled info */}
+              {isScheduled && scheduledProduct?.started_at && (
+                <p className="text-sm my-2 text-secondary font-medium">
+                  Starts on {new Date(scheduledProduct.started_at).toLocaleDateString()}
+                </p>
+              )}
+
+              <ul className="flex-1 my-6 space-y-2">
+                {plan.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm">
+                    <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5" /> {f}
+                  </li>
+                ))}
+              </ul>
+
+              
             </article>
           );
         })}
