@@ -52,7 +52,7 @@ export default function DetailsSection({ test }: { test: Test }) {
       feature = (features as Record<string, unknown>)["credits"];
     }
     const bal = (feature as { balance?: number })?.balance;
-    const usageExhausted = typeof bal === "number" && bal < 20;
+    const usageExhausted = typeof bal === "number" && bal < 1;
 
     const nextProduct = {
       id: "hobby",
@@ -73,7 +73,7 @@ export default function DetailsSection({ test }: { test: Test }) {
   const handleRun = async () => {
     if (running) return;
 
-    if (!allowed({ featureId: 'credits', requiredBalance: 20 })) {
+    if (!allowed({ featureId: 'credits', requiredBalance: 1 })) {
       setShowPaywallRun(true);
       return;
     }
