@@ -1,5 +1,5 @@
 "use client";
-import { useParams, notFound } from "next/navigation";
+import { useParams, notFound, useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { useTests } from "@/hooks/use-tests";
@@ -16,6 +16,7 @@ export const dynamic = 'force-dynamic';
 
 export default function TestDetailPage() {
   const { testId } = useParams<{ testId: string }>();
+  const router = useRouter();
   const { tests, getTestById } = useTests();
   const storeTest = useTestsStore(state => state.tests?.find(t => t._id === testId));
   const [test, setTest] = useState(() => tests?.find(t => t._id === testId));
@@ -59,9 +60,20 @@ export default function TestDetailPage() {
 
   // Sync local state when store updates (e.g., via Socket.IO after edit)
   useEffect(() => {
-    if (storeTest && (!test || storeTest !== test)) {
-      setTest(storeTest);
-      setLoading(false);
+    const testsLoaded = useTestsStore.getState().tests !== null;
+    if (storeTest) {
+      // If store has the test, update local copy (may include new changes)
+      if (!test || storeTest !== test) {
+        setTest(storeTest);
+        setLoading(false);
+      }
+      // If test is trashed or deleted flag, redirect
+      if (storeTest.trashed) {
+        router.push('/tests');
+      }
+    } else if (testsLoaded) {
+      // Store loaded but test missing – navigate away
+      router.push('/tests');
     }
   }, [storeTest]);
 
