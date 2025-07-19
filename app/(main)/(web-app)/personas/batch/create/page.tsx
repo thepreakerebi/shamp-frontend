@@ -24,9 +24,12 @@ export default function CreateBatchPersonaPage() {
   const [diversity, setDiversity] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = React.useState<{ count?: string; name?: string; description?: string }>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    // Clear field-specific error as user edits
+    setFieldErrors(prev => ({ ...prev, [e.target.name]: undefined }));
   };
 
   const handleDiversityChange = (idx: number, value: string) => {
@@ -38,8 +41,23 @@ export default function CreateBatchPersonaPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!form.name || !form.description || !form.count) {
-      setError("Name, description, and count are required.");
+    // Validate required fields
+    let hasError = false;
+    const newFieldErrors: { count?: string; name?: string; description?: string } = {};
+    if (!form.count || Number(form.count) <= 0) {
+      newFieldErrors.count = "Count is required.";
+      hasError = true;
+    }
+    if (!form.name) {
+      newFieldErrors.name = "Batch name is required.";
+      hasError = true;
+    }
+    if (!form.description) {
+      newFieldErrors.description = "Description is required.";
+      hasError = true;
+    }
+    if (hasError) {
+      setFieldErrors(newFieldErrors);
       return;
     }
     setLoading(true);
@@ -85,17 +103,32 @@ export default function CreateBatchPersonaPage() {
         <section>
           <label htmlFor="count" className="block text-sm font-medium mb-1">Count</label>
           <span className="block text-xs text-muted-foreground mb-1">How many unique personas do you want to generate in this batch? 3–10 recommended.</span>
-          <Input id="count" name="count" type="number" min={1} max={10} value={form.count} onChange={handleChange} disabled={loading} required />
+          <Input id="count" name="count" type="number" min={1} max={10} value={form.count} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.count} aria-describedby={fieldErrors.count ? 'count-error' : undefined} required />
+          {fieldErrors.count && (
+            <div id="count-error" className="text-destructive text-xs mt-1">
+              {fieldErrors.count}
+            </div>
+          )}
         </section>
         <section>
           <label htmlFor="name" className="block text-sm font-medium mb-1">Batch Name</label>
           <span className="block text-xs text-muted-foreground mb-1">A short label to identify this group of personas.</span>
-          <Input id="name" name="name" value={form.name} onChange={handleChange} disabled={loading} required />
+          <Input id="name" name="name" value={form.name} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.name} aria-describedby={fieldErrors.name ? 'name-error' : undefined} required />
+          {fieldErrors.name && (
+            <div id="name-error" className="text-destructive text-xs mt-1">
+              {fieldErrors.name}
+            </div>
+          )}
         </section>
         <section>
           <label htmlFor="description" className="block text-sm font-medium mb-1">Description</label>
           <span className="block text-xs text-muted-foreground mb-1">Describe the overall purpose or theme for these personas.</span>
-          <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} required />
+          <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.description} aria-describedby={fieldErrors.description ? 'description-error' : undefined} required />
+          {fieldErrors.description && (
+            <div id="description-error" className="text-destructive text-xs mt-1">
+              {fieldErrors.description}
+            </div>
+          )}
         </section>
         <section>
           <label htmlFor="targetAudience" className="block text-sm font-medium mb-1">Target Audience <span className="text-muted-foreground">(optional)</span></label>
