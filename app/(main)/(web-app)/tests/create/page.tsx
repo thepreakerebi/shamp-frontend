@@ -77,7 +77,7 @@ export default function CreateTestPage() {
         mobile: { w: 800, h: 1280 },
       };
       const vp = deviceSelectionEnabled ? viewportMap[form.device as keyof typeof viewportMap] : viewportMap["desktop"];
-      await createTest({
+      const newTest = await createTest({
         name: form.name,
         description: form.description,
         project: form.projectId,
@@ -86,7 +86,11 @@ export default function CreateTestPage() {
         browserViewportHeight: vp.h,
       });
       toast.success("Test created");
-      router.push("/tests");
+      if (newTest && newTest._id) {
+        router.push(`/tests/${newTest._id}`);
+      } else {
+        router.push("/tests");
+      }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to create test");
     } finally {
