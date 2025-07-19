@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { useProjects } from "@/hooks/use-projects";
 import { useRouter } from "next/navigation";
+import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 import { toast } from "sonner";
 
 export default function CreateProjectPage() {
@@ -17,6 +18,16 @@ export default function CreateProjectPage() {
   const [paymentCredentials, setPaymentCredentials] = useState<{ key: string; value: string }[]>([]);
   const [errors, setErrors] = useState<{ name?: string; url?: string }>({});
   const [loading, setLoading] = useState(false);
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
+
+  const isDirty = React.useMemo(() => {
+    if (loading) return false;
+    return (
+      form.name || form.description || form.url ||
+      authCredentials.some(c => c.key || c.value) ||
+      paymentCredentials.some(c => c.key || c.value)
+    );
+  }, [form, authCredentials, paymentCredentials, loading]);
 
   // Broadcast loading state to listeners (e.g., Topbar)
   useEffect(() => {
@@ -91,6 +102,14 @@ export default function CreateProjectPage() {
       toast.error(err instanceof Error ? err.message : "Failed to create project");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelNavigation = () => {
+    if (isDirty) {
+      setConfirmLeaveOpen(true);
+    } else {
+      router.back();
     }
   };
 
@@ -236,8 +255,20 @@ export default function CreateProjectPage() {
             ))}
           </fieldset> */}
 
+          {/* Action buttons */}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="ghost" onClick={handleCancelNavigation}>Cancel</Button>
+          </div>
           {/* Note: Submission is triggered from Topbar button */}
         </form>
+      <UnsavedChangesDialog
+        open={confirmLeaveOpen}
+        onOpenChange={setConfirmLeaveOpen}
+        onDiscard={() => {
+          setConfirmLeaveOpen(false);
+          router.back();
+        }}
+      />
     </main>
   );
 } 
