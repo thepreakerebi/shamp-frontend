@@ -134,43 +134,52 @@ export default function TestRunCanvasPage() {
   }
 
   return (
-    <section className="grid grid-cols-[320px_1fr_360px] h-screen w-full">
-      {/* Left summary panel */}
-      {run ? (
-        <SummaryPanel run={run} personaName={personaName} />
-      ) : (
-        <SummaryPanelContentSkeleton />
-      )}
-
-      {/* Center canvas */}
-      <section className="relative overflow-hidden">
-        {/* Only render React Flow on client */}
-        {ReactFlow && (
-          <ReactFlow
-            nodes={nodes}
-            nodeTypes={nodeTypes}
-            fitView
-            proOptions={{ hideAttribution: true }}
-            panOnScroll
-            zoomOnScroll={false}
-            minZoom={0.05}
-            maxZoom={4}
-          >
-            {/* <Controls /> */}
-            <Background />
-          </ReactFlow>
-        )}
+    <>
+      {/* Mobile notice */}
+      <section className="flex md:hidden flex-col items-center justify-center text-center p-6 gap-4 h-screen w-full">
+        <h1 className="text-xl font-semibold">Test run view unavailable on mobile</h1>
+        <p className="text-sm text-muted-foreground max-w-sm">The interactive canvas, summary, and chat require a larger screen. Please open this page on a desktop or tablet to view the full test run details.</p>
       </section>
 
-      {/* Right chat panel */}
-      {run ? (
-        <ChatPanel run={run} personaName={personaName} />
-      ) : (
-        <ChatPanelContentSkeleton />
-      )}
+      {/* Desktop canvas */}
+      <section className="hidden md:grid grid-cols-[320px_1fr_360px] h-screen w-full">
+        {/* Left summary panel */}
+        {run ? (
+          <SummaryPanel run={run} personaName={personaName} />
+        ) : (
+          <SummaryPanelContentSkeleton />
+        )}
 
-      {/* Bottom toolbar */}
-      {run && <TestRunToolbar run={run} />}
-    </section>
+        {/* Center canvas */}
+        <section className="relative overflow-hidden">
+          {/* Only render React Flow on client */}
+          {ReactFlow && (
+            <ReactFlow
+              nodes={nodes}
+              nodeTypes={nodeTypes}
+              fitView
+              proOptions={{ hideAttribution: true }}
+              panOnScroll
+              zoomOnScroll={false}
+              minZoom={0.05}
+              maxZoom={4}
+            >
+              {/* <Controls /> */}
+              <Background />
+            </ReactFlow>
+          )}
+        </section>
+
+        {/* Right chat panel */}
+        {run ? (
+          <ChatPanel run={run} personaName={personaName} />
+        ) : (
+          <ChatPanelContentSkeleton />
+        )}
+
+        {/* Bottom toolbar */}
+        {run && <TestRunToolbar run={run} />}
+      </section>
+    </>
   );
 } 
