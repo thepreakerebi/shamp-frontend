@@ -17,6 +17,7 @@ export const dynamic = 'force-dynamic';
 export default function TestDetailPage() {
   const { testId } = useParams<{ testId: string }>();
   const { tests, getTestById } = useTests();
+  const storeTest = useTestsStore(state => state.tests?.find(t => t._id === testId));
   const [test, setTest] = useState(() => tests?.find(t => t._id === testId));
   const [loading, setLoading] = useState(!test);
   const [mounted, setMounted] = useState(false);
@@ -55,6 +56,14 @@ export default function TestDetailPage() {
       })();
     }
   }, [testId, test, getTestById]);
+
+  // Sync local state when store updates (e.g., via Socket.IO after edit)
+  useEffect(() => {
+    if (storeTest && (!test || storeTest !== test)) {
+      setTest(storeTest);
+      setLoading(false);
+    }
+  }, [storeTest]);
 
   // Prevent rendering until client-side mount to avoid hydration issues
   if (!mounted) {
