@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useRouter, useParams, notFound } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useProjects } from "@/hooks/use-projects";
 import { useProjectsStore } from "@/lib/store/projects";
+import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 
 export default function EditProjectPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -20,6 +21,24 @@ export default function EditProjectPage() {
   const [paymentCredentials, setPaymentCredentials] = useState<{ key: string; value: string }[]>([]);
   const [errors, setErrors] = useState<{ name?: string; url?: string }>({});
   const [loading, setLoading] = useState(false);
+
+  // Unsaved changes dialog state
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  // Determine if there are unsaved changes compared to the current project values
+  const isDirty = useMemo(() => {
+    if (!project || loading) return false;
+    const authCredObj = Object.fromEntries(authCredentials.filter(c => c.key).map(c => [c.key, c.value]));
+    const paymentCredObj = Object.fromEntries(paymentCredentials.filter(c => c.key).map(c => [c.key, c.value]));
+    return (
+      form.name !== (project.name || "") ||
+      form.description !== (project.description || "") ||
+      form.url !== (project.url || "") ||
+      JSON.stringify(authCredObj) !== JSON.stringify(project.authCredentials || {}) ||
+      JSON.stringify(paymentCredObj) !== JSON.stringify(project.paymentCredentials || {})
+    );
+  }, [form, authCredentials, paymentCredentials, project, loading]);
 
   // Broadcast loading state to topbar
   useEffect(() => {
@@ -46,6 +65,22 @@ export default function EditProjectPage() {
       initializedRef.current = true;
     }
   }, [project]);
+
+  // Intercept breadcrumb link clicks when there are unsaved changes
+  useEffect(() => {
+    const handleLinkClick = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      const anchor = t.closest('a[data-slot="breadcrumb-link"]') as HTMLAnchorElement | null;
+      if (!anchor) return;
+      if (!isDirty) return;
+      if (anchor.href === window.location.href) return; // same page
+      e.preventDefault();
+      setPendingHref(anchor.href);
+      setConfirmLeaveOpen(true);
+    };
+    document.addEventListener('click', handleLinkClick, true);
+    return () => document.removeEventListener('click', handleLinkClick, true);
+  }, [isDirty]);
 
   if (project === null) {
     // If store loaded but project missing, 404
@@ -125,6 +160,14 @@ export default function EditProjectPage() {
       toast.error(err instanceof Error ? err.message : "Failed to update project");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelNavigation = () => {
+    if (isDirty) {
+      setConfirmLeaveOpen(true);
+    } else {
+      router.back();
     }
   };
 
@@ -269,7 +312,26 @@ export default function EditProjectPage() {
               </section>
             ))}
           </fieldset>
+
+          {/* Action buttons */}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
+          </div>
         </form>
+
+      {/* Unsaved changes confirmation */}
+      <UnsavedChangesDialog
+        open={confirmLeaveOpen}
+        onOpenChange={setConfirmLeaveOpen}
+        onDiscard={() => {
+          setConfirmLeaveOpen(false);
+          if (pendingHref) {
+            router.push(pendingHref);
+          } else {
+            router.back();
+          }
+        }}
+      />
     </main>
   );
 } 
