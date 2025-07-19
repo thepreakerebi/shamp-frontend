@@ -232,7 +232,7 @@ export function SummaryPanel({ run, personaName }: Props) {
 
       {/* Scrollable content */}
       <section className="flex-1 overflow-auto p-4 space-y-6">
-        {active.browserUseStatus === "finished" && !narration && !summary && !analysisSummary ? (
+        {active.browserUseStatus === "finished" && active.status !== "cancelled" && !narration && !summary && !analysisSummary ? (
           <SummaryDetailsSkeleton />
         ) : (
           <>
