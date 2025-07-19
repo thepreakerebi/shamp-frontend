@@ -23,6 +23,10 @@ export function NeedHelpDropdown() {
     window.open("https://cal.com/shamp/need-help", "_blank", "noopener,noreferrer");
   };
 
+  const reportBug = () => {
+    window.open("https://tally.so/r/mDRMb5", "_blank", "noopener,noreferrer");
+  };
+
   return (
     <CustomDropdownMenu>
       <CustomDropdownMenuTrigger asChild>
@@ -40,6 +44,7 @@ export function NeedHelpDropdown() {
           <Copy className="size-4 opacity-60" />
         </CustomDropdownMenuItem>
         <CustomDropdownMenuItem onSelect={openBooking}>Book a call</CustomDropdownMenuItem>
+        <CustomDropdownMenuItem onSelect={reportBug}>Report a bug</CustomDropdownMenuItem>
       </CustomDropdownMenuContent>
     </CustomDropdownMenu>
   );
