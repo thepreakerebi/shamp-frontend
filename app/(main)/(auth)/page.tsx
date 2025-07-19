@@ -199,8 +199,8 @@ export default function LoginPage() {
         </form>
         <footer className="text-xs text-muted-foreground mt-4 text-center">
           By logging in you agree to our{' '}
-          <Link href="/terms" className="text-secondary hover:underline">Terms of Service</Link> and{' '}
-          <Link href="/privacy" className="text-secondary hover:underline">Privacy Policy</Link>.
+          <Link href="https://www.shamp.io/terms" target="_blank" className="text-secondary hover:underline">Terms of Service</Link> and{' '}
+          <Link href="https://www.shamp.io/privacy" target="_blank" className="text-secondary hover:underline">Privacy Policy</Link>.
         </footer>
       </section>
     </main>
