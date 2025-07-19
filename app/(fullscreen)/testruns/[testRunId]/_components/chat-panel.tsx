@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useBilling } from "@/hooks/use-billing";
+import CheckDialog from "@/components/autumn/check-dialog";
 
 interface ChatMessage extends BaseChatMessage {
   id?: string;
@@ -22,6 +24,8 @@ interface Props {
 export function ChatPanel({ run, personaName }: Props) {
   const { user } = useAuth();
   const { getChatHistory, chatWithAgent, testRuns } = useTestRuns();
+  const { summary, loading: billingLoading } = useBilling();
+  const [showPaywall, setShowPaywall] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -29,7 +33,29 @@ export function ChatPanel({ run, personaName }: Props) {
   // Determine live browserUseStatus so UI reacts to real-time changes
   const liveRun = (testRuns ?? []).find(r => r._id === run._id);
   const browserStatus = liveRun?.browserUseStatus ?? run.browserUseStatus;
-  const canChat = ["finished", "stopped"].includes(browserStatus ?? "");
+  const planName = summary?.products && Array.isArray(summary.products) && summary.products.length > 0
+    ? ((summary.products[0] as { name?: string; id?: string }).name || (summary.products[0] as { id?: string }).id || '').toLowerCase()
+    : 'free';
+
+  const isFreePlan = !billingLoading && planName.startsWith('free');
+
+  const canChat = ["finished", "stopped"].includes(browserStatus ?? "") && !isFreePlan;
+
+  const getChatPreview = () => {
+    const nextProduct = {
+      id: 'hobby',
+      name: 'Hobby Plan',
+      is_add_on: false,
+      free_trial: undefined,
+    } as unknown as Record<string, unknown>;
+    return {
+      scenario: 'feature_flag',
+      feature_id: 'chat',
+      feature_name: 'Chat',
+      product_id: 'hobby',
+      products: [nextProduct],
+    } as unknown as Record<string, unknown>; // loose typing
+  };
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -185,6 +211,9 @@ export function ChatPanel({ run, personaName }: Props) {
               rows={1}
               disabled={!canChat}
               className="flex-1 resize-none border-0 bg-transparent p-0 focus-visible:ring-0 text-sm disabled:opacity-50"
+              onClick={() => {
+                if (isFreePlan) setShowPaywall(true);
+              }}
             />
           </div>
           <Button size="icon" type="submit" disabled={!canChat || sending || !input.trim()} aria-label="Send message">
@@ -192,6 +221,11 @@ export function ChatPanel({ run, personaName }: Props) {
           </Button>
         </form>
       </footer>
+
+      {showPaywall && (
+        /* @ts-expect-error preview partial */
+        <CheckDialog open={showPaywall} setOpen={setShowPaywall} preview={getChatPreview()} />
+      )}
     </aside>
   );
 } 

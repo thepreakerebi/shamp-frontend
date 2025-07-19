@@ -9,6 +9,7 @@ import { useBatchPersonas } from "@/hooks/use-batch-personas";
 import { toast } from "sonner";
 import { LoadingBenefitsModal } from "../../_components/loading-benefits-modal";
 import { useRouter } from "next/navigation";
+import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 
 export default function CreateBatchPersonaPage() {
   const { createBatchPersona } = useBatchPersonas(false); // disable auto fetch
@@ -25,6 +26,39 @@ export default function CreateBatchPersonaPage() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<{ count?: string; name?: string; description?: string }>({});
+
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false);
+  const [pendingHref, setPendingHref] = React.useState<string | null>(null);
+
+  const isDirty = React.useMemo(() => {
+    if (loading) return false;
+    return (
+      form.name || form.description || form.targetAudience || form.additionalContext || diversity.some(d=>d.trim())
+    );
+  }, [form, diversity, loading]);
+
+  React.useEffect(() => {
+    const handleLinkClick = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      const anchor = t.closest('a[data-slot="breadcrumb-link"]') as HTMLAnchorElement | null;
+      if (!anchor) return;
+      if (!isDirty) return;
+      if (anchor.href === window.location.href) return;
+      e.preventDefault();
+      setPendingHref(anchor.href);
+      setConfirmLeaveOpen(true);
+    };
+    document.addEventListener('click', handleLinkClick, true);
+    return () => document.removeEventListener('click', handleLinkClick, true);
+  }, [isDirty]);
+
+  const handleCancelNavigation = () => {
+    if (isDirty) {
+      setConfirmLeaveOpen(true);
+    } else {
+      router.back();
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -174,7 +208,25 @@ export default function CreateBatchPersonaPage() {
           <span className="block text-xs text-muted-foreground mb-1">Any extra guidance you want the AI to consider.</span>
           <Textarea id="additionalContext" name="additionalContext" value={form.additionalContext} onChange={handleChange} disabled={loading} />
         </section>
+
+        {/* Action buttons */}
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
+        </div>
       </form>
+
+      <UnsavedChangesDialog
+        open={confirmLeaveOpen}
+        onOpenChange={setConfirmLeaveOpen}
+        onDiscard={() => {
+          setConfirmLeaveOpen(false);
+          if (pendingHref) {
+            router.push(pendingHref);
+          } else {
+            router.back();
+          }
+        }}
+      />
     </section>
   );
 } 

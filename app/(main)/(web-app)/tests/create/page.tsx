@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import ProjectCommand from "./_components/project-command";
 import PersonaCommand from "./_components/persona-command";
 import { useBilling } from "@/hooks/use-billing";
+import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 
 export default function CreateTestPage() {
   const { createTest } = useTests();
@@ -21,6 +22,34 @@ export default function CreateTestPage() {
   const [form, setForm] = useState({ name: "", description: "", projectId: "", personaId: "", device: "" });
   const [errors, setErrors] = useState<{ name?: string; description?: string; projectId?: string; personaId?: string; device?: string }>({});
   const [loading, setLoading] = useState(false);
+
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  const isDirty = React.useMemo(()=>{
+    if (loading) return false;
+    return (
+      form.name || form.description || form.personaId || form.projectId || form.device
+    );
+  }, [form, loading]);
+
+  React.useEffect(()=>{
+    const handler = (e: MouseEvent)=>{
+      const anchor = (e.target as HTMLElement).closest('a[data-slot="breadcrumb-link"]') as HTMLAnchorElement|null;
+      if(!anchor) return;
+      if(!isDirty) return;
+      if(anchor.href===window.location.href) return;
+      e.preventDefault();
+      setPendingHref(anchor.href);
+      setConfirmLeaveOpen(true);
+    };
+    document.addEventListener('click', handler, true);
+    return ()=> document.removeEventListener('click', handler, true);
+  },[isDirty]);
+
+  const handleCancelNavigation = ()=>{
+    if(isDirty){ setConfirmLeaveOpen(true);} else { router.back(); }
+  };
 
   const planName = summary?.products && Array.isArray(summary.products) && summary.products.length > 0
     ? ((summary.products[0] as { name?: string; id?: string }).name || (summary.products[0] as { id?: string }).id || '').toLowerCase()
@@ -48,7 +77,7 @@ export default function CreateTestPage() {
         mobile: { w: 800, h: 1280 },
       };
       const vp = deviceSelectionEnabled ? viewportMap[form.device as keyof typeof viewportMap] : viewportMap["desktop"];
-      await createTest({
+      const newTest = await createTest({
         name: form.name,
         description: form.description,
         project: form.projectId,
@@ -57,7 +86,11 @@ export default function CreateTestPage() {
         browserViewportHeight: vp.h,
       });
       toast.success("Test created");
-      router.push("/tests");
+      if (newTest && newTest._id) {
+        router.push(`/tests/${newTest._id}`);
+      } else {
+        router.push("/tests");
+      }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to create test");
     } finally {
@@ -119,13 +152,21 @@ export default function CreateTestPage() {
         </section>
         )}
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={()=>router.back()}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
           <Button type="submit" variant="default" disabled={loading} className="flex items-center gap-2">
             {loading && <Loader2 className="animate-spin size-4" />}
             {loading?"Creating…":"Create test"}
           </Button>
         </div>
       </form>
+      <UnsavedChangesDialog
+        open={confirmLeaveOpen}
+        onOpenChange={setConfirmLeaveOpen}
+        onDiscard={()=>{
+          setConfirmLeaveOpen(false);
+          if(pendingHref){ router.push(pendingHref);} else { router.back(); }
+        }}
+      />
     </main>
   );
 } 

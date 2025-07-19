@@ -9,6 +9,7 @@ import { usePersonas } from "@/hooks/use-personas";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { LoadingBenefitsModal } from "../_components/loading-benefits-modal";
+import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 
 export default function CreatePersonaPage() {
   const { createPersona } = usePersonas();
@@ -27,6 +28,39 @@ export default function CreatePersonaPage() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<{ name?: string; description?: string }>({});
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false);
+  const [pendingHref, setPendingHref] = React.useState<string | null>(null);
+
+  const isDirty = React.useMemo(() => {
+    if (loading) return false;
+    return (
+      form.name || form.description || form.background || form.gender ||
+      goals.some(g=>g.trim()) || frustrations.some(f=>f.trim()) || traits.some(t=>t.trim()) || preferredDevices.length>0
+    );
+  }, [form, goals, frustrations, traits, preferredDevices, loading]);
+
+  React.useEffect(() => {
+    const handleLinkClick = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      const anchor = t.closest('a[data-slot="breadcrumb-link"]') as HTMLAnchorElement | null;
+      if (!anchor) return;
+      if (!isDirty) return;
+      if (anchor.href === window.location.href) return;
+      e.preventDefault();
+      setPendingHref(anchor.href);
+      setConfirmLeaveOpen(true);
+    };
+    document.addEventListener('click', handleLinkClick, true);
+    return () => document.removeEventListener('click', handleLinkClick, true);
+  }, [isDirty]);
+
+  const handleCancelNavigation = () => {
+    if (isDirty) {
+      setConfirmLeaveOpen(true);
+    } else {
+      router.back();
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -91,7 +125,7 @@ export default function CreatePersonaPage() {
       <LoadingBenefitsModal />
       <h1 className="text-2xl font-semibold mb-6">Create Persona</h1>
       {error && <div className="text-destructive text-sm mb-4">{error}</div>}
-      <form
+      <form noValidate
         id="create-persona-form"
         onSubmit={handleSubmit}
         className="space-y-6"
@@ -110,7 +144,7 @@ export default function CreatePersonaPage() {
           <span className="block text-xs text-muted-foreground mb-1">
             Give your persona a short, descriptive name (e.g. &quot;Liam Smith&quot;).
           </span>
-          <Input id="name" name="name" value={form.name} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.name} aria-describedby={fieldErrors.name ? "name-error" : undefined} required />
+          <Input id="name" name="name" value={form.name} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.name} aria-describedby={fieldErrors.name ? "name-error" : undefined} />
           {fieldErrors.name && (
             <div id="name-error" className="text-destructive text-xs mt-1">
               {fieldErrors.name}
@@ -125,7 +159,7 @@ export default function CreatePersonaPage() {
           <span className="block text-xs text-muted-foreground mb-1">
             Briefly explain who this persona is and what drives them (1–2 sentences).
           </span>
-          <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.description} aria-describedby={fieldErrors.description ? "description-error" : undefined} required />
+          <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.description} aria-describedby={fieldErrors.description ? "description-error" : undefined} />
           {fieldErrors.description && (
             <div id="description-error" className="text-destructive text-xs mt-1">
               {fieldErrors.description}
@@ -291,8 +325,24 @@ export default function CreatePersonaPage() {
             ))}
           </div>
         </fieldset>
+        {/* Action buttons */}
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
+        </div>
         {/* Note: submission button now lives in Topbar */}
       </form>
+      <UnsavedChangesDialog
+        open={confirmLeaveOpen}
+        onOpenChange={setConfirmLeaveOpen}
+        onDiscard={() => {
+          setConfirmLeaveOpen(false);
+          if (pendingHref) {
+            router.push(pendingHref);
+          } else {
+            router.back();
+          }
+        }}
+      />
     </section>
   );
 } 

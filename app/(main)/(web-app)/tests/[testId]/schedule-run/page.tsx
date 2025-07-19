@@ -1,6 +1,6 @@
 "use client";
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/lib/auth";
 import { useTests } from "@/hooks/use-tests";
 import { usePersonas } from "@/hooks/use-personas";
@@ -20,6 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useTestRunsStore } from "@/lib/store/testruns";
 import { useTestSchedulesStore } from "@/lib/store/testSchedules";
 import { ScheduleRunPageSkeleton } from "../_components/schedule-run-page-skeleton";
+import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 
 export default function ScheduleRunPage() {
   const { testId } = useParams<{ testId: string }>();
@@ -43,6 +44,32 @@ export default function ScheduleRunPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ personaId?: string; runDate?: string; runTime?: string; dateTime?: string }>({});
   const [dateOpen, setDateOpen] = useState(false);
+
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  const isDirty = useMemo(()=>{
+    if(submitting) return false;
+    return selectedPersona || runDate || runHour!=="" || runMinute!=="" || isRecurring;
+  }, [selectedPersona, runDate, runHour, runMinute, isRecurring, submitting]);
+
+  useEffect(()=>{
+    const handler = (e: MouseEvent)=>{
+      const anchor = (e.target as HTMLElement).closest('a[data-slot="breadcrumb-link"]') as HTMLAnchorElement|null;
+      if(!anchor) return;
+      if(!isDirty) return;
+      if(anchor.href===window.location.href) return;
+      e.preventDefault();
+      setPendingHref(anchor.href);
+      setConfirmLeaveOpen(true);
+    };
+    document.addEventListener('click', handler, true);
+    return ()=> document.removeEventListener('click', handler, true);
+  }, [isDirty]);
+
+  const handleCancelNavigation = ()=>{
+    if(isDirty){ setConfirmLeaveOpen(true);} else { router.back(); }
+  };
 
   useEffect(() => {
     (async () => {
@@ -296,13 +323,21 @@ export default function ScheduleRunPage() {
 
         {/* Actions */}
         <section className="flex justify-end gap-2">
-          <Button variant="ghost" type="button" onClick={()=>router.back()} disabled={submitting}>Cancel</Button>
+          <Button variant="outline" type="button" onClick={handleCancelNavigation} disabled={submitting}>Cancel</Button>
           <Button type="submit" disabled={submitting} variant="default">
             {submitting && <Loader2 className="mr-2 size-4 animate-spin" />} 
             {isRecurring?"Create schedule":"Schedule"}
           </Button>
         </section>
       </form>
+      <UnsavedChangesDialog
+        open={confirmLeaveOpen}
+        onOpenChange={setConfirmLeaveOpen}
+        onDiscard={()=>{
+          setConfirmLeaveOpen(false);
+          if(pendingHref){ router.push(pendingHref);} else { router.back(); }
+        }}
+      />
     </main>
   );
 } 

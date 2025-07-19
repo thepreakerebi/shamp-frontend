@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTests } from "@/hooks/use-tests";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import PersonaCommand from "../../create/_components/persona-command";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useBilling } from "@/hooks/use-billing";
+import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 
 export default function EditTestPage() {
   const { testId } = useParams<{ testId: string }>();
@@ -70,6 +71,59 @@ export default function EditTestPage() {
   });
   const [errors, setErrors] = useState<{ name?: string; description?: string; projectId?: string; personaId?: string; device?: string }>({});
   const [saving, setSaving] = useState(false);
+
+  // Unsaved changes dialog
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  // Determine if form has unsaved changes compared to initial form values
+  const isDirty = useMemo(() => {
+    if (saving || !initialLoaded) return false;
+    const viewportMap: Record<string,string> = {
+      desktop:"1280x720", tablet:"820x1180", mobile:"800x1280"
+    };
+    const initialDeviceKey = ((): string => {
+      if (!existing) return "";
+      const key = `${(existing as any).browserViewportWidth ?? ""}x${(existing as any).browserViewportHeight ?? ""}`;
+      const inv = Object.entries(viewportMap).find(([,v])=>v===key);
+      return inv ? inv[0] : "";
+    })();
+    const initial = {
+      name: existing?.name || "",
+      description: existing?.description || "",
+      projectId: getId(existing?.project),
+      personaId: (()=>{
+        if(!existing) return "";
+        const ex:any = existing;
+        if (Array.isArray(ex.personas) && ex.personas.length) return getId(ex.personas[0]);
+        if (ex.persona) return getId(ex.persona);
+        return "";
+      })(),
+      device: initialDeviceKey,
+    };
+    return (
+      form.name !== initial.name ||
+      form.description !== initial.description ||
+      form.projectId !== initial.projectId ||
+      form.personaId !== initial.personaId ||
+      form.device !== initial.device
+    );
+  }, [form, existing, getId, initialLoaded, saving]);
+
+  // Intercept breadcrumb link clicks
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const anchor = (e.target as HTMLElement).closest('a[data-slot="breadcrumb-link"]') as HTMLAnchorElement | null;
+      if (!anchor) return;
+      if (!isDirty) return;
+      if (anchor.href === window.location.href) return;
+      e.preventDefault();
+      setPendingHref(anchor.href);
+      setConfirmLeaveOpen(true);
+    };
+    document.addEventListener('click', handler, true);
+    return () => document.removeEventListener('click', handler, true);
+  }, [isDirty]);
 
   // Fetch if missing or incomplete data (e.g., viewport sizes absent)
   useEffect(() => {
@@ -177,13 +231,31 @@ export default function EditTestPage() {
         </section>
         )}
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={()=>router.back()}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={() => {
+            if (isDirty) {
+              setConfirmLeaveOpen(true);
+            } else {
+              router.back();
+            }
+          }}>Cancel</Button>
           <Button type="submit" disabled={saving} className="flex items-center gap-2">
             {saving && <Loader2 className="animate-spin size-4" />}
             {saving?"Saving…":"Save changes"}
           </Button>
         </div>
       </form>
+      <UnsavedChangesDialog
+        open={confirmLeaveOpen}
+        onOpenChange={setConfirmLeaveOpen}
+        onDiscard={() => {
+          setConfirmLeaveOpen(false);
+          if (pendingHref) {
+            router.push(pendingHref);
+          } else {
+            router.back();
+          }
+        }}
+      />
     </main>
   );
 } 

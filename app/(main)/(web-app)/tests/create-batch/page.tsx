@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useBatchTests } from "@/hooks/use-batch-tests";
@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import ProjectCommand from "../create/_components/project-command";
 import BatchPersonaCommand from "./_components/batch-persona-command";
 import TestCommand from "./_components/test-command";
+import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic';
@@ -24,6 +25,32 @@ export default function CreateBatchTestPage() {
   const [form, setForm] = useState({ projectId: "", batchPersonaId: "", testId: "" });
   const [errors, setErrors] = useState<{ projectId?: string; batchPersonaId?: string; testId?: string }>({});
   const [loading, setLoading] = useState(false);
+
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  const isDirty = useMemo(()=>{
+    if (loading) return false;
+    return form.projectId || form.batchPersonaId || form.testId;
+  }, [form, loading]);
+
+  useEffect(()=>{
+    const handler = (e: MouseEvent)=>{
+      const anchor = (e.target as HTMLElement).closest('a[data-slot="breadcrumb-link"]') as HTMLAnchorElement|null;
+      if(!anchor) return;
+      if(!isDirty) return;
+      if(anchor.href===window.location.href) return;
+      e.preventDefault();
+      setPendingHref(anchor.href);
+      setConfirmLeaveOpen(true);
+    };
+    document.addEventListener('click', handler, true);
+    return ()=> document.removeEventListener('click', handler, true);
+  }, [isDirty]);
+
+  const handleCancelNavigation = () => {
+    if (isDirty) setConfirmLeaveOpen(true); else router.back();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,13 +99,25 @@ export default function CreateBatchTestPage() {
           {errors.testId && <p className="text-destructive text-xs mt-1">{errors.testId}</p>}
         </section>
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={()=>router.back()}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
           <Button type="submit" variant="default" disabled={loading} className="flex items-center gap-2">
             {loading && <Loader2 className="animate-spin size-4" />}
             {loading ? "Creating…" : "Create batch test"}
           </Button>
         </div>
       </form>
+      <UnsavedChangesDialog
+        open={confirmLeaveOpen}
+        onOpenChange={setConfirmLeaveOpen}
+        onDiscard={() => {
+          setConfirmLeaveOpen(false);
+          if (pendingHref) {
+            router.push(pendingHref);
+          } else {
+            router.back();
+          }
+        }}
+      />
     </main>
   );
 } 

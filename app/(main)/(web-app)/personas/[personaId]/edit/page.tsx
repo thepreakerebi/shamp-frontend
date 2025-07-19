@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +9,7 @@ import { Plus, Trash } from "lucide-react";
 import { EditPersonaFormSkeleton } from "./_components/edit-persona-form-skeleton";
 import { usePersonas } from "@/hooks/use-personas";
 import { toast } from "sonner";
+import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 
 export default function EditPersonaPage() {
   const params = useParams();
@@ -28,6 +29,12 @@ export default function EditPersonaPage() {
   const [traits, setTraits] = React.useState<string[]>([]);
   const [preferredDevices, setPreferredDevices] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(false);
+  // Unsaved changes dialog state
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false);
+  const [pendingHref, setPendingHref] = React.useState<string | null>(null);
+
+  // Store initial data snapshot for dirty-checking
+  const initialDataRef = useRef<{ form: typeof form; goals: string[]; frustrations: string[]; traits: string[]; preferredDevices: string[] } | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<{ name?: string; description?: string }>({});
 
@@ -45,6 +52,18 @@ export default function EditPersonaPage() {
         setFrustrations(Array.isArray(persona.frustrations) ? persona.frustrations : []);
         setTraits(Array.isArray(persona.traits) ? (persona.traits as string[]) : []);
         setPreferredDevices(Array.isArray(persona.preferredDevices) ? persona.preferredDevices : []);
+        initialDataRef.current = {
+          form: {
+            name: persona.name || "",
+            description: persona.description || "",
+            background: persona.background || "",
+            gender: persona.gender || "",
+          },
+          goals: Array.isArray(persona.goals) ? persona.goals : [],
+          frustrations: Array.isArray(persona.frustrations) ? persona.frustrations : [],
+          traits: Array.isArray(persona.traits) ? (persona.traits as string[]) : [],
+          preferredDevices: Array.isArray(persona.preferredDevices) ? persona.preferredDevices : [],
+        };
         setInitialLoaded(true);
       } catch {
         router.push("/personas");
@@ -53,6 +72,45 @@ export default function EditPersonaPage() {
     fetchPersona();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [personaId]);
+
+  const sanitize = (arr: string[]) => arr.map((s) => s.trim()).filter(Boolean);
+
+  const isDirty = useMemo(() => {
+    if (!initialLoaded || loading || !initialDataRef.current) return false;
+    const init = initialDataRef.current;
+    if (form.name !== init.form.name) return true;
+    if (form.description !== init.form.description) return true;
+    if (form.background !== init.form.background) return true;
+    if (form.gender !== init.form.gender) return true;
+    if (JSON.stringify(sanitize(goals)) !== JSON.stringify(sanitize(init.goals))) return true;
+    if (JSON.stringify(sanitize(frustrations)) !== JSON.stringify(sanitize(init.frustrations))) return true;
+    if (JSON.stringify(sanitize(traits)) !== JSON.stringify(sanitize(init.traits))) return true;
+    if (JSON.stringify(sanitize(preferredDevices)) !== JSON.stringify(sanitize(init.preferredDevices))) return true;
+    return false;
+  }, [form, goals, frustrations, traits, preferredDevices, initialLoaded, loading]);
+
+  // Intercept breadcrumb link clicks
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const anchor = (e.target as HTMLElement).closest('a[data-slot="breadcrumb-link"]') as HTMLAnchorElement | null;
+      if (!anchor) return;
+      if (!isDirty) return;
+      if (anchor.href === window.location.href) return;
+      e.preventDefault();
+      setPendingHref(anchor.href);
+      setConfirmLeaveOpen(true);
+    };
+    document.addEventListener('click', handler, true);
+    return () => document.removeEventListener('click', handler, true);
+  }, [isDirty]);
+
+  const handleCancelNavigation = () => {
+    if (isDirty) {
+      setConfirmLeaveOpen(true);
+    } else {
+      router.back();
+    }
+  };
 
   if (!initialLoaded) {
     return <EditPersonaFormSkeleton />;
@@ -318,8 +376,27 @@ export default function EditPersonaPage() {
             </section>
           ))}
         </fieldset>
-        {/* Note: submit handled by Topbar */}
+
+        {/* Action buttons */}
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="outline" onClick={handleCancelNavigation} disabled={loading}>Cancel</Button>
+        </div>
+        {/* Note: submission triggered from Topbar */}
       </form>
+
+      {/* Unsaved changes dialog */}
+      <UnsavedChangesDialog
+        open={confirmLeaveOpen}
+        onOpenChange={setConfirmLeaveOpen}
+        onDiscard={() => {
+          setConfirmLeaveOpen(false);
+          if (pendingHref) {
+            router.push(pendingHref);
+          } else {
+            router.back();
+          }
+        }}
+      />
     </div>
   );
 } 
