@@ -19,6 +19,7 @@ export default function CreateProjectPage() {
   const [errors, setErrors] = useState<{ name?: string; url?: string }>({});
   const [loading, setLoading] = useState(false);
   const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
+  const [pendingHref, setPendingHref] = React.useState<string | null>(null);
 
   const isDirty = React.useMemo(() => {
     if (loading) return false;
@@ -112,6 +113,22 @@ export default function CreateProjectPage() {
       router.back();
     }
   };
+
+  React.useEffect(() => {
+    const handleLinkClick = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      const anchor = t.closest('a[data-slot="breadcrumb-link"]') as HTMLAnchorElement | null;
+      if (!anchor) return;
+      if (!isDirty) return;
+      // ignore same page
+      if (anchor.href === window.location.href) return;
+      e.preventDefault();
+      setPendingHref(anchor.href);
+      setConfirmLeaveOpen(true);
+    };
+    document.addEventListener('click', handleLinkClick, true); // capture phase
+    return () => document.removeEventListener('click', handleLinkClick, true);
+  }, [isDirty]);
 
   return (
     <main className="p-4 w-full max-w-[500px] mx-auto space-y-6">
@@ -257,7 +274,7 @@ export default function CreateProjectPage() {
 
           {/* Action buttons */}
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={handleCancelNavigation}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
           </div>
           {/* Note: Submission is triggered from Topbar button */}
         </form>
@@ -266,7 +283,11 @@ export default function CreateProjectPage() {
         onOpenChange={setConfirmLeaveOpen}
         onDiscard={() => {
           setConfirmLeaveOpen(false);
-          router.back();
+          if (pendingHref) {
+            router.push(pendingHref);
+          } else {
+            router.back();
+          }
         }}
       />
     </main>
