@@ -29,6 +29,24 @@ export function SubscriptionSection() {
   // ---------------------------------------------------------------------
   // Credits usage calculation (same logic as CreditsUsageCard)
   // ---------------------------------------------------------------------
+  // Detect plan changes to trigger toast on home page
+  useEffect(() => {
+    if (!summary) return;
+    const prevPlanId = typeof window !== 'undefined' ? localStorage.getItem('planId') : null;
+    const currentPlanId = currentProductId;
+
+    if (prevPlanId && prevPlanId !== currentPlanId) {
+      // Plan has changed – set flag for toast
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('showPlanToast', '1');
+      }
+    }
+    // Always store latest plan id
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('planId', currentPlanId);
+    }
+  }, [summary, currentProductId]);
+
   const creditsInfo = useMemo(() => {
     if (!summary) return null;
 
