@@ -42,7 +42,7 @@ export function UnsavedChangesDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{stayLabel}</AlertDialogCancel>
-          <AlertDialogAction className="bg-red-500 hover:bg-red-600 text-white" onClick={onDiscard}>{discardLabel}</AlertDialogAction>
+          <AlertDialogAction className="bg-red-500 hover:bg-red-600 text-white dar" onClick={onDiscard}>{discardLabel}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
