@@ -20,7 +20,7 @@ interface Plan {
 }
 
 const monthlyPlans: Plan[] = [
-  { id: "free", name: "Free", price: "$0", secondary: "per month", description: "Explore how Shamp helps with basic testing", features: ["150 credits / mo", "2 tests", "1 project", "2 personas", "Issues board", "AI insights"], },
+  { id: "free", name: "Free", price: "$0", secondary: "per month", description: "Explore how Shamp helps with basic testing", features: ["100 credits / mo", "2 tests", "1 project", "2 personas", "Issues board", "AI insights"], },
   { id: "hobby", name: "Hobby", price: "$14.99", secondary: "per month", description: "Expanded limits for hobby projects", features: ["1,200 credits / mo (then $0.06 ea)", "10 tests", "5 projects", "15 personas", "Chat personas", "Issues board", "AI insights"], },
   { id: "pro", name: "Pro", price: "$49.99", secondary: "per month", popular: true, description: "Advanced features & higher limits", features: ["3,000 credits / mo", "35 tests", "15 projects", "30 personas", "Scheduled & recurring runs", "Device types", "Chat personas", "AI insights"], },
   { id: "ultra", name: "Ultra", price: "$99.99", secondary: "per month", description: "Unlimited scale and full capabilities", features: ["8,000 credits / mo", "Unlimited tests", "Unlimited projects", "Unlimited personas", "Batch personas & tests", "Scheduled & recurring runs", "Device types", "Chat personas", "AI insights"], },
