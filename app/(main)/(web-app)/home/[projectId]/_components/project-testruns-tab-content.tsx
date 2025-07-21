@@ -27,7 +27,7 @@ export function ProjectTestrunsTabContent() {
   const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any" });
 
   useEffect(() => {
-    if (!projectId || !token) return;
+    if (!projectId) return;
     let mounted = true;
     if (!cached) setLoading(true);
 
