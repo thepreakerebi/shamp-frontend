@@ -16,6 +16,7 @@ import { useTestRunsStore } from "@/lib/store/testruns";
 import { useTestsStore } from "@/lib/store/tests";
 import { useBilling } from "@/hooks/use-billing";
 import CheckDialog from "@/components/autumn/check-dialog";
+import React from "react";
 
 /**
  * DetailsSection
@@ -114,6 +115,12 @@ export default function DetailsSection({ test }: { test: Test }) {
   const { getTestRunsForTest } = useTests();
   const [loadingRuns, setLoadingRuns] = useState(false);
 
+  // Determine if any run is currently running for this test
+  const isRunning = React.useMemo(() => {
+    const list = testRunsStore?.filter(r => r.test === test._id) || [];
+    return list.some(r => r.browserUseStatus === 'running');
+  }, [testRunsStore, test._id]);
+
   useEffect(() => {
     if (runsSlice === undefined && !loadingRuns) {
       (async () => {
@@ -171,10 +178,20 @@ export default function DetailsSection({ test }: { test: Test }) {
               Schedule run
             </Button>
           )}
-          <Button onClick={handleRun} variant="secondary" disabled={running}>
-            {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Run test
-          </Button>
+          {isRunning ? (
+            <Badge variant="secondary" className="px-2 py-1 text-xs bg-primary/10 text-primary-foreground dark:text-primary flex items-center gap-1">
+              <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+              running
+            </Badge>
+          ) : (
+            <Button onClick={handleRun} variant="secondary" disabled={running}>
+              {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Run test
+            </Button>
+          )}
           {showPaywallRun && (
             /* @ts-expect-error preview partial */
             <CheckDialog open={showPaywallRun} setOpen={setShowPaywallRun} preview={getCreditsPreview()} />
