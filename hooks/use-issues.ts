@@ -89,13 +89,13 @@ export function useIssues(enabled: boolean = true) {
   // Actions
   const resolveIssue = async (id: string, resolved: boolean) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/issues/${id}/${resolved ? 'resolve' : 'unresolve'}`, { token, workspaceId: currentWorkspaceId, init: { method: 'PUT' } });
+    const res = await apiFetch(`/issues/${id}/${resolved ? 'resolve' : 'unresolve'}`, { token, workspaceId: currentWorkspaceId, method: 'PUT' });
     if (!res.ok) throw new Error("Failed to update issue");
   };
 
   const deleteIssue = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/issues/${id}`, { token, workspaceId: currentWorkspaceId, init: { method: 'DELETE' } });
+    const res = await apiFetch(`/issues/${id}`, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to delete issue");
   };
 

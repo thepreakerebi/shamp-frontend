@@ -18,7 +18,7 @@ export function useNarrationAudio(runId: string) {
   }, []);
 
   const fetchAudio = useCallback(async () => {
-    const res = await apiFetch(`/tts/testrun/${runId}`, { token, workspaceId: currentWorkspaceId, init: { method: 'POST' } });
+    const res = await apiFetch(`/tts/testrun/${runId}`, { token, workspaceId: currentWorkspaceId, method: 'POST' });
     if (!res.ok) {
       throw new Error(await res.text());
     }

@@ -63,7 +63,7 @@ export function useBilling() {
       if (!token || !currentWorkspaceId) {
         throw new Error("Not authenticated or workspace missing");
       }
-      const res = await apiFetch('/billing/attach-product', { token, workspaceId: currentWorkspaceId, init: { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) } });
+      const res = await apiFetch('/billing/attach-product', { token, workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
       if (!res.ok) {
         const text = await res.text();
         throw new Error(text || "Failed to create checkout session");
@@ -80,7 +80,7 @@ export function useBilling() {
     if (!token || !currentWorkspaceId) {
       throw new Error("Not authenticated or workspace missing");
     }
-    const res = await apiFetch('/billing/portal-url', { token, workspaceId: currentWorkspaceId, init: { method: 'POST', headers: { 'Content-Type': 'application/json' } } });
+    const res = await apiFetch('/billing/portal-url', { token, workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' } });
     if (!res.ok) {
       const text = await res.text();
       throw new Error(text || "Failed to create billing portal session");

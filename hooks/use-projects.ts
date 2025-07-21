@@ -218,7 +218,7 @@ export function useProjects() {
   // Create a project
   const createProject = async (payload: ProjectPayload) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch('/projects', { token, workspaceId: currentWorkspaceId, init: { method: 'POST', body: JSON.stringify(payload) } });
+    const res = await apiFetch('/projects', { token, workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error("Failed to create project");
     const project = await res.json();
     // Don't manually update store - let Socket.IO events handle it
@@ -228,7 +228,7 @@ export function useProjects() {
   // Update a project
   const updateProject = async (id: string, payload: Partial<ProjectPayload>) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/projects/${id}`, { token, workspaceId: currentWorkspaceId, init: { method: 'PATCH', body: JSON.stringify(payload) } });
+    const res = await apiFetch(`/projects/${id}`, { token, workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error("Failed to update project");
     const project = await res.json();
     // Optimistically update store for immediate UI feedback; socket will reconcile if needed
@@ -240,7 +240,7 @@ export function useProjects() {
   const deleteProject = async (id: string, deleteTests = false) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
     const path = `/projects/${id}${deleteTests ? `?deleteTests=true` : ''}`;
-    const res = await apiFetch(path, { token, workspaceId: currentWorkspaceId, init: { method: 'DELETE' } });
+    const res = await apiFetch(path, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to delete project");
     return res.json();
   };
@@ -248,7 +248,7 @@ export function useProjects() {
   // Move project to trash
   const moveProjectToTrash = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/projects/${id}/trash`, { token, workspaceId: currentWorkspaceId, init: { method: 'PATCH' } });
+    const res = await apiFetch(`/projects/${id}/trash`, { token, workspaceId: currentWorkspaceId, method: 'PATCH' });
     if (!res.ok) throw new Error("Failed to move project to trash");
     const project = await res.json();
     // Don't manually update store - let Socket.IO events handle it
@@ -258,7 +258,7 @@ export function useProjects() {
   // Restore project from trash
   const restoreProjectFromTrash = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/projects/${id}/restore`, { token, workspaceId: currentWorkspaceId, init: { method: 'PATCH' } });
+    const res = await apiFetch(`/projects/${id}/restore`, { token, workspaceId: currentWorkspaceId, method: 'PATCH' });
     if (!res.ok) throw new Error("Failed to restore project from trash");
     const project = await res.json();
     // Don't manually update store - let Socket.IO events handle it
@@ -307,7 +307,7 @@ export function useProjects() {
   const emptyProjectTrash = async (deleteTests?: boolean) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
     const qs = deleteTests ? '?deleteTests=true' : '';
-    const res = await apiFetch(`/projects/trash/empty${qs}`, { token, workspaceId: currentWorkspaceId, init: { method: 'DELETE' } });
+    const res = await apiFetch(`/projects/trash/empty${qs}`, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to empty project trash");
     const result = await res.json();
     store.emptyTrashedProjects();

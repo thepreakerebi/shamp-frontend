@@ -187,7 +187,7 @@ export function usePersonas() {
   // Create a persona
   const createPersona = async (payload: PersonaPayload) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch('/personas', { token, workspaceId: currentWorkspaceId, init: { method: 'POST', body: JSON.stringify(payload) } });
+    const res = await apiFetch('/personas', { token, workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error("Failed to create persona");
     const persona = await res.json();
     store.addPersonaToList(persona);
@@ -197,7 +197,7 @@ export function usePersonas() {
   // Update a persona
   const updatePersona = async (id: string, payload: PersonaPayload) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/personas/${id}`, { token, workspaceId: currentWorkspaceId, init: { method: 'PATCH', body: JSON.stringify(payload) } });
+    const res = await apiFetch(`/personas/${id}`, { token, workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error("Failed to update persona");
     const persona = await res.json();
     store.updatePersonaInList(persona);
@@ -207,7 +207,7 @@ export function usePersonas() {
   // Delete a persona
   const deletePersona = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/personas/${id}`, { token, workspaceId: currentWorkspaceId, init: { method: 'DELETE' } });
+    const res = await apiFetch(`/personas/${id}`, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to delete persona");
     store.removePersonaFromList(id);
     // Decrement count just like the socket handler would
@@ -218,7 +218,7 @@ export function usePersonas() {
   // Stop (cancel) a persona that is currently being created
   const stopPersonaCreation = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/personas/${id}/stop`, { token, workspaceId: currentWorkspaceId, init: { method: 'POST' } });
+    const res = await apiFetch(`/personas/${id}/stop`, { token, workspaceId: currentWorkspaceId, method: 'POST' });
     if (!res.ok) throw new Error("Failed to stop persona creation");
     // Treat as deletion locally
     store.removePersonaFromList(id);
@@ -233,7 +233,7 @@ export function usePersonas() {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await apiFetch('/personas/upload-doc', { token, workspaceId: currentWorkspaceId, init: { method: 'POST', body: formData } });
+    const res = await apiFetch('/personas/upload-doc', { token, workspaceId: currentWorkspaceId, method: 'POST', body: formData });
     // Browser sets correct content-type for FormData
 
     if (!res.ok) {
