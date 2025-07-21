@@ -159,6 +159,8 @@ export default function DetailsSection({ test }: { test: Test }) {
     return "Mobile" as const;
   })();
 
+  const showDeviceType = deviceType && !["free","hobby","hobby_annual"].includes((planName??"").toLowerCase());
+
   return (
     <article className="p-4 space-y-6" aria-labelledby="test-details-heading">
       {/* Header */}
@@ -247,7 +249,7 @@ export default function DetailsSection({ test }: { test: Test }) {
         </div>
 
         {/* Device type */}
-        {deviceType && (
+        {showDeviceType && (
           <div className="space-y-2 w-full md:w-1/3">
             <h3 className="text-sm font-medium text-muted-foreground">Device</h3>
             <Badge variant="secondary" className="flex items-center gap-1 px-2 py-1 text-sm bg-primary/10 text-primary-foreground dark:text-primary" aria-label={`Device type: ${deviceType}`}>
