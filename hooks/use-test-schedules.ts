@@ -3,19 +3,14 @@ import io from "socket.io-client";
 import { useAuth } from "@/lib/auth";
 import { useTestSchedulesStore, TestSchedule } from "@/lib/store/testSchedules";
 import { toast } from "sonner";
+import { apiFetch } from '@/lib/api-client';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
-const fetcher = (url: string, token: string, workspaceId?: string) =>
-  fetch(`${API_BASE}${url}`, {
-    credentials: "include",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(workspaceId ? { 'X-Workspace-ID': workspaceId } : {}),
-    },
-  }).then(res => {
-    if (!res.ok) throw new Error("Failed to fetch");
+const fetcher = (url: string, token: string | null, workspaceId?: string) =>
+  apiFetch(url, { token, workspaceId }).then(res => {
+    if (!res.ok) throw new Error('Failed to fetch');
     return res.json();
   });
 

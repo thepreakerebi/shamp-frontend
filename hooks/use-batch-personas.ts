@@ -2,6 +2,7 @@ import { useAuth } from "@/lib/auth";
 import { useEffect } from "react";
 import io from "socket.io-client";
 import { useBatchPersonasStore } from "@/lib/store/batchPersonas";
+import { apiFetch } from '@/lib/api-client';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
@@ -38,15 +39,9 @@ type BatchPersonaPayload = {
   additionalContext?: string;
 };
 
-const fetcher = (url: string, token: string, workspaceId?: string | null) =>
-  fetch(`${API_BASE}${url}`, {
-    credentials: "include",
-    headers: { 
-      Authorization: `Bearer ${token}`,
-      ...(workspaceId ? { 'X-Workspace-ID': workspaceId } : {})
-    },
-  }).then(res => {
-    if (!res.ok) throw new Error("Failed to fetch");
+const fetcher = (url: string, token: string | null, workspaceId?: string | null) =>
+  apiFetch(url, { token, workspaceId }).then(res => {
+    if (!res.ok) throw new Error('Failed to fetch');
     return res.json();
   });
 
@@ -56,7 +51,7 @@ export function useBatchPersonas(enabled: boolean = true) {
 
   useEffect(() => {
     if (!enabled) return;
-    if (!token || !currentWorkspaceId) return;
+    if (!currentWorkspaceId) return;
     // Inline the fetch logic to avoid dependency on fetchBatchPersonas
     (async () => {
     store.setBatchPersonasLoading(true);
@@ -78,7 +73,7 @@ export function useBatchPersonas(enabled: boolean = true) {
 
   useEffect(() => {
     if (!enabled) return;
-    if (!token || !currentWorkspaceId) return;
+    if (!currentWorkspaceId) return;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
       auth: { token, workspaceId: currentWorkspaceId },

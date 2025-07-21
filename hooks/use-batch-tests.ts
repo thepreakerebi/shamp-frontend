@@ -5,6 +5,7 @@ import io from "socket.io-client";
 import { useBatchTestsStore } from "@/lib/store/batchTests";
 import { useTestRunsStore } from "@/lib/store/testruns";
 import type { TestRun } from "@/hooks/use-testruns";
+import { apiFetch } from '@/lib/api-client';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
@@ -34,15 +35,9 @@ export interface BatchTestAnalysis {
 
 export type BatchTestAnalysisHistoryEntry = BatchTestAnalysis;
 
-const fetcher = (url: string, token: string, workspaceId?: string | null) =>
-  fetch(`${API_BASE}${url}`, {
-    credentials: "include",
-    headers: { 
-      Authorization: `Bearer ${token}`,
-      ...(workspaceId ? { 'X-Workspace-ID': workspaceId } : {})
-    },
-  }).then(res => {
-    if (!res.ok) throw new Error("Failed to fetch");
+const fetcher = (url: string, token: string | null, workspaceId?: string | null) =>
+  apiFetch(url, { token, workspaceId }).then(res => {
+    if (!res.ok) throw new Error('Failed to fetch');
     return res.json();
   });
 
