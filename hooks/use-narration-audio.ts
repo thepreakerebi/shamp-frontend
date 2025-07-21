@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
+import { apiFetch } from '@/lib/api-client';
 
 export function useNarrationAudio(runId: string) {
   const { token, currentWorkspaceId } = useAuth();
@@ -17,16 +18,7 @@ export function useNarrationAudio(runId: string) {
   }, []);
 
   const fetchAudio = useCallback(async () => {
-    const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    if (currentWorkspaceId) headers['X-Workspace-Id'] = currentWorkspaceId;
-
-    const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '';
-    const res = await fetch(`${API_BASE}/tts/testrun/${runId}`, {
-      method: 'POST',
-      headers,
-      credentials: 'include',
-    });
+    const res = await apiFetch(`/tts/testrun/${runId}`, { token, workspaceId: currentWorkspaceId, init: { method: 'POST' } });
     if (!res.ok) {
       throw new Error(await res.text());
     }

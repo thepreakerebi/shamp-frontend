@@ -1,27 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { useBillingStore } from "@/lib/store/billing";
 import { useAuth } from "@/lib/auth";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
-
-const fetcher = async (
-  endpoint: string,
-  token: string,
-  workspaceId?: string | null
-) => {
-  const res = await fetch(`${API_BASE}${endpoint}`, {
-    credentials: "include",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(workspaceId ? { "X-Workspace-ID": workspaceId } : {}),
-    },
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "Failed to fetch");
-  }
-  return res.json();
-};
+import { apiFetch } from '@/lib/api-client';
 
 export function useBilling() {
   const { token, currentWorkspaceId } = useAuth();
@@ -35,11 +15,8 @@ export function useBilling() {
     }
     store.setError(null);
     try {
-      const summary = await fetcher(
-        "/billing/summary",
-        token,
-        currentWorkspaceId
-      );
+      const res = await apiFetch('/billing/summary', { token, workspaceId: currentWorkspaceId });
+      const summary = await res.json();
       store.setSummary(summary);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to fetch";
@@ -86,16 +63,7 @@ export function useBilling() {
       if (!token || !currentWorkspaceId) {
         throw new Error("Not authenticated or workspace missing");
       }
-      const res = await fetch(`${API_BASE}/billing/attach-product`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "X-Workspace-ID": currentWorkspaceId,
-        },
-        body: JSON.stringify({ productId }),
-      });
+      const res = await apiFetch('/billing/attach-product', { token, workspaceId: currentWorkspaceId, init: { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) } });
       if (!res.ok) {
         const text = await res.text();
         throw new Error(text || "Failed to create checkout session");
@@ -112,15 +80,7 @@ export function useBilling() {
     if (!token || !currentWorkspaceId) {
       throw new Error("Not authenticated or workspace missing");
     }
-    const res = await fetch(`${API_BASE}/billing/portal-url`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        "X-Workspace-ID": currentWorkspaceId,
-      },
-    });
+    const res = await apiFetch('/billing/portal-url', { token, workspaceId: currentWorkspaceId, init: { method: 'POST', headers: { 'Content-Type': 'application/json' } } });
     if (!res.ok) {
       const text = await res.text();
       throw new Error(text || "Failed to create billing portal session");
@@ -134,7 +94,8 @@ export function useBilling() {
       if (!token) {
         throw new Error("Not authenticated");
       }
-      const product = await fetcher(`/billing/product/${productId}`, token);
+      const res = await apiFetch(`/billing/product/${productId}`, { token });
+      const product = await res.json();
       store.setProduct(product);
       return product;
     },
