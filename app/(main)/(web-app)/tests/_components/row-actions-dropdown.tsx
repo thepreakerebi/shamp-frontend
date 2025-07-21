@@ -1,5 +1,5 @@
 "use client";
-import type { Test as TestType } from "@/hooks/use-tests";
+// import type { Test as TestType } from "@/hooks/use-tests";
 import {
   CustomDropdownMenu,
   CustomDropdownMenuTrigger,
@@ -12,8 +12,7 @@ import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import React, { useState } from "react";
 import { toast } from "sonner";
-import { useBilling } from "@/hooks/use-billing";
-import CheckDialog from "@/components/autumn/check-dialog";
+// import { useBilling } from "@/hooks/use-billing";
 import { MoveTestToTrashModal } from "./move-test-to-trash-modal";
 import { DeleteTestModal } from "./delete-test-modal";
 
@@ -36,7 +35,8 @@ interface RowActionsDropdownProps {
 
 function RowActionsDropdownComponent({ testId, testName, onOpen, actions, showOpen = true, showRun = true, showEdit = true, showTrash = true }: RowActionsDropdownProps) {
   const router = useRouter();
-  const { duplicateTest, moveTestToTrash, deleteTest } = actions;
+  // Duplicate functionality temporarily disabled
+  const { /* duplicateTest, */ moveTestToTrash, deleteTest } = actions;
   const [confirmState, setConfirmState] = useState<{
     type: "run" | null;
     loading: boolean;
@@ -48,35 +48,9 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions, showOp
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const { summary, allowed } = useBilling();
-  const [showPaywallDuplicate, setShowPaywallDuplicate] = useState(false);
+  // Duplicate paywall/state removed
 
-  const getTestPreview = () => {
-    const features: unknown = summary?.features;
-    let feature: unknown;
-    if (Array.isArray(features)) {
-      feature = features.find((f) => (f as { feature_id: string }).feature_id === "tests");
-    } else if (features && typeof features === "object") {
-      feature = (features as Record<string, unknown>)["tests"];
-    }
-    const bal = (feature as { balance?: number })?.balance;
-    const usageExhausted = typeof bal === "number" && bal <= 0;
-
-    const nextProduct = {
-      id: "hobby",
-      name: "Hobby Plan",
-      is_add_on: false,
-      free_trial: undefined,
-    } as unknown as Record<string, unknown>;
-
-    return {
-      scenario: usageExhausted ? "usage_limit" : "feature_flag",
-      feature_id: "tests",
-      feature_name: "Tests",
-      product_id: "hobby",
-      products: [nextProduct],
-    };
-  };
+  // Duplicate preview helper removed
 
   // Check if dropdown should be shown (user has any actionable options)
   const hasActionableOptions = showEdit || showTrash;
@@ -99,21 +73,9 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions, showOp
     router.push(`/tests/${testId}/edit`);
   };
 
-  const handleDuplicate = async () => {
-    if (!allowed({ featureId: "tests" })) {
-      setShowPaywallDuplicate(true);
-      return;
-    }
-    try {
-      const newTest = await duplicateTest(testId) as TestType;
-      toast.success("Test duplicated");
-      if (newTest && newTest._id) {
-        router.push(`/tests/${newTest._id}`);
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to duplicate test");
-    }
-  };
+  /* Duplicate functionality disabled
+  const handleDuplicate = async () => {};
+  */
 
   const handleTrash = () => {
     setTrashModalOpen(true);
@@ -177,7 +139,7 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions, showOp
           {showRun && <CustomDropdownMenuItem data-stop-row onSelect={handleRun}>Run</CustomDropdownMenuItem>}
           {showOpen && <CustomDropdownMenuItem data-stop-row onSelect={handleOpen}>Open</CustomDropdownMenuItem>}
           {showEdit && <CustomDropdownMenuItem data-stop-row onSelect={handleEdit}>Edit</CustomDropdownMenuItem>}
-          <CustomDropdownMenuItem data-stop-row onSelect={handleDuplicate}>Duplicate</CustomDropdownMenuItem>
+          {/* Duplicate option disabled */}
           {showTrash && <CustomDropdownMenuItem data-stop-row onSelect={handleTrash}>Move to trash</CustomDropdownMenuItem>}
           <CustomDropdownMenuItem variant="destructive" data-stop-row onSelect={handleDelete}>
             Delete
@@ -213,10 +175,7 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions, showOp
         loading={deleteLoading}
       />
 
-      {showPaywallDuplicate && (
-        /* @ts-expect-error preview partial */
-        <CheckDialog open={showPaywallDuplicate} setOpen={setShowPaywallDuplicate} preview={getTestPreview()} />
-      )}
+      {/* Duplicate paywall disabled */}
     </>
   );
 }
