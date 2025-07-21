@@ -1,9 +1,9 @@
 import { useAuth } from "@/lib/auth";
 import { useEffect, useCallback, useRef } from "react";
 import io from "socket.io-client";
+import { apiFetch } from '@/lib/api-client';
 import { usePersonasStore } from "@/lib/store/personas";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
 export interface Persona {
@@ -40,17 +40,7 @@ interface User {
   email?: string;
 }
 
-const fetcher = (url: string, token: string, workspaceId?: string | null) =>
-  fetch(`${API_BASE}${url}`, {
-    credentials: "include",
-    headers: { 
-      Authorization: `Bearer ${token}`,
-      ...(workspaceId ? { 'X-Workspace-ID': workspaceId } : {})
-    },
-  }).then(res => {
-    if (!res.ok) throw new Error("Failed to fetch");
-    return res.json();
-  });
+// Legacy fetcher removed – apiFetch is used everywhere
 
 export function usePersonas() {
   const { token, currentWorkspaceId } = useAuth();
@@ -58,7 +48,7 @@ export function usePersonas() {
   const previousWorkspaceId = useRef<string | null>(null);
 
   const fetchPersonas = useCallback(async () => {
-    if (!token || !currentWorkspaceId) {
+    if (!currentWorkspaceId) {
       store.setPersonasLoading(false);
       store.setPersonas([]);
       return;
@@ -66,7 +56,8 @@ export function usePersonas() {
     store.setPersonasLoading(true);
     store.setPersonasError(null);
     try {
-      const data = await fetcher("/personas", token, currentWorkspaceId);
+      const res = await apiFetch('/personas', { token, workspaceId: currentWorkspaceId });
+      const data = await res.json();
       store.setPersonas(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -80,7 +71,7 @@ export function usePersonas() {
   }, [token, currentWorkspaceId, store]);
 
   const fetchCount = useCallback(async () => {
-    if (!token || !currentWorkspaceId) {
+    if (!currentWorkspaceId) {
       store.setCountLoading(false);
       store.setCount(0);
       return;
@@ -88,7 +79,8 @@ export function usePersonas() {
     store.setCountLoading(true);
     store.setCountError(null);
     try {
-      const data = await fetcher("/personas/count", token, currentWorkspaceId);
+      const res = await apiFetch('/personas/count', { token, workspaceId: currentWorkspaceId });
+      const data = await res.json();
       store.setCount(data.count ?? 0);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -108,7 +100,7 @@ export function usePersonas() {
   }, [fetchPersonas, fetchCount]);
 
   useEffect(() => {
-    if (!token || !currentWorkspaceId) {
+    if (!currentWorkspaceId) {
       store.setPersonasLoading(false);
       store.setCountLoading(false);
       store.setPersonas([]);
@@ -129,10 +121,10 @@ export function usePersonas() {
     fetchPersonas();
     fetchCount();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, currentWorkspaceId]);
+  }, [currentWorkspaceId]);
 
   useEffect(() => {
-    if (!token || !currentWorkspaceId) return;
+    if (!currentWorkspaceId) return;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
       auth: { token, workspaceId: currentWorkspaceId },
@@ -183,14 +175,8 @@ export function usePersonas() {
 
   // Get a single persona by ID
   const getPersonaById = async (id: string): Promise<Persona> => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/personas/${id}`, {
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const res = await apiFetch(`/personas/${id}`, { token, workspaceId: currentWorkspaceId });
     if (res.status === 404) throw new Error("Not found");
     if (!res.ok) throw new Error("Failed to fetch persona");
     const persona = await res.json();
@@ -200,17 +186,8 @@ export function usePersonas() {
 
   // Create a persona
   const createPersona = async (payload: PersonaPayload) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/personas`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-      body: JSON.stringify(payload),
-    });
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const res = await apiFetch('/personas', { token, workspaceId: currentWorkspaceId, init: { method: 'POST', body: JSON.stringify(payload) } });
     if (!res.ok) throw new Error("Failed to create persona");
     const persona = await res.json();
     store.addPersonaToList(persona);
@@ -219,17 +196,8 @@ export function usePersonas() {
 
   // Update a persona
   const updatePersona = async (id: string, payload: PersonaPayload) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/personas/${id}`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-      body: JSON.stringify(payload),
-    });
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const res = await apiFetch(`/personas/${id}`, { token, workspaceId: currentWorkspaceId, init: { method: 'PATCH', body: JSON.stringify(payload) } });
     if (!res.ok) throw new Error("Failed to update persona");
     const persona = await res.json();
     store.updatePersonaInList(persona);
@@ -238,15 +206,8 @@ export function usePersonas() {
 
   // Delete a persona
   const deletePersona = async (id: string) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/personas/${id}`, {
-      method: "DELETE",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const res = await apiFetch(`/personas/${id}`, { token, workspaceId: currentWorkspaceId, init: { method: 'DELETE' } });
     if (!res.ok) throw new Error("Failed to delete persona");
     store.removePersonaFromList(id);
     // Decrement count just like the socket handler would
@@ -256,15 +217,8 @@ export function usePersonas() {
 
   // Stop (cancel) a persona that is currently being created
   const stopPersonaCreation = async (id: string) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/personas/${id}/stop`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId,
-      },
-    });
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const res = await apiFetch(`/personas/${id}/stop`, { token, workspaceId: currentWorkspaceId, init: { method: 'POST' } });
     if (!res.ok) throw new Error("Failed to stop persona creation");
     // Treat as deletion locally
     store.removePersonaFromList(id);
@@ -274,21 +228,13 @@ export function usePersonas() {
 
   // Upload a document (PDF, DOCX, CSV) to extract personas in bulk
   const uploadPersonaDocument = async (file: File) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    if (!currentWorkspaceId) throw new Error("No workspace context");
 
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await fetch(`${API_BASE}/personas/upload-doc`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId,
-        // NOTE: Do NOT set Content-Type when sending FormData, the browser will set the correct boundary
-      } as Record<string, string>,
-      body: formData,
-    });
+    const res = await apiFetch('/personas/upload-doc', { token, workspaceId: currentWorkspaceId, init: { method: 'POST', body: formData } });
+    // Browser sets correct content-type for FormData
 
     if (!res.ok) {
       // Surface server error text if available
