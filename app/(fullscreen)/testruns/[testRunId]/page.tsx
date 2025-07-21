@@ -56,8 +56,9 @@ export default function TestRunCanvasPage() {
       } as Node;
     });
 
-    // If no steps yet, add a placeholder node
-    if (built.length === 0) {
+    // If no steps yet and run still in progress, add a placeholder node
+    const runInProgress = !['finished','stopped','cancelled'].includes((run.browserUseStatus ?? '').toLowerCase());
+    if (built.length === 0 && runInProgress) {
       built.push({
         id: 'placeholder',
         type: 'step',

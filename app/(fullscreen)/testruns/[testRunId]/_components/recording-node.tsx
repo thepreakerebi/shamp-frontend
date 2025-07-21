@@ -26,6 +26,13 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
     return run?.browserUseStatus === 'stopped';
   })();
 
+  const hasAnalysis = (() => {
+    if (!data.testRunId) return false;
+    const run = (testRuns ?? []).find(r => r._id === data.testRunId);
+    const arr = (run as { analysis?: unknown[] })?.analysis;
+    return Array.isArray(arr) && arr.length > 0;
+  })();
+
   const statusCancelled = (() => {
     if (!data.testRunId) return false;
     const run = (testRuns ?? []).find(r => r._id === data.testRunId);
@@ -192,7 +199,7 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
 
   return (
     <section className="flex flex-col items-center justify-center max-w-[420px] border rounded-lg bg-card shadow relative">
-      { browserStopped && !hasVideo && !statusCancelled && (
+      { browserStopped && !hasVideo && !statusCancelled && hasAnalysis &&  (
         <div className="w-full h-48 flex items-center justify-center text-muted-foreground text-sm bg-muted rounded-lg text-center px-2">
           Refresh to see recording
         </div>
