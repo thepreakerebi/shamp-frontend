@@ -135,10 +135,12 @@ export function useProjects() {
   }, [currentWorkspaceId]);
 
   useEffect(() => {
-    if (!token || !currentWorkspaceId) return;
+    if (!currentWorkspaceId) return;
+    const socketAuth: Record<string, unknown> = { workspaceId: currentWorkspaceId };
+    if (token) socketAuth.token = token;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
-      auth: { token, workspaceId: currentWorkspaceId },
+      auth: socketAuth,
     });
     socket.on("project:created", (data: Project & { workspace?: string }) => {
       // Only process events for the current workspace
@@ -242,6 +244,8 @@ export function useProjects() {
     const path = `/projects/${id}${deleteTests ? `?deleteTests=true` : ''}`;
     const res = await apiFetch(path, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to delete project");
+    // Optimistic update: remove from trashed list immediately
+    store.removeTrashedProject(id);
     return res.json();
   };
 
@@ -251,7 +255,12 @@ export function useProjects() {
     const res = await apiFetch(`/projects/${id}/trash`, { token, workspaceId: currentWorkspaceId, method: 'PATCH' });
     if (!res.ok) throw new Error("Failed to move project to trash");
     const project = await res.json();
-    // Don't manually update store - let Socket.IO events handle it
+    // Optimistic update: remove from active list and add to trashed list immediately
+    store.removeProjectFromList(project._id);
+    store.addTrashedProject({ ...project, trashed: true });
+    // Update count accordingly
+    const { projects } = useProjectsStore.getState();
+    store.setCount(Array.isArray(projects) ? projects.length : 0);
     return project;
   };
 
@@ -261,7 +270,14 @@ export function useProjects() {
     const res = await apiFetch(`/projects/${id}/restore`, { token, workspaceId: currentWorkspaceId, method: 'PATCH' });
     if (!res.ok) throw new Error("Failed to restore project from trash");
     const project = await res.json();
-    // Don't manually update store - let Socket.IO events handle it
+    // Optimistic update: remove from trash list and add back to active list
+    store.removeTrashedProject(project._id);
+    // Ensure it's not already in active list then add
+    store.removeProjectFromList(project._id);
+    store.addProjectToList(project);
+    // Recalculate active count
+    const { projects } = useProjectsStore.getState();
+    store.setCount(Array.isArray(projects) ? projects.length : 0);
     return project;
   };
 
