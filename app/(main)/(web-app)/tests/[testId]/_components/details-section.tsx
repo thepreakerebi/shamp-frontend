@@ -144,10 +144,19 @@ export default function DetailsSection({ test }: { test: Test }) {
   const deviceType = (() => {
     const w = (test as unknown as { browserViewportWidth?: number }).browserViewportWidth;
     const h = (test as unknown as { browserViewportHeight?: number }).browserViewportHeight;
+    if (!w || !h) return null;
+    // Exact presets used by create/edit pages
+    if (w === 1280 && h === 720) return "Desktop" as const;
+    if (w === 820 && h === 1180) return "Tablet" as const;
+    if (w === 800 && h === 1280) return "Mobile" as const;
+    // Legacy presets
     if (w === 1280 && h === 960) return "Desktop" as const;
     if (w === 834 && h === 1112) return "Tablet" as const;
     if (w === 390 && h === 844) return "Mobile" as const;
-    return null;
+    // Fallback based on width only
+    if (w >= 1000) return "Desktop" as const;
+    if (w >= 700) return "Tablet" as const;
+    return "Mobile" as const;
   })();
 
   return (
