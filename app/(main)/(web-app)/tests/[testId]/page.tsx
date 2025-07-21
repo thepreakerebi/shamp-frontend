@@ -62,8 +62,10 @@ export default function TestDetailPage() {
   useEffect(() => {
     const testsLoaded = useTestsStore.getState().tests !== null;
     if (storeTest) {
-      // If store has the test, update local copy (may include new changes)
-      if (!test || storeTest !== test) {
+      // Update local copy only if content actually changed (using updatedAt or reference absence)
+      const storeUpdatedAt = (storeTest as { updatedAt?: string }).updatedAt;
+      const localUpdatedAt = (test as { updatedAt?: string } | null)?.updatedAt;
+      if (!test || storeUpdatedAt !== localUpdatedAt) {
         setTest(storeTest);
         setLoading(false);
       }

@@ -89,7 +89,7 @@ export default function CreateTestPage() {
       if (newTest && newTest._id) {
         router.push(`/tests/${newTest._id}`);
       } else {
-        router.push("/tests");
+      router.push("/tests");
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to create test");
