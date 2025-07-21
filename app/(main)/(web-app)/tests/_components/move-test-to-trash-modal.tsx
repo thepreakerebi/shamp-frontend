@@ -10,6 +10,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 interface MoveTestToTrashModalProps {
   open: boolean;
@@ -20,6 +21,14 @@ interface MoveTestToTrashModalProps {
 }
 
 export function MoveTestToTrashModal({ open, setOpen, testName, onConfirm, loading }: MoveTestToTrashModalProps) {
+  const router = useRouter();
+
+  const handleConfirm = async () => {
+    await onConfirm();
+    // After moving to trash, navigate back to tests list
+    router.push('/tests');
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="rounded-3xl" data-stop-row>
@@ -33,7 +42,7 @@ export function MoveTestToTrashModal({ open, setOpen, testName, onConfirm, loadi
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={loading}>Cancel</Button>
           </DialogClose>
-          <Button variant="destructive" onClick={onConfirm} disabled={loading}>
+          <Button variant="destructive" onClick={handleConfirm} disabled={loading}>
             {loading ? "Moving..." : "Move to Trash"}
           </Button>
         </DialogFooter>
