@@ -89,6 +89,13 @@ export function useAuth() {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
+// Retrieve CSRF token from cookie
+function getCsrfToken(): string | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const m = document.cookie.match(/(?:^|;\s*)csrf=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : undefined;
+}
+
 async function fetchWithToken(url: string, token: string | null, workspaceId?: string | null, options: RequestInit = {}) {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -102,6 +109,11 @@ async function fetchWithToken(url: string, token: string | null, workspaceId?: s
   
   if (token) {
     headers.Authorization = `Bearer ${token}`;
+  }
+  // Attach CSRF header if cookie present
+  const csrf = getCsrfToken();
+  if (csrf && !headers['X-CSRF-Token']) {
+    headers['X-CSRF-Token'] = csrf;
   }
   
   if (workspaceId) {
