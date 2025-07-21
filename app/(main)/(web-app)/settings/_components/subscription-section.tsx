@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 
 export function SubscriptionSection() {
   const { summary, loading: billingLoading, getProduct, product, getBillingPortalUrl } = useBilling();
@@ -18,13 +19,15 @@ export function SubscriptionSection() {
   const currentProductId = (summary?.products?.[0] as { id?: string })?.id ?? "free";
   const planName = (summary?.products?.[0] as { name?: string })?.name || currentProductId;
 
-  // Load product info once (for admins only this request will succeed)
+  // Fetch product details only if user is admin
+  const { user } = useAuth();
+  const isAdmin = user?.currentWorkspaceRole === 'admin';
+
   useEffect(() => {
-    if (currentProductId && !product) {
-      // silently ignore failure if not allowed
+    if (isAdmin && currentProductId && !product) {
       getProduct(currentProductId).catch(() => void 0);
     }
-  }, [currentProductId, product, getProduct]);
+  }, [currentProductId, product, getProduct, isAdmin]);
 
   // ---------------------------------------------------------------------
   // Credits usage calculation (same logic as CreditsUsageCard)
@@ -140,7 +143,8 @@ export function SubscriptionSection() {
         </section>
       ) : null}
 
-      {/* Manage subscription button */}
+      {/* Manage subscription button (admins only) */}
+      {isAdmin && (
       <Button
         variant="secondary"
         disabled={portalLoading}
@@ -162,7 +166,7 @@ export function SubscriptionSection() {
         }}
       >
         {portalLoading ? "Opening…" : "Manage subscription"}
-      </Button>
+      </Button>) }
 
       {/* Current Plan Details */}
       <section className="mt-4 p-4 rounded-lg border space-y-4">

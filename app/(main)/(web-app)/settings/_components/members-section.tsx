@@ -15,6 +15,8 @@ export function MembersSection() {
 
   const handleRemove = (id: string) => { void deleteMember(id); }
 
+  if (!user || user.currentWorkspaceRole !== 'admin') return null;
+
   return (
     <section className="p-4 space-y-4">
       <header className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">

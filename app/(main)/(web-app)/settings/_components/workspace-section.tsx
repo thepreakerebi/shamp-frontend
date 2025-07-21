@@ -53,6 +53,8 @@ export function WorkspaceSection() {
     }
   };
 
+  if (!user || user.currentWorkspaceRole !== 'admin') return null;
+
   return (
     <section className="p-4 space-y-6 max-w-md">
       <h2 className="text-xl font-semibold">Workspace Settings</h2>

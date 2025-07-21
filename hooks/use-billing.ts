@@ -8,7 +8,7 @@ export function useBilling() {
   const store = useBillingStore();
 
   const loadSummary = useCallback(async () => {
-    if (!token || !currentWorkspaceId) return;
+    if (!currentWorkspaceId) return;
     const initialLoad = !useBillingStore.getState().summary;
     if (initialLoad) {
       store.setLoading(true);
@@ -60,9 +60,7 @@ export function useBilling() {
 
   const attachProductCheckout = useCallback(
     async ({ productId }: { productId: string }): Promise<{ checkout_url?: string }> => {
-      if (!token || !currentWorkspaceId) {
-        throw new Error("Not authenticated or workspace missing");
-      }
+      if (!currentWorkspaceId) throw new Error("No workspace context");
       const res = await apiFetch('/billing/attach-product', { token, workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
       if (!res.ok) {
         const text = await res.text();
@@ -77,9 +75,7 @@ export function useBilling() {
   );
 
   const getBillingPortalUrl = useCallback(async (): Promise<{ portal_url?: string }> => {
-    if (!token || !currentWorkspaceId) {
-      throw new Error("Not authenticated or workspace missing");
-    }
+    if (!currentWorkspaceId) throw new Error("No workspace context");
     const res = await apiFetch('/billing/portal-url', { token, workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' } });
     if (!res.ok) {
       const text = await res.text();
@@ -91,9 +87,6 @@ export function useBilling() {
 
   const getProduct = useCallback(
     async (productId: string) => {
-      if (!token) {
-        throw new Error("Not authenticated");
-      }
       const res = await apiFetch(`/billing/product/${productId}`, { token });
       const product = await res.json();
       store.setProduct(product);
