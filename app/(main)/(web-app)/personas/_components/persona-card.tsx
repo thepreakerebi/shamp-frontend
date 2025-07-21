@@ -14,11 +14,19 @@ interface PersonaCardProps {
 
 export function PersonaCard({ persona, onEdit, onOpen, onDelete }: PersonaCardProps) {
   const router = useRouter();
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Ignore clicks coming from the dropdown menu area
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-persona-card-dropdown]')) return;
+    router.push(`/personas/${persona._id}`);
+  };
+
   return (
     <section
       role="button"
       tabIndex={0}
-      onClick={() => router.push(`/personas/${persona._id}`)}
+      onClick={handleCardClick}
       className="flex cursor-pointer items-center gap-4 p-4 bg-card rounded-2xl border border-border dark:border-0 hover:bg-muted/60 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-secondary"
     >
       <section className="flex-shrink-0">
@@ -45,6 +53,7 @@ export function PersonaCard({ persona, onEdit, onOpen, onDelete }: PersonaCardPr
         onClick={(e)=>e.stopPropagation()}
         onPointerDown={(e)=>e.stopPropagation()}
         data-stop-row
+        data-persona-card-dropdown
       >
         <PersonaCardDropdown
           onOpen={onOpen}
