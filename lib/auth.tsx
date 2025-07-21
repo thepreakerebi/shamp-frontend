@@ -128,9 +128,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [workspaceAdmin, setWorkspaceAdmin] = useState<WorkspaceAdmin | null>(null);
   const [switchingWorkspace, setSwitchingWorkspace] = useState(false);
 
-  // On mount, try to fetch user if token exists
+  // On mount (and whenever token changes) try to fetch current user. If token is null we
+  // still attempt – the backend may authenticate via HttpOnly cookie.
   useEffect(() => {
-    if (token) {
       fetchWithToken(`${API_BASE}/users/me`, token, currentWorkspaceId)
         .then(async (res) => {
           if (res.ok) {
@@ -173,9 +173,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         })
         .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
   }, [token]);
 
   // Listen for storage changes (e.g., from TokenHandler setting authToken)
@@ -317,7 +314,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Update profile (first & last name)
   const updateProfile = async (changes: { firstName?: string; lastName?: string }) => {
-    if (!token || !user) throw new Error("Not authenticated");
+    if (!user) throw new Error("Not authenticated");
     const res = await fetchWithToken(`${API_BASE}/users/${user._id}`, token, currentWorkspaceId, {
       method: 'PUT',
       body: JSON.stringify(changes),
@@ -340,7 +337,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Update workspace settings
   const updateWorkspace = async (data: { name?: string; description?: string; maxAgentStepsDefault?: number }) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    if (!currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     
     const res = await fetchWithToken(`${API_BASE}/users/workspace`, token, currentWorkspaceId, {
       method: 'PUT',
@@ -384,12 +381,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Join workspace via invite (for existing users)
   const joinWorkspace = async (inviteToken: string) => {
-    if (!token) throw new Error("Not authenticated");
     const res = await fetch(`${API_BASE}/users/join-workspace`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
       body: JSON.stringify({ token: inviteToken }),
     });
@@ -480,6 +476,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setWorkspaceAdmin(null);
     localStorage.removeItem('authToken');
     localStorage.removeItem('currentWorkspaceId');
+
+    // Expire auth cookie client-side (best-effort)
+    if (typeof document !== 'undefined') {
+      document.cookie = 'auth=; path=/; max-age=0; SameSite=Lax;';
+    }
   };
 
   // Refresh session (re-fetch user info)
