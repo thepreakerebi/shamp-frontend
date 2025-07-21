@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { apiFetch } from '@/lib/api-client';
 
 export interface User {
   _id: string;
@@ -225,6 +226,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentWorkspaceId]);
 
+  // ------------------ Silent session refresh ------------------
+  useEffect(() => {
+    // Only start timer when the user is logged-in (cookie is set by backend)
+    if (!user) return;
+
+    // Refresh 5 minutes before the 15-minute auth cookie expiry → every 10 min
+    const REFRESH_MS = 10 * 60 * 1000;
+
+    const interval = setInterval(async () => {
+      try {
+        // Backend verifies existing cookie and issues a fresh one (204 No Content)
+        const res = await apiFetch('/users/refresh', { method: 'POST' });
+
+        if (res.status === 204) {
+          // Optionally re-fetch current user to reflect any server-side changes
+          await refresh();
+        } else if (res.status === 401 || res.status === 403) {
+          // Session no longer valid → force logout
+          logout();
+        }
+      } catch {
+        // Network errors – ignore, next tick will retry
+      }
+    }, REFRESH_MS);
+
+    return () => clearInterval(interval);
+  }, [user]);
+   
   // Login method
   const login = async (email: string, password: string) => {
     setLoading(true);
