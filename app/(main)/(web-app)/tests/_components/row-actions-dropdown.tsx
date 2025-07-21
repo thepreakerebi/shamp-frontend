@@ -1,4 +1,5 @@
 "use client";
+import type { Test as TestType } from "@/hooks/use-tests";
 import {
   CustomDropdownMenu,
   CustomDropdownMenuTrigger,
@@ -104,8 +105,11 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions, showOp
       return;
     }
     try {
-      await duplicateTest(testId);
+      const newTest = await duplicateTest(testId) as TestType;
       toast.success("Test duplicated");
+      if (newTest && newTest._id) {
+        router.push(`/tests/${newTest._id}`);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to duplicate test");
     }
