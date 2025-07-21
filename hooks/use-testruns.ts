@@ -494,7 +494,7 @@ export function useTestRuns() {
 
   // One-time startup fetch per workspace
   useEffect(() => {
-    if (!token || !currentWorkspaceId) {
+    if (!currentWorkspaceId) {
       // Clear data when no workspace context
       setTestRuns([]);
       setTrashedTestRuns([]);
@@ -511,10 +511,10 @@ export function useTestRuns() {
       fetchTestRuns();
       fetchCounts();
     }
-  }, [token, currentWorkspaceId, fetchTestRuns, fetchCounts]);
+  }, [currentWorkspaceId, fetchTestRuns, fetchCounts]);
 
   useEffect(() => {
-    if (!token || !currentWorkspaceId) return;
+    if (!currentWorkspaceId) return;
     
     // Get or create workspace state for this workspace
     if (!workspaceFetchState[currentWorkspaceId]) {
@@ -525,7 +525,7 @@ export function useTestRuns() {
       wsState.trashedRunsFetched = true;
       fetchTrashedTestRuns();
     }
-  }, [token, currentWorkspaceId, fetchTrashedTestRuns]);
+  }, [currentWorkspaceId, fetchTrashedTestRuns]);
 
   // Start a test run
   const startTestRun = async (testId: string) => {
