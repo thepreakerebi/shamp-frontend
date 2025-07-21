@@ -5,7 +5,6 @@ import { useTestSchedulesStore, TestSchedule } from "@/lib/store/testSchedules";
 import { toast } from "sonner";
 import { apiFetch } from '@/lib/api-client';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
 const fetcher = (url: string, token: string | null, workspaceId?: string) =>
@@ -136,13 +135,10 @@ export function useTestSchedules() {
     async (id: string) => {
       if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
       try {
-        const res = await fetch(`${API_BASE}/testschedules/${id}/trash`, {
-          method: "PATCH",
-          credentials: "include",
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'X-Workspace-ID': currentWorkspaceId,
-          },
+        const res = await apiFetch(`/testschedules/${id}/trash`, {
+          token,
+          workspaceId: currentWorkspaceId,
+          method: 'PATCH',
         });
         const data = await res.json().catch(()=>null);
         if (data && data.schedule) {
@@ -167,14 +163,7 @@ export function useTestSchedules() {
     async (id: string) => {
       if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
       try {
-        const res = await fetch(`${API_BASE}/testschedules/${id}/restore`, {
-          method: "PATCH",
-          credentials: "include",
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'X-Workspace-ID': currentWorkspaceId,
-          },
-        });
+        const res = await apiFetch(`/testschedules/${id}/restore`, { token, workspaceId: currentWorkspaceId, method: 'PATCH' });
         if (!res.ok) throw new Error("Failed to restore schedule");
         const data = (await res.json()) as { schedule?: TestSchedule } | TestSchedule;
         const schedule: TestSchedule = (data as { schedule?: TestSchedule }).schedule ?? (data as TestSchedule);
@@ -193,14 +182,7 @@ export function useTestSchedules() {
     async (id: string) => {
       if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
       try {
-        const res = await fetch(`${API_BASE}/testschedules/recurring/${id}`, {
-          method: "DELETE",
-          credentials: "include",
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'X-Workspace-ID': currentWorkspaceId,
-          },
-        });
+        const res = await apiFetch(`/testschedules/recurring/${id}`, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
         if (!res.ok) throw new Error("Failed to delete schedule");
         removeScheduleFromList(id);
         removeTrashedSchedule(id);
@@ -218,16 +200,7 @@ export function useTestSchedules() {
     async (id: string, recurrenceRule: string) => {
       if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
       try {
-        const res = await fetch(`${API_BASE}/testschedules/recurring/${id}`, {
-          method: "PATCH",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-            'X-Workspace-ID': currentWorkspaceId,
-          },
-          body: JSON.stringify({ recurrenceRule }),
-        });
+        const res = await apiFetch(`/testschedules/recurring/${id}`, { token, workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recurrenceRule }) });
         if (!res.ok) {
           const errTxt = await res.text().catch(()=>"Failed");
           throw new Error(errTxt || "Failed to update schedule");
@@ -306,14 +279,7 @@ export function useTestSchedules() {
   // Empty trash - permanently delete all trashed test schedules
   const emptyTestScheduleTrash = async () => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/testschedules/trash/empty`, {
-      method: "DELETE",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId,
-      },
-    });
+    const res = await apiFetch('/testschedules/trash/empty', { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to empty test schedule trash");
     const result = await res.json();
     emptyTrashedSchedules();

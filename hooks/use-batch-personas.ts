@@ -4,7 +4,6 @@ import io from "socket.io-client";
 import { useBatchPersonasStore } from "@/lib/store/batchPersonas";
 import { apiFetch } from '@/lib/api-client';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
 export interface Persona {
@@ -111,73 +110,35 @@ export function useBatchPersonas(enabled: boolean = true) {
 
   const getBatchPersonaById = async (id: string): Promise<BatchPersona> => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/batchpersonas/${id}`, {
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    const res = await apiFetch(`/batchpersonas/${id}`, { token, workspaceId: currentWorkspaceId });
     if (!res.ok) throw new Error("Failed to fetch batch persona");
     return res.json();
   };
 
   const createBatchPersona = async (payload: BatchPersonaPayload) => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/batchpersonas`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-      body: JSON.stringify(payload),
-    });
+    const res = await apiFetch('/batchpersonas', { token, workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error("Failed to create batch persona");
     return res.json();
   };
 
   const deleteBatchPersona = async (id: string) => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/batchpersonas/${id}`, {
-      method: "DELETE",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    const res = await apiFetch(`/batchpersonas/${id}`, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to delete batch persona");
     return res.json();
   };
 
   const stopBatchPersonaCreation = async (id: string) => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/batchpersonas/${id}/stop`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId,
-      },
-    });
+    const res = await apiFetch(`/batchpersonas/${id}/stop`, { token, workspaceId: currentWorkspaceId, method: 'POST' });
     if (!res.ok) throw new Error("Failed to stop batch persona creation");
     return res.json();
   };
 
   const updateBatchPersonaName = async (id: string, name: string): Promise<BatchPersona> => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/batchpersonas/${id}`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-      body: JSON.stringify({ name }),
-    });
+    const res = await apiFetch(`/batchpersonas/${id}`, { token, workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
     if (!res.ok) throw new Error("Failed to update batch persona");
     const updated = await res.json();
     store.updateBatchPersonaInList(updated);

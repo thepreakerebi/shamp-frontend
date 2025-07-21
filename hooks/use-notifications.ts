@@ -4,7 +4,6 @@ import { useNotificationsStore, Notification } from "@/lib/store/notifications";
 import { useAuth } from "@/lib/auth";
 import { apiFetch } from '@/lib/api-client';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
 const fetcher = (url: string, token: string | null, workspaceId?: string | null) =>
@@ -154,14 +153,7 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
     if (!token || (scope === 'current' && !currentWorkspaceId)) return;
     const endpoint = `/notifications/${id}/read`;
     try {
-      await fetch(`${API_BASE}${endpoint}`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          ...(effectiveWorkspaceId ? { 'X-Workspace-ID': effectiveWorkspaceId } : {}),
-        },
-      });
+      await apiFetch(endpoint, { method: 'PUT', token, workspaceId: effectiveWorkspaceId ?? undefined });
     } catch {
       // ignore, backend will sync later
     }
@@ -171,28 +163,14 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
   const markAllAsRead = useCallback(async () => {
     if (!token || (scope === 'current' && !currentWorkspaceId)) return;
     const endpoint = scope === 'all' ? `/notifications/mark-all-read?workspace=all` : `/notifications/mark-all-read`;
-    await fetch(`${API_BASE}${endpoint}`, {
-      method: "PUT",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        ...(effectiveWorkspaceId ? { 'X-Workspace-ID': effectiveWorkspaceId } : {})
-      },
-    });
+    await apiFetch(endpoint, { method: 'PUT', token, workspaceId: effectiveWorkspaceId ?? undefined });
     store.markAllReadLocally();
   }, [token, currentWorkspaceId, scope]);
 
   const clearAll = useCallback(async () => {
     if (!token || (scope === 'current' && !currentWorkspaceId)) return;
     const endpoint = scope === 'all' ? `/notifications/clear-all?workspace=all` : `/notifications/clear-all`;
-    await fetch(`${API_BASE}${endpoint}`, {
-      method: "DELETE",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        ...(effectiveWorkspaceId ? { 'X-Workspace-ID': effectiveWorkspaceId } : {})
-      },
-    });
+    await apiFetch(endpoint, { method: 'DELETE', token, workspaceId: effectiveWorkspaceId ?? undefined });
     store.clearAllLocally();
   }, [token, currentWorkspaceId, scope]);
 

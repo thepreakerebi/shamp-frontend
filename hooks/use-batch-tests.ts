@@ -7,7 +7,7 @@ import { useTestRunsStore } from "@/lib/store/testruns";
 import type { TestRun } from "@/hooks/use-testruns";
 import { apiFetch } from '@/lib/api-client';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+// API_BASE no longer needed – we build relative paths
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
 export interface BatchTest {
@@ -186,13 +186,7 @@ export function useBatchTests() {
 
   const getBatchTestById = async (id: string): Promise<BatchTest> => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/batchtests/${id}`, {
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    const res = await apiFetch(`/batchtests/${id}`, { token, workspaceId: currentWorkspaceId });
     if (!res.ok) throw new Error("Failed to fetch batch test");
     const batch = await res.json();
     addBatchTestToList(batch);
@@ -201,14 +195,11 @@ export function useBatchTests() {
 
   const createBatchTest = async (payload: Pick<BatchTest, 'project' | 'batchPersona' | 'test'>) => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/batchtests`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
+    const res = await apiFetch('/batchtests', {
+      token,
+      workspaceId: currentWorkspaceId,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to create batch test");
@@ -219,14 +210,11 @@ export function useBatchTests() {
 
   const updateBatchTest = async (id: string, payload: Partial<Pick<BatchTest, 'batchPersona' | 'test'>>) => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/batchtests/${id}`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
+    const res = await apiFetch(`/batchtests/${id}`, {
+      token,
+      workspaceId: currentWorkspaceId,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to update batch test");
@@ -237,14 +225,7 @@ export function useBatchTests() {
 
   const moveBatchTestToTrash = async (id: string) => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/batchtests/${id}/trash`, {
-      method: "POST",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    const res = await apiFetch(`/batchtests/${id}/trash`, { token, workspaceId: currentWorkspaceId, method:'POST' });
     if (!res.ok) throw new Error("Failed to move batch test to trash");
     const data = await res.json();
     const batch = data.batchTest ?? data;
@@ -254,14 +235,7 @@ export function useBatchTests() {
 
   const restoreBatchTestFromTrash = async (id: string) => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/batchtests/${id}/restore`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    const res = await apiFetch(`/batchtests/${id}/restore`, { token, workspaceId: currentWorkspaceId, method:'PATCH' });
     if (!res.ok) throw new Error("Failed to restore batch test from trash");
     const data = await res.json();
     const batch = data.batchTest ?? data;
@@ -271,14 +245,7 @@ export function useBatchTests() {
 
   const duplicateBatchTest = async (id: string) => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/batchtests/${id}/duplicate`, {
-      method: "POST",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    const res = await apiFetch(`/batchtests/${id}/duplicate`, { token, workspaceId: currentWorkspaceId, method:'POST' });
     if (!res.ok) throw new Error("Failed to duplicate batch test");
     const batch = await res.json();
     addBatchTestToList(batch);
@@ -287,15 +254,8 @@ export function useBatchTests() {
 
   const deleteBatchTest = async (id: string, deleteTestRuns = false) => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const url = `${API_BASE}/batchtests/${id}${deleteTestRuns ? `?deleteTestRuns=true` : ''}`;
-    const res = await fetch(url, {
-      method: "DELETE",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    const path = `/batchtests/${id}${deleteTestRuns ? `?deleteTestRuns=true` : ''}`;
+    const res = await apiFetch(path, { token, workspaceId: currentWorkspaceId, method:'DELETE' });
     if (!res.ok) throw new Error("Failed to delete batch test");
     removeBatchTestFromList(id);
     return res.json();
@@ -303,12 +263,9 @@ export function useBatchTests() {
 
   const analyzeBatchTestOutputs = async (id: string): Promise<BatchTestAnalysis> => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/batchtests/${id}/analyze-outputs`, {
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
+    const res = await apiFetch(`/batchtests/${id}/analyze-outputs`, {
+      token,
+      workspaceId: currentWorkspaceId,
     });
     if (!res.ok) throw new Error("Failed to analyze batch test outputs");
     return res.json();
@@ -316,12 +273,9 @@ export function useBatchTests() {
 
   const getBatchTestAnalysisHistory = async (id: string): Promise<BatchTestAnalysisHistoryEntry[]> => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/batchtests/${id}/analysis-history`, {
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
+    const res = await apiFetch(`/batchtests/${id}/analysis-history`, {
+      token,
+      workspaceId: currentWorkspaceId,
     });
     if (!res.ok) throw new Error("Failed to fetch batch test analysis history");
     return res.json();
@@ -338,12 +292,9 @@ export function useBatchTests() {
       return cached as unknown as TestRun[];
     }
 
-    const res = await fetch(`${API_BASE}/batchtests/${batchTestId}/testruns`, {
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
+    const res = await apiFetch(`/batchtests/${batchTestId}/testruns`, {
+      token,
+      workspaceId: currentWorkspaceId,
     });
     if (!res.ok) throw new Error("Failed to fetch batch test runs");
     const runs = (await res.json()) as TestRun[];
@@ -367,18 +318,11 @@ export function useBatchTests() {
 
   const emptyBatchTestTrash = async (deleteTestRuns = false) => {
     if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const url = new URL(`${API_BASE}/batchtests/trash/empty`);
+    const url = new URL(`/batchtests/trash/empty`);
     if (deleteTestRuns) {
       url.searchParams.set('deleteTestRuns', 'true');
     }
-    const res = await fetch(url.toString(), {
-      method: "DELETE",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    const res = await apiFetch(url.toString(), { token, workspaceId: currentWorkspaceId, method:'DELETE' });
     if (!res.ok) throw new Error("Failed to empty batch test trash");
     const result = await res.json();
     emptyTrashedBatchTests();

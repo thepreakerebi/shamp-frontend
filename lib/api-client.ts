@@ -6,15 +6,13 @@ function getCsrfToken(): string | undefined {
   return m ? decodeURIComponent(m[1]) : undefined;
 }
 
-export async function apiFetch(path: string, {
-  token,
-  workspaceId,
-  init = {},
-}: {
+type ApiOptions = RequestInit & {
   token?: string | null;
   workspaceId?: string | null;
-  init?: RequestInit;
-} = {}) {
+};
+
+export async function apiFetch(path: string, options: ApiOptions = {}) {
+  const { token, workspaceId, ...init } = options;
   const headers: Record<string,string> = {
     'Content-Type': 'application/json',
   };

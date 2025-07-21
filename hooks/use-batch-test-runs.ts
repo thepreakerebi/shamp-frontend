@@ -2,8 +2,9 @@ import { useAuth } from "@/lib/auth";
 import { useTestRunsStore } from "@/lib/store/testruns";
 import { useBatchTestsStore } from "@/lib/store/batchTests";
 import type { TestRun } from "@/hooks/use-testruns";
+import { apiFetch } from '@/lib/api-client';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+// apiFetch used for mutations
 
 export interface BatchTest {
   _id: string;
@@ -36,16 +37,7 @@ export function useBatchTestRuns() {
   }
 
   const startBatchTestRuns = async (batchTestId: string) => {
-      const res = await fetch(`${API_BASE}/batchtestruns/start`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          'X-Workspace-ID': currentWorkspaceId
-        },
-        body: JSON.stringify({ batchTestId: batchTestId.toString() }),
-      });
+      const res = await apiFetch('/batchtestruns/start', { token, workspaceId: currentWorkspaceId, method: 'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ batchTestId: batchTestId.toString() }) });
       if (!res.ok) throw new Error("Failed to start batch test runs");
     const data = await res.json();
     const runs: unknown[] = Array.isArray(data.testRuns) ? data.testRuns : [];
@@ -63,13 +55,7 @@ export function useBatchTestRuns() {
     // Background-refresh full run list so we don't miss earlier runs
     (async () => {
       try {
-        const resFull = await fetch(`${API_BASE}/batchtests/${batchTestId}/testruns`, {
-          credentials: "include",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'X-Workspace-ID': currentWorkspaceId,
-          },
-        });
+        const resFull = await apiFetch(`/batchtests/${batchTestId}/testruns`, { token, workspaceId: currentWorkspaceId });
         if (resFull.ok) {
           const fullRuns = (await resFull.json()) as TestRun[];
           const dedupFull = Array.from(new Map(fullRuns.map(r => [ (r as { _id: string })._id, r ])).values());
@@ -89,14 +75,7 @@ export function useBatchTestRuns() {
   };
 
   const postAction = async (id: string, action: "pause" | "resume" | "stop") => {
-    const res = await fetch(`${API_BASE}/batchtestruns/${id.toString()}/${action}`, {
-        method: "POST",
-        credentials: "include",
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'X-Workspace-ID': currentWorkspaceId
-        },
-      });
+    const res = await apiFetch(`/batchtestruns/${id}/${action}`, { token, workspaceId: currentWorkspaceId, method: 'POST' });
     if (!res.ok) throw new Error("Failed to post action");
     const data = await res.json();
     const runs: unknown[] = Array.isArray(data.testRuns) ? data.testRuns : [];
