@@ -130,9 +130,7 @@ async function fetchWithToken(url: string, token: string | null, workspaceId?: s
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(
-    typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
-  );
+  const [token, setToken] = useState<string | null>(null);
   const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(
     typeof window !== 'undefined' ? localStorage.getItem('currentWorkspaceId') : null
   );
@@ -181,37 +179,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUser(null);
             setToken(null);
             setCurrentWorkspaceId(null);
-            localStorage.removeItem('authToken');
             localStorage.removeItem('currentWorkspaceId');
           }
         })
         .finally(() => setLoading(false));
   }, [token]);
 
-  // Listen for storage changes (e.g., from TokenHandler setting authToken)
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'authToken' && e.newValue !== token) {
-        // Token changed in localStorage, update our state
-        setToken(e.newValue);
-      }
-    };
-
-    // Listen for custom event from TokenHandler
-    const handleTokenChanged = (e: CustomEvent) => {
-      const newToken = e.detail?.token;
-      if (newToken && newToken !== token) {
-        setToken(newToken);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('authTokenChanged', handleTokenChanged as EventListener);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('authTokenChanged', handleTokenChanged as EventListener);
-    };
-  }, [token]);
+  // Token persistence removed – cookies hold the session.
 
   // Keep the 'ws' cookie in sync with the current workspace – this is used by server components
   useEffect(() => {
@@ -279,7 +253,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       throw new Error('No auth token returned');
     }
-    localStorage.setItem('authToken', authToken);
     setToken(authToken);
     
     // Fetch user info to get workspace context
@@ -470,7 +443,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch {}
 
       // Store token and update state
-      localStorage.setItem('authToken', authToken);
       setToken(authToken);
 
       if (workspaceIdFromToken) {
@@ -515,8 +487,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setCurrentWorkspaceId(null);
     setWorkspaceSettings(null);
     setWorkspaceAdmin(null);
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('currentWorkspaceId');
+    // token already cleared
 
     // Expire auth cookie client-side (best-effort)
     if (typeof document !== 'undefined') {
@@ -535,7 +506,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       setToken(null);
       setCurrentWorkspaceId(null);
-      localStorage.removeItem('authToken');
       localStorage.removeItem('currentWorkspaceId');
     }
     setLoading(false);
@@ -567,7 +537,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       throw new Error('No auth token returned');
     }
-    localStorage.setItem('authToken', authToken);
     setToken(authToken);
     setUser(data.user);
     
