@@ -6,9 +6,20 @@ interface StepData {
   screenshot?: string | null;
   description?: string; // evaluation_previous_goal
   nextGoal?: string; // next_goal
+  placeholder?: boolean;
 }
 
 export default function StepNode({ data }: NodeProps<StepData>) {
+  if (data.placeholder) {
+    return (
+      <section className="flex flex-col max-w-[280px]">
+        <section className="flex items-center justify-center bg-card rounded-lg p-4 shadow border text-muted-foreground text-sm">
+          Waiting for steps…
+        </section>
+      </section>
+    );
+  }
+
   return (
     <section className="flex flex-col gap-4 max-w-[280px]">
       {/* Text block */}

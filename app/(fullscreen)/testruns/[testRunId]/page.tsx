@@ -56,6 +56,16 @@ export default function TestRunCanvasPage() {
       } as Node;
     });
 
+    // If no steps yet, add a placeholder node
+    if (built.length === 0) {
+      built.push({
+        id: 'placeholder',
+        type: 'step',
+        position: { x: 0, y: 0 },
+        data: { placeholder: true },
+      });
+    }
+
     // Determine bounding box of steps to center recording node
     let centerX = 0;
     if (built.length) {
