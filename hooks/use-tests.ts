@@ -2,6 +2,7 @@ import { useAuth } from "@/lib/auth";
 import type { TestRun } from "@/hooks/use-testruns";
 import { useEffect, useCallback, useRef } from "react";
 import io from "socket.io-client";
+import { apiFetch } from '@/lib/api-client';
 import { useTestsStore } from "@/lib/store/tests";
 import { useTestRunsStore } from "@/lib/store/testruns";
 
@@ -73,17 +74,7 @@ export interface TestSearchParams {
   [key: string]: string | number | boolean | undefined;
 }
 
-const fetcher = (url: string, token: string, workspaceId?: string | null) =>
-  fetch(`${API_BASE}${url}`, {
-    credentials: "include",
-    headers: { 
-      Authorization: `Bearer ${token}`,
-      ...(workspaceId ? { 'X-Workspace-ID': workspaceId } : {})
-    },
-  }).then(res => {
-    if (!res.ok) throw new Error("Failed to fetch");
-    return res.json();
-  });
+// Legacy fetcher removed – apiFetch covers credentials, CSRF and optional auth
 
 export function useTests() {
   const { token, currentWorkspaceId } = useAuth();
@@ -92,7 +83,7 @@ export function useTests() {
 
   // Fetch tests
   const fetchTests = useCallback(async () => {
-    if (!token || !currentWorkspaceId) {
+    if (!currentWorkspaceId) {
       store.setTests([]);
       store.setTestsLoading(false);
       store.setTestsError(null);
@@ -102,7 +93,8 @@ export function useTests() {
     store.setTestsLoading(true);
     store.setTestsError(null);
     try {
-      const data = await fetcher("/tests", token, currentWorkspaceId);
+      const res = await apiFetch('/tests', { token, workspaceId: currentWorkspaceId });
+      const data = await res.json();
       // Handle paginated response - extract tests from data.data array
       const tests = data.data || data;
       store.setTests(Array.isArray(tests) ? tests : []);
@@ -119,12 +111,13 @@ export function useTests() {
 
   // Fetch trashed tests
   const fetchTrashedTests = useCallback(async () => {
-    if (!token || !currentWorkspaceId) {
+    if (!currentWorkspaceId) {
       store.setTrashedTests([]);
       return;
     }
     try {
-      const data = await fetcher("/tests/trashed", token, currentWorkspaceId);
+      const res = await apiFetch('/tests/trashed', { token, workspaceId: currentWorkspaceId });
+      const data = await res.json();
       // Handle paginated response - extract tests from data.data array
       const trashedTests = data.data || data;
       store.setTrashedTests(Array.isArray(trashedTests) ? trashedTests : []);
@@ -136,7 +129,7 @@ export function useTests() {
 
   // Fetch count
   const fetchCount = useCallback(async () => {
-    if (!token || !currentWorkspaceId) {
+    if (!currentWorkspaceId) {
       store.setCount(0);
       store.setCountLoading(false);
       store.setCountError(null);
@@ -145,7 +138,8 @@ export function useTests() {
     store.setCountLoading(true);
     store.setCountError(null);
     try {
-      const data = await fetcher("/tests/count", token, currentWorkspaceId);
+      const res = await apiFetch('/tests/count', { token, workspaceId: currentWorkspaceId });
+      const data = await res.json();
       store.setCount(typeof data.count === "number" ? data.count : 0);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -166,7 +160,7 @@ export function useTests() {
   }, [fetchTests, fetchCount, fetchTrashedTests]);
 
   useEffect(() => {
-    if (!token || !currentWorkspaceId) {
+    if (!currentWorkspaceId) {
       // When there's no auth context, set loading to false to prevent infinite skeleton
       store.setTestsLoading(false);
       store.setCountLoading(false);
@@ -192,10 +186,10 @@ export function useTests() {
     fetchCount();
     fetchTrashedTests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, currentWorkspaceId]);
+  }, [currentWorkspaceId]);
 
   useEffect(() => {
-    if (!token || !currentWorkspaceId) return;
+    if (!currentWorkspaceId) return;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
       auth: { token, workspaceId: currentWorkspaceId },
@@ -291,17 +285,8 @@ export function useTests() {
 
   // Create a test
   const createTest = async (payload: TestPayload) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/tests`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-      body: JSON.stringify(payload),
-    });
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const res = await apiFetch('/tests', { token, workspaceId: currentWorkspaceId, init: { method: 'POST', body: JSON.stringify(payload) } });
     if (!res.ok) throw new Error("Failed to create test");
     const test = await res.json();
     // Let Socket.IO handle the store update
@@ -310,14 +295,8 @@ export function useTests() {
 
   // Get a single test by ID
   const getTestById = async (id: string): Promise<Test> => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/tests/${id}`, {
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const res = await apiFetch(`/tests/${id}`, { token, workspaceId: currentWorkspaceId });
     if (res.status === 404) throw new Error("Not found");
     if (!res.ok) throw new Error("Failed to fetch test");
     const test = await res.json();
@@ -327,17 +306,8 @@ export function useTests() {
 
   // Update a test
   const updateTest = async (id: string, payload: TestPayload) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/tests/${id}`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-      body: JSON.stringify(payload),
-    });
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const res = await apiFetch(`/tests/${id}`, { token, workspaceId: currentWorkspaceId, init: { method: 'PATCH', body: JSON.stringify(payload) } });
     if (!res.ok) throw new Error("Failed to update test");
     const test = await res.json();
     // Let Socket.IO handle the store update
@@ -346,16 +316,9 @@ export function useTests() {
 
   // Delete a test
   const deleteTest = async (id: string, deleteTestRuns = false) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const url = `${API_BASE}/tests/${id}${deleteTestRuns ? `?deleteTestRuns=true` : ''}`;
-    const res = await fetch(url, {
-      method: "DELETE",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const path = `/tests/${id}${deleteTestRuns ? '?deleteTestRuns=true' : ''}`;
+    const res = await apiFetch(path, { token, workspaceId: currentWorkspaceId, init: { method: 'DELETE' } });
     if (!res.ok) throw new Error("Failed to delete test");
     // Let Socket.IO handle the store update
     return res.json();
@@ -363,15 +326,8 @@ export function useTests() {
 
   // Move test to trash
   const moveTestToTrash = async (id: string) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/tests/${id}/trash`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const res = await apiFetch(`/tests/${id}/trash`, { token, workspaceId: currentWorkspaceId, init: { method: 'PATCH' } });
     if (!res.ok) throw new Error("Failed to move test to trash");
     const test = await res.json();
     // Let Socket.IO handle the store update
@@ -380,15 +336,8 @@ export function useTests() {
 
   // Restore test from trash
   const restoreTestFromTrash = async (id: string) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/tests/${id}/restore`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const res = await apiFetch(`/tests/${id}/restore`, { token, workspaceId: currentWorkspaceId, init: { method: 'PATCH' } });
     if (!res.ok) throw new Error("Failed to restore test from trash");
     const test = await res.json();
     // Let Socket.IO handle the store update
@@ -397,15 +346,8 @@ export function useTests() {
 
   // Duplicate a test
   const duplicateTest = async (id: string) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/tests/${id}/duplicate`, {
-      method: "POST",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const res = await apiFetch(`/tests/${id}/duplicate`, { token, workspaceId: currentWorkspaceId, init: { method: 'POST' } });
     if (!res.ok) throw new Error("Failed to duplicate test");
     const test = await res.json();
     // Let Socket.IO handle the store update
@@ -414,43 +356,31 @@ export function useTests() {
 
   // Analyze all test runs for a test (aggregate analysis)
   const analyzeTestOutputs = async (id: string): Promise<TestAnalysis> => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/tests/${id}/analyze-outputs`, {
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const res = await apiFetch(`/tests/${id}/analyze-outputs`, { token, workspaceId: currentWorkspaceId });
     if (!res.ok) throw new Error("Failed to analyze test outputs");
     return res.json();
   };
 
   // Get full analysis history for a test
   const getTestAnalysisHistory = async (id: string): Promise<TestAnalysisHistoryEntry[]> => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/tests/${id}/analysis-history`, {
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const res = await apiFetch(`/tests/${id}/analysis-history`, { token, workspaceId: currentWorkspaceId });
     if (!res.ok) throw new Error("Failed to fetch test analysis history");
     return res.json();
   };
 
   // Search tests
   const searchTests = async (query: string | TestSearchParams): Promise<TestSearch> => {
-    if (!token || !currentWorkspaceId) {
+    if (!currentWorkspaceId) {
       const queryStr = typeof query === 'string' ? query : '';
       return { query: queryStr, results: [], loading: false, error: "Not authenticated or no workspace context" };
     }
     
     try {
-      let url: string;
+      let path: string;
       if (typeof query === 'string') {
-        url = `${API_BASE}/tests/search?q=${encodeURIComponent(query)}`;
+        path = `/tests/search?q=${encodeURIComponent(query)}`;
       } else {
         // Handle object parameters by converting to query string
         const params = new URLSearchParams();
@@ -459,16 +389,10 @@ export function useTests() {
             params.set(key, String(value));
           }
         });
-        url = `${API_BASE}/tests/search?${params.toString()}`;
+        path = `/tests/search?${params.toString()}`;
       }
       
-      const res = await fetch(url, {
-        credentials: "include",
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'X-Workspace-ID': currentWorkspaceId
-        },
-      });
+      const res = await apiFetch(path, { token, workspaceId: currentWorkspaceId });
       if (!res.ok) throw new Error("Failed to search tests");
       const results = await res.json();
       const queryStr = typeof query === 'string' ? query : JSON.stringify(query);
@@ -489,7 +413,7 @@ export function useTests() {
     testId: string,
     forceRefresh = false
   ): Promise<TestRun[]> => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    if (!currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
 
     const { getTestRunsForTest: getCached, setTestRunsForTest } = useTestsStore.getState();
     const cached = getCached(testId);
@@ -497,13 +421,7 @@ export function useTests() {
       return cached as unknown as TestRun[];
     }
 
-    const res = await fetch(`${API_BASE}/tests/${testId}/testruns`, {
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    const res = await apiFetch(`/tests/${testId}/testruns`, { token, workspaceId: currentWorkspaceId });
     if (!res.ok) throw new Error("Failed to fetch test runs");
     const runs = (await res.json()) as TestRun[];
 
@@ -522,19 +440,12 @@ export function useTests() {
 
   // Empty trash - permanently delete all trashed tests
   const emptyTestTrash = async (deleteTestRuns?: boolean) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    if (!currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const url = new URL(`${API_BASE}/tests/trash/empty`);
     if (deleteTestRuns) {
       url.searchParams.set('deleteTestRuns', 'true');
     }
-    const res = await fetch(url.toString(), {
-      method: "DELETE",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    const res = await apiFetch(url.toString(), { token, workspaceId: currentWorkspaceId, init: { method: 'DELETE' } });
     if (!res.ok) throw new Error("Failed to empty test trash");
     const result = await res.json();
     // Let Socket.IO handle the store update
