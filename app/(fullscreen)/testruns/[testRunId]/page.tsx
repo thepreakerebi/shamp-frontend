@@ -125,7 +125,8 @@ export default function TestRunCanvasPage() {
     const recLen = liveRun.recordings?.length ?? 0;
     const prevStepsLen = run.stepsWithScreenshots?.length ?? 0;
     const prevRecLen = run.recordings?.length ?? 0;
-    if (stepsLen !== prevStepsLen || recLen !== prevRecLen) {
+    const statusChanged = (liveRun.browserUseStatus ?? '') !== (run.browserUseStatus ?? '');
+    if (stepsLen !== prevStepsLen || recLen !== prevRecLen || statusChanged) {
       buildNodes(liveRun);
       setRun(prev => {
         if (!prev) return liveRun;
@@ -137,7 +138,7 @@ export default function TestRunCanvasPage() {
         } as TestRunStatus;
       });
     }
-  }, [liveRun?.stepsWithScreenshots?.length, liveRun?.recordings?.length]);
+  }, [liveRun?.stepsWithScreenshots?.length, liveRun?.recordings?.length, liveRun?.browserUseStatus]);
 
   if (fetchError) {
     notFound();
