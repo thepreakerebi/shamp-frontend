@@ -150,6 +150,7 @@ function RowActionsDropdownComponent({ testId, testName, onOpen, actions, showOp
     try {
       await deleteTest(testId, deleteRuns);
       toast.success("Test deleted");
+      router.push('/tests');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete test");
     } finally {
