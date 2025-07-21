@@ -1,6 +1,7 @@
 import { useAuth } from "@/lib/auth";
 import { useEffect, useCallback, useRef } from "react";
 import io from "socket.io-client";
+import { apiFetch } from '@/lib/api-client';
 import { useTestRunsStore } from "@/lib/store/testruns";
 import { useTestsStore } from "@/lib/store/tests";
 import { useBatchTestsStore } from "@/lib/store/batchTests";
@@ -74,17 +75,7 @@ export interface ChatMessage {
   createdAt?: string;
 }
 
-const fetcher = (url: string, token: string, workspaceId?: string | null): Promise<unknown> =>
-  fetch(`${API_BASE}${url}`, {
-    credentials: "include",
-    headers: { 
-      Authorization: `Bearer ${token}`,
-      ...(workspaceId ? { 'X-Workspace-ID': workspaceId } : {})
-    },
-  }).then(res => {
-    if (!res.ok) throw new Error("Failed to fetch");
-    return res.json() as Promise<unknown>;
-  });
+// legacy fetcher removed – apiFetch covers CSRF + credentials
 
 export function useTestRuns() {
   const { token, currentWorkspaceId } = useAuth();
@@ -457,11 +448,12 @@ export function useTestRuns() {
 
   // Fetch all test runs
   const fetchTestRuns = useCallback(async () => {
-    if (!token || !currentWorkspaceId) return;
+    if (!currentWorkspaceId) return;
     setTestRunsLoading(true);
     setTestRunsError(null);
     try {
-      const data = await fetcher("/testruns", token, currentWorkspaceId) as TestRun[];
+      const res = await apiFetch('/testruns', { token, workspaceId: currentWorkspaceId });
+      const data = await res.json() as TestRun[];
       setTestRuns(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -476,7 +468,7 @@ export function useTestRuns() {
 
   // Count successful/failed runs
   const fetchCounts = useCallback(async () => {
-    if (!token || !currentWorkspaceId) {
+    if (!currentWorkspaceId) {
       store.setCountsLoading(false);
       store.setSuccessfulCount(0);
       store.setFailedCount(0);
@@ -488,7 +480,8 @@ export function useTestRuns() {
     
     try {
       // Use the optimized combined endpoint
-      const data = await fetcher("/testruns/counts", token, currentWorkspaceId) as { successful: number; failed: number };
+      const res = await apiFetch('/testruns/counts', { token, workspaceId: currentWorkspaceId });
+      const data = await res.json() as { successful: number; failed: number };
       setSuccessfulCount(data.successful ?? 0);
       setFailedCount(data.failed ?? 0);
     } catch (err: unknown) {
@@ -504,9 +497,10 @@ export function useTestRuns() {
 
   // Fetch trashed test runs
   const fetchTrashedTestRuns = useCallback(async () => {
-    if (!token || !currentWorkspaceId) return;
+    if (!currentWorkspaceId) return;
     try {
-      const data = await fetcher("/testruns/trashed", token, currentWorkspaceId) as TestRun[];
+      const res = await apiFetch('/testruns/trashed', { token, workspaceId: currentWorkspaceId });
+      const data = await res.json() as TestRun[];
       setTrashedTestRuns(Array.isArray(data) ? data : []);
     } catch {
       // silent fail for trashed runs
