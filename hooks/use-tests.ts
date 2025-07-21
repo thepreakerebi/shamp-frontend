@@ -6,7 +6,6 @@ import { apiFetch } from '@/lib/api-client';
 import { useTestsStore } from "@/lib/store/tests";
 import { useTestRunsStore } from "@/lib/store/testruns";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
 export interface Test {
@@ -286,7 +285,7 @@ export function useTests() {
   // Create a test
   const createTest = async (payload: TestPayload) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch('/tests', { token, workspaceId: currentWorkspaceId, init: { method: 'POST', body: JSON.stringify(payload) } });
+    const res = await apiFetch('/tests', { token, workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error("Failed to create test");
     const test = await res.json();
     // Let Socket.IO handle the store update
@@ -307,7 +306,7 @@ export function useTests() {
   // Update a test
   const updateTest = async (id: string, payload: TestPayload) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/tests/${id}`, { token, workspaceId: currentWorkspaceId, init: { method: 'PATCH', body: JSON.stringify(payload) } });
+    const res = await apiFetch(`/tests/${id}`, { token, workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error("Failed to update test");
     const test = await res.json();
     // Let Socket.IO handle the store update
@@ -318,7 +317,7 @@ export function useTests() {
   const deleteTest = async (id: string, deleteTestRuns = false) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
     const path = `/tests/${id}${deleteTestRuns ? '?deleteTestRuns=true' : ''}`;
-    const res = await apiFetch(path, { token, workspaceId: currentWorkspaceId, init: { method: 'DELETE' } });
+    const res = await apiFetch(path, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to delete test");
     // Let Socket.IO handle the store update
     return res.json();
@@ -327,7 +326,7 @@ export function useTests() {
   // Move test to trash
   const moveTestToTrash = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/tests/${id}/trash`, { token, workspaceId: currentWorkspaceId, init: { method: 'PATCH' } });
+    const res = await apiFetch(`/tests/${id}/trash`, { token, workspaceId: currentWorkspaceId, method: 'PATCH' });
     if (!res.ok) throw new Error("Failed to move test to trash");
     const test = await res.json();
     // Let Socket.IO handle the store update
@@ -337,7 +336,7 @@ export function useTests() {
   // Restore test from trash
   const restoreTestFromTrash = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/tests/${id}/restore`, { token, workspaceId: currentWorkspaceId, init: { method: 'PATCH' } });
+    const res = await apiFetch(`/tests/${id}/restore`, { token, workspaceId: currentWorkspaceId, method: 'PATCH' });
     if (!res.ok) throw new Error("Failed to restore test from trash");
     const test = await res.json();
     // Let Socket.IO handle the store update
@@ -347,7 +346,7 @@ export function useTests() {
   // Duplicate a test
   const duplicateTest = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/tests/${id}/duplicate`, { token, workspaceId: currentWorkspaceId, init: { method: 'POST' } });
+    const res = await apiFetch(`/tests/${id}/duplicate`, { token, workspaceId: currentWorkspaceId, method: 'POST' });
     if (!res.ok) throw new Error("Failed to duplicate test");
     const test = await res.json();
     // Let Socket.IO handle the store update
@@ -441,11 +440,8 @@ export function useTests() {
   // Empty trash - permanently delete all trashed tests
   const emptyTestTrash = async (deleteTestRuns?: boolean) => {
     if (!currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const url = new URL(`${API_BASE}/tests/trash/empty`);
-    if (deleteTestRuns) {
-      url.searchParams.set('deleteTestRuns', 'true');
-    }
-    const res = await apiFetch(url.toString(), { token, workspaceId: currentWorkspaceId, init: { method: 'DELETE' } });
+    const endpoint = deleteTestRuns ? '/tests/trash/empty?deleteTestRuns=true' : '/tests/trash/empty';
+    const res = await apiFetch(endpoint, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to empty test trash");
     const result = await res.json();
     // Let Socket.IO handle the store update
