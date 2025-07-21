@@ -77,7 +77,7 @@ export default function TestDetailPage() {
       // Store loaded and not currently fetching, but test still missing → redirect
       router.push('/tests');
     }
-  }, [storeTest, loading, useTestsStore]);
+  }, [storeTest, loading]);
 
   // Prevent rendering until client-side mount to avoid hydration issues
   if (!mounted) {
