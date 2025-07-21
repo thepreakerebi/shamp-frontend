@@ -73,8 +73,8 @@ export default function TestDetailPage() {
       if (storeTest.trashed) {
         router.push('/tests');
       }
-    } else if (testsLoaded) {
-      // Store loaded but test missing – navigate away
+    } else if (testsLoaded && !loading) {
+      // Store loaded and not currently fetching, but test still missing → redirect
       router.push('/tests');
     }
   }, [storeTest]);
