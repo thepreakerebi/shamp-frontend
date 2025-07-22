@@ -78,7 +78,11 @@ export default function IssuesPage() {
       <section className="p-4 space-y-4">
         <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">
           <h1 className="text-2xl font-semibold">Issues · 0</h1>
-          
+          <IssuesFilter
+            personaOptions={personaOptions}
+            filters={filters}
+            onChange={setFilters}
+          />
         </section>
         <IssuesListEmpty />
       </section>
