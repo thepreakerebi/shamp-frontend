@@ -1,9 +1,10 @@
 "use client";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useProjects } from "@/hooks/use-projects";
 import { useProjectsStore } from "@/lib/store/projects";
 import { useTestRunsStore } from "@/lib/store/testruns";
+import { useTestRuns } from "@/hooks/use-testruns";
 import { TestRunCard, MinimalRun } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card";
 import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-card-skeleton";
 import TestRunsFilter from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-filter";
@@ -22,9 +23,22 @@ export function ProjectTestrunsTabContent() {
 
   const cached = projectId ? projectsStore.getTestRunsForProject(projectId as string) : undefined;
 
+  // Ensure socket listeners from useTestRuns are active while this tab is
+  // mounted so real-time events update the global store, which then feeds
+  // into this component via `storeRuns`.
+  // We don't need the returned API functions here, so we just invoke the
+  // hook and ignore its return value.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _rt = useTestRuns();
+
   const [runs, setRuns] = useState<import("@/hooks/use-testruns").TestRun[] | null>(cached ?? null);
   const [loading, setLoading] = useState(cached ? false : true);
   const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any" });
+
+  // Track whether we've seen at least one Socket.IO event for this project's
+  // test runs. Until then we ignore merge attempts that would wipe the list
+  // and momentarily show the empty-state placeholder, causing a flicker.
+  const initializedRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!projectId) return;
@@ -75,16 +89,69 @@ export function ProjectTestrunsTabContent() {
     };
   }, [projectId, token, cached, getProjectTestruns, personasStore]);
 
-  // Sync with global testRuns store (e.g., deletions) once we have initial data
+  // Merge real-time changes from the global testRuns store into this project
+  // tab’s local list. We update existing runs, append new ones that belong to
+  // this project, and remove runs that disappeared (e.g. deleted).
   useEffect(() => {
-    if (!storeRuns || storeRuns.length === 0 || !runs) return;
+    if (!storeRuns || storeRuns.length === 0) return;
     setRuns(prev => {
-      if (!prev) return prev;
-      const ids = new Set(storeRuns.map(r => r._id));
-      const updated = prev.filter(r => ids.has(r._id));
-      return updated.length === prev.length ? prev : updated;
+      const list = prev ?? [];
+      // Map current runs by id for quick lookup
+      const currentMap = new Map(list.map(r => [r._id, r]));
+
+      // Helper to extract project id from run.project (string or {_id})
+      const extractPid = (run: { project?: unknown }): string | undefined => {
+        const p = run.project;
+        if (!p) return undefined;
+        if (typeof p === 'string') return p;
+        if (typeof p === 'object' && p && '_id' in p) return (p as { _id: string })._id;
+        return undefined;
+      };
+
+      // Determine which global runs belong to this project
+      const relevant = storeRuns.filter(r => extractPid(r as { project?: unknown }) === projectId);
+
+      // Build merged list using relevant runs and also update any currently
+      // displayed run whose _id appears in storeRuns even if its project
+      // field is missing (socket events omit project). This guarantees pause/
+      // resume/stop status updates propagate.
+
+      const storeMap = new Map(storeRuns.map(r => [r._id, r]));
+
+      const merged: import("@/hooks/use-testruns").TestRun[] = relevant.map(r => {
+        const existing = currentMap.get(r._id);
+        return existing ? { ...existing, ...r } : (r as unknown as import("@/hooks/use-testruns").TestRun);
+      });
+
+      // Update existing items that weren't included in "relevant" because of
+      // missing project field, but whose status changed.
+      list.forEach(orig => {
+        if (!merged.some(r => r._id === orig._id) && storeMap.has(orig._id)) {
+          merged.push({ ...orig, ...storeMap.get(orig._id)! });
+        }
+      });
+
+      // If we haven't received any socket events for this project yet, avoid
+      // replacing the existing list with an empty array (which would trigger
+      // the empty-state UI). Once we receive at least one relevant event we
+      // mark the project as initialized so further real-time diffs apply.
+      if (!initializedRef.current) {
+        if (merged.length === 0) {
+          return prev;
+        }
+        initializedRef.current = true;
+      }
+
+      // If length and content unchanged, skip setState to avoid extra renders
+      if (merged.length === list.length && merged.every((r, i) => {
+        const prevItem = list[i] as import("@/hooks/use-testruns").TestRun;
+        return r._id === prevItem._id && r.browserUseStatus === prevItem.browserUseStatus && r.status === prevItem.status;
+      })) {
+        return prev;
+      }
+      return merged as unknown as import("@/hooks/use-testruns").TestRun[];
     });
-  }, [storeRuns]);
+  }, [storeRuns, projectId]);
 
   // If the project-specific cache becomes available later (e.g., after fetch completed in background), adopt it
   useEffect(() => {
