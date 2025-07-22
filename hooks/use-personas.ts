@@ -43,7 +43,7 @@ interface User {
 // Legacy fetcher removed – apiFetch is used everywhere
 
 export function usePersonas() {
-  const { token, currentWorkspaceId } = useAuth();
+  const { currentWorkspaceId } = useAuth();
   const store = usePersonasStore();
   const previousWorkspaceId = useRef<string | null>(null);
 
@@ -56,7 +56,7 @@ export function usePersonas() {
     store.setPersonasLoading(true);
     store.setPersonasError(null);
     try {
-      const res = await apiFetch('/personas', { token, workspaceId: currentWorkspaceId });
+      const res = await apiFetch('/personas', { workspaceId: currentWorkspaceId });
       const data = await res.json();
       store.setPersonas(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
@@ -68,7 +68,7 @@ export function usePersonas() {
     } finally {
       store.setPersonasLoading(false);
     }
-  }, [token, currentWorkspaceId, store]);
+  }, [currentWorkspaceId, store]);
 
   const fetchCount = useCallback(async () => {
     if (!currentWorkspaceId) {
@@ -79,7 +79,7 @@ export function usePersonas() {
     store.setCountLoading(true);
     store.setCountError(null);
     try {
-      const res = await apiFetch('/personas/count', { token, workspaceId: currentWorkspaceId });
+      const res = await apiFetch('/personas/count', { workspaceId: currentWorkspaceId });
       const data = await res.json();
       store.setCount(data.count ?? 0);
     } catch (err: unknown) {
@@ -91,7 +91,7 @@ export function usePersonas() {
     } finally {
       store.setCountLoading(false);
     }
-  }, [token, currentWorkspaceId, store]);
+  }, [currentWorkspaceId, store]);
 
   // Refetch both personas and count
   const refetch = useCallback(() => {
@@ -127,7 +127,7 @@ export function usePersonas() {
     if (!currentWorkspaceId) return;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
-      auth: { token, workspaceId: currentWorkspaceId },
+      auth: { workspaceId: currentWorkspaceId },
     });
 
     const handleCreated = (data: Persona & { workspace?: string }) => {
@@ -171,12 +171,12 @@ export function usePersonas() {
       socket.off("batchPersona:created", handleBatchCreated);
       socket.disconnect();
     };
-  }, [token, currentWorkspaceId, store]);
+  }, [currentWorkspaceId, store]);
 
   // Get a single persona by ID
   const getPersonaById = async (id: string): Promise<Persona> => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/personas/${id}`, { token, workspaceId: currentWorkspaceId });
+    const res = await apiFetch(`/personas/${id}`, { workspaceId: currentWorkspaceId });
     if (res.status === 404) throw new Error("Not found");
     if (!res.ok) throw new Error("Failed to fetch persona");
     const persona = await res.json();
@@ -187,7 +187,7 @@ export function usePersonas() {
   // Create a persona
   const createPersona = async (payload: PersonaPayload) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch('/personas', { token, workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+    const res = await apiFetch('/personas', { workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error("Failed to create persona");
     const persona = await res.json();
     store.addPersonaToList(persona);
@@ -197,7 +197,7 @@ export function usePersonas() {
   // Update a persona
   const updatePersona = async (id: string, payload: PersonaPayload) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/personas/${id}`, { token, workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+    const res = await apiFetch(`/personas/${id}`, { workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error("Failed to update persona");
     const persona = await res.json();
     store.updatePersonaInList(persona);
@@ -207,7 +207,7 @@ export function usePersonas() {
   // Delete a persona
   const deletePersona = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/personas/${id}`, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
+    const res = await apiFetch(`/personas/${id}`, { workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to delete persona");
     store.removePersonaFromList(id);
     // Decrement count just like the socket handler would
@@ -218,7 +218,7 @@ export function usePersonas() {
   // Stop (cancel) a persona that is currently being created
   const stopPersonaCreation = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/personas/${id}/stop`, { token, workspaceId: currentWorkspaceId, method: 'POST' });
+    const res = await apiFetch(`/personas/${id}/stop`, { workspaceId: currentWorkspaceId, method: 'POST' });
     if (!res.ok) throw new Error("Failed to stop persona creation");
     // Treat as deletion locally
     store.removePersonaFromList(id);
@@ -233,7 +233,7 @@ export function usePersonas() {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await apiFetch('/personas/upload-doc', { token, workspaceId: currentWorkspaceId, method: 'POST', body: formData });
+    const res = await apiFetch('/personas/upload-doc', { workspaceId: currentWorkspaceId, method: 'POST', body: formData });
     // Browser sets correct content-type for FormData
 
     if (!res.ok) {
