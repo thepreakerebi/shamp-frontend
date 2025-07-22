@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { apiFetch } from '@/lib/api-client';
 
 export function useBilling() {
-  const { token, currentWorkspaceId } = useAuth();
+  const { currentWorkspaceId } = useAuth();
   const store = useBillingStore();
 
   const loadSummary = useCallback(async () => {
@@ -15,7 +15,7 @@ export function useBilling() {
     }
     store.setError(null);
     try {
-      const res = await apiFetch('/billing/summary', { token, workspaceId: currentWorkspaceId });
+      const res = await apiFetch('/billing/summary', { workspaceId: currentWorkspaceId });
       const summary = await res.json();
       store.setSummary(summary);
     } catch (err) {
@@ -26,13 +26,13 @@ export function useBilling() {
         store.setLoading(false);
       }
     }
-  }, [token, currentWorkspaceId, store]);
+  }, [currentWorkspaceId, store]);
 
   // auto fetch on mount or workspace change
   useEffect(() => {
     loadSummary();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, currentWorkspaceId]);
+  }, [currentWorkspaceId]);
 
   // helper: check allowed
   const allowed = useCallback(
@@ -61,7 +61,7 @@ export function useBilling() {
   const attachProductCheckout = useCallback(
     async ({ productId }: { productId: string }): Promise<{ checkout_url?: string }> => {
       if (!currentWorkspaceId) throw new Error("No workspace context");
-      const res = await apiFetch('/billing/attach-product', { token, workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
+      const res = await apiFetch('/billing/attach-product', { workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
       if (!res.ok) {
         const text = await res.text();
         throw new Error(text || "Failed to create checkout session");
@@ -71,28 +71,28 @@ export function useBilling() {
       loadSummary();
       return json as { checkout_url?: string };
     },
-    [token, currentWorkspaceId, loadSummary]
+    [currentWorkspaceId, loadSummary]
   );
 
   const getBillingPortalUrl = useCallback(async (): Promise<{ portal_url?: string }> => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch('/billing/portal-url', { token, workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    const res = await apiFetch('/billing/portal-url', { workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' } });
     if (!res.ok) {
       const text = await res.text();
       throw new Error(text || "Failed to create billing portal session");
     }
     const json = await res.json();
     return json as { portal_url?: string };
-  }, [token, currentWorkspaceId]);
+  }, [currentWorkspaceId]);
 
   const getProduct = useCallback(
     async (productId: string) => {
-      const res = await apiFetch(`/billing/product/${productId}`, { token });
+      const res = await apiFetch(`/billing/product/${productId}`);
       const product = await res.json();
       store.setProduct(product);
       return product;
     },
-    [token, store]
+    [store]
   );
 
   return {
