@@ -116,9 +116,12 @@ export default function DetailsSection({ test }: { test: Test }) {
   const [loadingRuns, setLoadingRuns] = useState(false);
 
   // Determine if any run is currently running for this test
-  const isRunning = React.useMemo(() => {
+  const { isRunning, isPaused } = React.useMemo(() => {
     const list = testRunsStore?.filter(r => r.test === test._id) || [];
-    return list.some(r => r.browserUseStatus === 'running');
+    return {
+      isRunning: list.some(r => r.browserUseStatus === 'running'),
+      isPaused: list.some(r => r.browserUseStatus === 'paused'),
+    };
   }, [testRunsStore, test._id]);
 
   // Deliberately omit getTestRunsForTest from deps because its identity is
@@ -201,6 +204,11 @@ export default function DetailsSection({ test }: { test: Test }) {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
               </svg>
               running
+            </Badge>
+          ) : isPaused ? (
+            <Badge variant="secondary" className="px-2 py-1 text-xs bg-yellow-400/20 text-yellow-700 dark:text-yellow-400 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
+              paused
             </Badge>
           ) : (
             <Button onClick={handleRun} variant="secondary" disabled={running}>
