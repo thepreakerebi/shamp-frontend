@@ -529,9 +529,21 @@ export function useTestRuns() {
 
   // Start a test run
   const startTestRun = async (testId: string) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    // We rely on the auth HttpOnly cookie; token is optional.
     const res = await api('/testruns/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ testId: testId.toString() }) });
-    if (!res.ok) throw new Error("Failed to start test run");
+    if (!res.ok) {
+      let message = 'Failed to start test run';
+      try {
+        const data = await res.json();
+        if (data && typeof data.error === 'string') message = data.error;
+      } catch {
+        try {
+          const text = await res.text();
+          if (text) message = text;
+        } catch {/* ignore */}
+      }
+      throw new Error(message);
+    }
     const data = await res.json();
     const run = data.testRun;
     if (run) {
@@ -589,7 +601,6 @@ export function useTestRuns() {
 
   // Get test run status (full details)
   const getTestRunStatus = async (id: string): Promise<TestRunStatus> => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const res = await api(`/testruns/${id}`);
     if (res.status === 404) {
       throw new Error("Not found");

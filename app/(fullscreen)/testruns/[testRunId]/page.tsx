@@ -1,6 +1,7 @@
 "use client";
 import { useParams, notFound } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
+import { useAuth } from "@/lib/auth";
 import { useTestRuns, TestRunStatus } from "@/hooks/use-testruns";
 import dynamic from "next/dynamic";
 import StepNode from "./_components/step-node";
@@ -27,6 +28,7 @@ const nodeTypes = {
 export default function TestRunCanvasPage() {
   const { testRunId } = useParams<{ testRunId: string }>();
   const { getTestRunStatus, testRuns } = useTestRuns();
+  const { currentWorkspaceId } = useAuth();
   const [personaName, setPersonaName] = useState<string | undefined>();
   const [nodes, setNodes] = useState<Node[]>([]);
   const [run, setRun] = useState<TestRunStatus | null>(null);
@@ -94,6 +96,7 @@ export default function TestRunCanvasPage() {
 
   useEffect(() => {
     if (!testRunId) return;
+    if (!currentWorkspaceId) return; // wait until workspace context resolved
     // Fetch only if we haven't loaded this run yet
     if (run) return;
 
@@ -109,7 +112,7 @@ export default function TestRunCanvasPage() {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [testRunId, run]);
+  }, [testRunId, run, currentWorkspaceId]);
 
   // Memoised live run from store
   const liveRun = useMemo(() => {

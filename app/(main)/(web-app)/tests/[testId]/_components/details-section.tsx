@@ -95,9 +95,9 @@ export default function DetailsSection({ test }: { test: Test }) {
       } else if (popup) {
         popup.close();
       }
-    } catch {
+    } catch (err) {
       if (popup) popup.close();
-      toast.error("Failed to start test run");
+      toast.error(err instanceof Error ? err.message : 'Failed to start test run');
     }
     setRunning(false);
   };
@@ -121,6 +121,11 @@ export default function DetailsSection({ test }: { test: Test }) {
     return list.some(r => r.browserUseStatus === 'running');
   }, [testRunsStore, test._id]);
 
+  // Deliberately omit getTestRunsForTest from deps because its identity is
+  // not stable across renders (defined inside a hook). Including it would
+  // re-trigger the effect endlessly and cause a "maximum update depth"
+  // error. The ESLint rule is disabled for this line.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (runsSlice === undefined && !loadingRuns) {
       (async () => {
@@ -129,7 +134,7 @@ export default function DetailsSection({ test }: { test: Test }) {
         setLoadingRuns(false);
       })();
     }
-  }, [runsSlice, getTestRunsForTest, test._id, loadingRuns]);
+  }, [runsSlice, test._id, loadingRuns]);
 
   const totalRunsStore = runsSlice ? runsSlice.length : testRunsStore?.filter(r => r.test === test._id).length;
 

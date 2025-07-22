@@ -1,7 +1,8 @@
 "use client";
 import { useParams, notFound, useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth";
 import { useTests } from "@/hooks/use-tests";
 import type { Test as TestType } from "@/hooks/use-tests";
 import { useTestsStore } from "@/lib/store/tests";
@@ -18,6 +19,7 @@ export default function TestDetailPage() {
   const { testId } = useParams<{ testId: string }>();
   const router = useRouter();
   const { tests, getTestById } = useTests();
+  const { currentWorkspaceId } = useAuth();
   const storeTest = useTestsStore(state => state.tests?.find(t => t._id === testId));
   const [test, setTest] = useState(() => tests?.find(t => t._id === testId));
   const [loading, setLoading] = useState(!test);
@@ -33,8 +35,12 @@ export default function TestDetailPage() {
     setTab(initialTab);
   }, []);
 
+  // Fetch the test once we have a workspace context. Without the header the
+  // backend returns 400/403 which previously triggered the catch→notFound
+  // path even though the test exists.
   useEffect(() => {
     if (!testId) return;
+    if (!currentWorkspaceId) return; // wait until workspace resolved
     let needsFetch = false;
     if (!test) {
       needsFetch = true;
@@ -56,7 +62,7 @@ export default function TestDetailPage() {
         }
       })();
     }
-  }, [testId, test, getTestById]);
+  }, [testId, test, currentWorkspaceId]);
 
   // Sync local state when store updates (e.g., via Socket.IO after edit)
   useEffect(() => {
