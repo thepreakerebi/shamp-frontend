@@ -35,14 +35,14 @@ export interface BatchTestAnalysis {
 
 export type BatchTestAnalysisHistoryEntry = BatchTestAnalysis;
 
-const fetcher = (url: string, token: string | null, workspaceId?: string | null) =>
-  apiFetch(url, { token, workspaceId }).then(res => {
+const fetcher = (url: string, workspaceId?: string | null) =>
+  apiFetch(url, { workspaceId }).then(res => {
     if (!res.ok) throw new Error('Failed to fetch');
     return res.json();
   });
 
 export function useBatchTests() {
-  const { token, currentWorkspaceId } = useAuth();
+  const { currentWorkspaceId } = useAuth();
   const {
     batchTests,
     batchTestsLoading,
@@ -72,7 +72,7 @@ export function useBatchTests() {
     setBatchTestsLoading(true);
     setBatchTestsError(null);
     try {
-      const data = await fetcher("/batchtests", token ?? null, currentWorkspaceId);
+      const data = await fetcher("/batchtests", currentWorkspaceId);
       if (Array.isArray(data)) {
         setBatchTests(data.filter((b: BatchTest) => !b.trashed));
       } else {
@@ -87,20 +87,20 @@ export function useBatchTests() {
     } finally {
       setBatchTestsLoading(false);
     }
-  }, [token, currentWorkspaceId, setBatchTests, setBatchTestsLoading, setBatchTestsError]);
+  }, [currentWorkspaceId, setBatchTests, setBatchTestsLoading, setBatchTestsError]);
 
   const fetchTrashedBatchTests = useCallback(async () => {
     if (!currentWorkspaceId) return;
     setBatchTestsLoading(true);
     try {
-      const data = await fetcher('/batchtests/trashed', token ?? null, currentWorkspaceId);
+      const data = await fetcher('/batchtests/trashed', currentWorkspaceId);
       if (Array.isArray(data)) {
         setTrashedBatchTests(data);
       }
     } finally {
       setBatchTestsLoading(false);
     }
-  }, [token, currentWorkspaceId, setTrashedBatchTests, setBatchTestsLoading]);
+  }, [currentWorkspaceId, setTrashedBatchTests, setBatchTestsLoading]);
 
   useEffect(() => {
     if (!currentWorkspaceId) {
@@ -119,13 +119,13 @@ export function useBatchTests() {
 
     fetchBatchTests();
     fetchTrashedBatchTests();
-  }, [token, currentWorkspaceId, fetchBatchTests, fetchTrashedBatchTests, setBatchTests, setTrashedBatchTests, setBatchTestsLoading]);
+  }, [currentWorkspaceId, fetchBatchTests, fetchTrashedBatchTests, setBatchTests, setTrashedBatchTests, setBatchTestsLoading]);
 
   useEffect(() => {
-    if (!token || !currentWorkspaceId) return;
+    if (!currentWorkspaceId) return;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
-      auth: { token, workspaceId: currentWorkspaceId },
+      auth: { workspaceId: currentWorkspaceId },
     });
 
     const createdHandler = (data: BatchTest & { workspace?: string }) => {
@@ -182,11 +182,11 @@ export function useBatchTests() {
       socket.off("batchTest:analysisUpdated");
       socket.disconnect();
     };
-  }, [token, currentWorkspaceId, addBatchTestToList, removeBatchTestFromList, updateBatchTestInList]);
+  }, [currentWorkspaceId, addBatchTestToList, removeBatchTestFromList, updateBatchTestInList]);
 
   const getBatchTestById = async (id: string): Promise<BatchTest> => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/batchtests/${id}`, { token, workspaceId: currentWorkspaceId });
+    const res = await apiFetch(`/batchtests/${id}`, { workspaceId: currentWorkspaceId });
     if (!res.ok) throw new Error("Failed to fetch batch test");
     const batch = await res.json();
     addBatchTestToList(batch);
@@ -196,7 +196,6 @@ export function useBatchTests() {
   const createBatchTest = async (payload: Pick<BatchTest, 'project' | 'batchPersona' | 'test'>) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
     const res = await apiFetch('/batchtests', {
-      token,
       workspaceId: currentWorkspaceId,
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -211,7 +210,6 @@ export function useBatchTests() {
   const updateBatchTest = async (id: string, payload: Partial<Pick<BatchTest, 'batchPersona' | 'test'>>) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
     const res = await apiFetch(`/batchtests/${id}`, {
-      token,
       workspaceId: currentWorkspaceId,
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -225,7 +223,7 @@ export function useBatchTests() {
 
   const moveBatchTestToTrash = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/batchtests/${id}/trash`, { token, workspaceId: currentWorkspaceId, method:'POST' });
+    const res = await apiFetch(`/batchtests/${id}/trash`, { workspaceId: currentWorkspaceId, method:'POST' });
     if (!res.ok) throw new Error("Failed to move batch test to trash");
     const data = await res.json();
     const batch = data.batchTest ?? data;
@@ -235,7 +233,7 @@ export function useBatchTests() {
 
   const restoreBatchTestFromTrash = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/batchtests/${id}/restore`, { token, workspaceId: currentWorkspaceId, method:'PATCH' });
+    const res = await apiFetch(`/batchtests/${id}/restore`, { workspaceId: currentWorkspaceId, method:'PATCH' });
     if (!res.ok) throw new Error("Failed to restore batch test from trash");
     const data = await res.json();
     const batch = data.batchTest ?? data;
@@ -245,7 +243,7 @@ export function useBatchTests() {
 
   const duplicateBatchTest = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/batchtests/${id}/duplicate`, { token, workspaceId: currentWorkspaceId, method:'POST' });
+    const res = await apiFetch(`/batchtests/${id}/duplicate`, { workspaceId: currentWorkspaceId, method:'POST' });
     if (!res.ok) throw new Error("Failed to duplicate batch test");
     const batch = await res.json();
     addBatchTestToList(batch);
@@ -255,7 +253,7 @@ export function useBatchTests() {
   const deleteBatchTest = async (id: string, deleteTestRuns = false) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
     const path = `/batchtests/${id}${deleteTestRuns ? `?deleteTestRuns=true` : ''}`;
-    const res = await apiFetch(path, { token, workspaceId: currentWorkspaceId, method:'DELETE' });
+    const res = await apiFetch(path, { workspaceId: currentWorkspaceId, method:'DELETE' });
     if (!res.ok) throw new Error("Failed to delete batch test");
     removeBatchTestFromList(id);
     return res.json();
@@ -264,7 +262,6 @@ export function useBatchTests() {
   const analyzeBatchTestOutputs = async (id: string): Promise<BatchTestAnalysis> => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
     const res = await apiFetch(`/batchtests/${id}/analyze-outputs`, {
-      token,
       workspaceId: currentWorkspaceId,
     });
     if (!res.ok) throw new Error("Failed to analyze batch test outputs");
@@ -274,7 +271,6 @@ export function useBatchTests() {
   const getBatchTestAnalysisHistory = async (id: string): Promise<BatchTestAnalysisHistoryEntry[]> => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
     const res = await apiFetch(`/batchtests/${id}/analysis-history`, {
-      token,
       workspaceId: currentWorkspaceId,
     });
     if (!res.ok) throw new Error("Failed to fetch batch test analysis history");
@@ -293,7 +289,6 @@ export function useBatchTests() {
     }
 
     const res = await apiFetch(`/batchtests/${batchTestId}/testruns`, {
-      token,
       workspaceId: currentWorkspaceId,
     });
     if (!res.ok) throw new Error("Failed to fetch batch test runs");
@@ -322,7 +317,7 @@ export function useBatchTests() {
     if (deleteTestRuns) {
       url.searchParams.set('deleteTestRuns', 'true');
     }
-    const res = await apiFetch(url.toString(), { token, workspaceId: currentWorkspaceId, method:'DELETE' });
+    const res = await apiFetch(url.toString(), { workspaceId: currentWorkspaceId, method:'DELETE' });
     if (!res.ok) throw new Error("Failed to empty batch test trash");
     const result = await res.json();
     emptyTrashedBatchTests();
