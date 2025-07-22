@@ -7,14 +7,14 @@ import { apiFetch } from '@/lib/api-client';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
-const fetcher = (url: string, token: string | null, workspaceId?: string) =>
-  apiFetch(url, { token, workspaceId }).then(res => {
+const fetcher = (url: string, workspaceId?: string) =>
+  apiFetch(url, { workspaceId }).then(res => {
     if (!res.ok) throw new Error('Failed to fetch');
     return res.json();
   });
 
 export function useTestSchedules() {
-  const { token, currentWorkspaceId } = useAuth();
+  const { currentWorkspaceId } = useAuth();
   const store = useTestSchedulesStore();
   const {
     schedules,
@@ -49,7 +49,7 @@ export function useTestSchedules() {
     if (!currentWorkspaceId) return;
     fetchSchedules();
     fetchTrashedSchedules();
-  }, [token, currentWorkspaceId]);
+  }, [currentWorkspaceId]);
 
   // Fetch trashed schedules (defined early so it can be referenced below)
   const fetchTrashedSchedules = useCallback(async () => {
@@ -57,21 +57,21 @@ export function useTestSchedules() {
     setTrashedSchedulesLoading(true);
     setTrashedSchedulesError(null);
     try {
-      const data = await fetcher("/testschedules/trashed", token, currentWorkspaceId);
+      const data = await fetcher("/testschedules/trashed", currentWorkspaceId);
       setTrashedSchedules(Array.isArray(data) ? (data as TestSchedule[]) : []);
     } catch (err: unknown) {
       setTrashedSchedulesError(err instanceof Error ? err.message : "Failed to load trashed schedules");
     } finally {
       setTrashedSchedulesLoading(false);
     }
-  }, [token, currentWorkspaceId, setTrashedSchedulesLoading, setTrashedSchedulesError, setTrashedSchedules]);
+  }, [currentWorkspaceId, setTrashedSchedulesLoading, setTrashedSchedulesError, setTrashedSchedules]);
 
   // Real-time updates with Socket.IO scoped to workspace
   useEffect(() => {
     if (!currentWorkspaceId) return;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
-      auth: { token, workspaceId: currentWorkspaceId },
+      auth: { workspaceId: currentWorkspaceId },
     });
 
     socket.on("schedule:created", (schedule: TestSchedule & { workspace?: string }) => {
@@ -113,7 +113,7 @@ export function useTestSchedules() {
     return () => {
       socket.disconnect();
     };
-  }, [token, currentWorkspaceId, updateScheduleInList, removeScheduleFromList, addTrashedSchedule, removeTrashedSchedule, addScheduleToList, fetchTrashedSchedules]);
+  }, [currentWorkspaceId, updateScheduleInList, removeScheduleFromList, addTrashedSchedule, removeTrashedSchedule, addScheduleToList, fetchTrashedSchedules]);
 
   // Fetch all schedules for the admin group
   const fetchSchedules = useCallback(async () => {
@@ -121,14 +121,14 @@ export function useTestSchedules() {
     setSchedulesLoading(true);
     setSchedulesError(null);
     try {
-      const data = await fetcher("/testschedules", token, currentWorkspaceId);
+      const data = await fetcher("/testschedules", currentWorkspaceId);
       setSchedules(Array.isArray(data) ? (data as TestSchedule[]) : []);
     } catch (err: unknown) {
       setSchedulesError(err instanceof Error ? err.message : "Failed to load schedules");
     } finally {
       setSchedulesLoading(false);
     }
-  }, [token, currentWorkspaceId, setSchedulesLoading, setSchedulesError, setSchedules]);
+  }, [currentWorkspaceId, setSchedulesLoading, setSchedulesError, setSchedules]);
 
   // Move schedule to trash
   const moveScheduleToTrash = useCallback(
@@ -136,7 +136,6 @@ export function useTestSchedules() {
       if (!currentWorkspaceId) throw new Error("No workspace context");
       try {
         const res = await apiFetch(`/testschedules/${id}/trash`, {
-          token,
           workspaceId: currentWorkspaceId,
           method: 'PATCH',
         });
@@ -155,7 +154,7 @@ export function useTestSchedules() {
         toast.error(err instanceof Error ? err.message : "Failed to trash schedule");
       }
     },
-    [token, currentWorkspaceId, removeScheduleFromList, addTrashedSchedule, fetchTrashedSchedules]
+    [currentWorkspaceId, removeScheduleFromList, addTrashedSchedule, fetchTrashedSchedules]
   );
 
   // Restore schedule from trash
@@ -163,7 +162,7 @@ export function useTestSchedules() {
     async (id: string) => {
       if (!currentWorkspaceId) throw new Error("No workspace context");
       try {
-        const res = await apiFetch(`/testschedules/${id}/restore`, { token, workspaceId: currentWorkspaceId, method: 'PATCH' });
+        const res = await apiFetch(`/testschedules/${id}/restore`, { workspaceId: currentWorkspaceId, method: 'PATCH' });
         if (!res.ok) throw new Error("Failed to restore schedule");
         const data = (await res.json()) as { schedule?: TestSchedule } | TestSchedule;
         const schedule: TestSchedule = (data as { schedule?: TestSchedule }).schedule ?? (data as TestSchedule);
@@ -174,7 +173,7 @@ export function useTestSchedules() {
         toast.error(err instanceof Error ? err.message : "Failed to restore schedule");
       }
     },
-    [token, currentWorkspaceId, updateScheduleInList, removeTrashedSchedule]
+    [currentWorkspaceId, updateScheduleInList, removeTrashedSchedule]
   );
 
   // Delete schedule (recurring)
@@ -182,7 +181,7 @@ export function useTestSchedules() {
     async (id: string) => {
       if (!currentWorkspaceId) throw new Error("No workspace context");
       try {
-        const res = await apiFetch(`/testschedules/recurring/${id}`, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
+        const res = await apiFetch(`/testschedules/recurring/${id}`, { workspaceId: currentWorkspaceId, method: 'DELETE' });
         if (!res.ok) throw new Error("Failed to delete schedule");
         removeScheduleFromList(id);
         removeTrashedSchedule(id);
@@ -192,7 +191,7 @@ export function useTestSchedules() {
         throw err;
       }
     },
-    [token, currentWorkspaceId, removeScheduleFromList, removeTrashedSchedule]
+    [currentWorkspaceId, removeScheduleFromList, removeTrashedSchedule]
   );
 
   // Update recurring schedule
@@ -200,7 +199,7 @@ export function useTestSchedules() {
     async (id: string, recurrenceRule: string) => {
       if (!currentWorkspaceId) throw new Error("No workspace context");
       try {
-        const res = await apiFetch(`/testschedules/recurring/${id}`, { token, workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recurrenceRule }) });
+        const res = await apiFetch(`/testschedules/recurring/${id}`, { workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recurrenceRule }) });
         if (!res.ok) {
           const errTxt = await res.text().catch(()=>"Failed");
           throw new Error(errTxt || "Failed to update schedule");
@@ -213,7 +212,7 @@ export function useTestSchedules() {
         throw err;
       }
     },
-    [token, currentWorkspaceId, updateScheduleInList]
+    [currentWorkspaceId, updateScheduleInList]
   );
 
   // Remote search/filter for schedules
@@ -237,7 +236,7 @@ export function useTestSchedules() {
         }
 
         const qs = new URLSearchParams(filtered).toString();
-        const resp = await fetcher(`/tests/search?${qs}`, token, currentWorkspaceId);
+        const resp = await fetcher(`/tests/search?${qs}`, currentWorkspaceId);
 
         type SearchResp = { data: Array<{ _id: string }> } | Array<{ _id: string }>;
         const testsResp = resp as unknown as SearchResp;
@@ -273,13 +272,13 @@ export function useTestSchedules() {
         setSchedulesLoading(false);
       }
     },
-    [token, currentWorkspaceId, setSchedules, setSchedulesLoading, setSchedulesError, fetchSchedules]
+    [currentWorkspaceId, setSchedules, setSchedulesLoading, setSchedulesError, fetchSchedules]
   );
 
   // Empty trash - permanently delete all trashed test schedules
   const emptyTestScheduleTrash = async () => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch('/testschedules/trash/empty', { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
+    const res = await apiFetch('/testschedules/trash/empty', { workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to empty test schedule trash");
     const result = await res.json();
     emptyTrashedSchedules();
