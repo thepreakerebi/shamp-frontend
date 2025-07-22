@@ -38,7 +38,7 @@ export interface ProjectPayload {
 }
 
 export function useProjects() {
-  const { token, currentWorkspaceId } = useAuth();
+  const { currentWorkspaceId } = useAuth();
   const store = useProjectsStore();
   const previousWorkspaceId = useRef<string | null>(null);
 
@@ -48,7 +48,7 @@ export function useProjects() {
     store.setProjectsLoading(true);
     store.setProjectsError(null);
     try {
-      const res = await apiFetch('/projects', { token, workspaceId: currentWorkspaceId });
+      const res = await apiFetch('/projects', { workspaceId: currentWorkspaceId });
       const data = await res.json();
       store.setProjects(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
@@ -60,7 +60,7 @@ export function useProjects() {
     } finally {
       store.setProjectsLoading(false);
     }
-  }, [token, currentWorkspaceId, store]);
+  }, [currentWorkspaceId, store]);
 
   // Fetch count
   const fetchCount = useCallback(async () => {
@@ -68,7 +68,7 @@ export function useProjects() {
     store.setCountLoading(true);
     store.setCountError(null);
     try {
-      const res = await apiFetch('/projects/count', { token, workspaceId: currentWorkspaceId });
+      const res = await apiFetch('/projects/count', { workspaceId: currentWorkspaceId });
       const data = await res.json();
       store.setCount(typeof data.count === "number" ? data.count : 0);
     } catch (err: unknown) {
@@ -80,7 +80,7 @@ export function useProjects() {
     } finally {
       store.setCountLoading(false);
     }
-  }, [token, currentWorkspaceId, store]);
+  }, [currentWorkspaceId, store]);
 
   // Fetch trashed projects
   const fetchTrashedProjects = useCallback(async () => {
@@ -88,7 +88,7 @@ export function useProjects() {
     store.setTrashedProjectsLoading(true);
     store.setTrashedProjectsError(null);
     try {
-      const res = await apiFetch('/projects/trashed', { token, workspaceId: currentWorkspaceId });
+      const res = await apiFetch('/projects/trashed', { workspaceId: currentWorkspaceId });
       const data = await res.json();
       store.setTrashedProjects(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
@@ -100,7 +100,7 @@ export function useProjects() {
     } finally {
       store.setTrashedProjectsLoading(false);
     }
-  }, [token, currentWorkspaceId, store]);
+  }, [currentWorkspaceId, store]);
 
   // Refetch all
   const refetch = useCallback(() => {
@@ -137,7 +137,6 @@ export function useProjects() {
   useEffect(() => {
     if (!currentWorkspaceId) return;
     const socketAuth: Record<string, unknown> = { workspaceId: currentWorkspaceId };
-    if (token) socketAuth.token = token;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
       auth: socketAuth,
@@ -205,12 +204,12 @@ export function useProjects() {
     return () => {
       socket.disconnect();
     };
-  }, [token, currentWorkspaceId]);
+  }, [currentWorkspaceId]);
 
   // Get a single project by ID
   const getProjectById = async (id: string): Promise<Project> => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/projects/${id}`, { token, workspaceId: currentWorkspaceId });
+    const res = await apiFetch(`/projects/${id}`, { workspaceId: currentWorkspaceId });
     if (!res.ok) throw new Error("Failed to fetch project");
     const project = await res.json();
     store.updateProjectInList(project);
@@ -220,7 +219,7 @@ export function useProjects() {
   // Create a project
   const createProject = async (payload: ProjectPayload) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch('/projects', { token, workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+    const res = await apiFetch('/projects', { workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error("Failed to create project");
     const project = await res.json();
     // Don't manually update store - let Socket.IO events handle it
@@ -230,7 +229,7 @@ export function useProjects() {
   // Update a project
   const updateProject = async (id: string, payload: Partial<ProjectPayload>) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/projects/${id}`, { token, workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+    const res = await apiFetch(`/projects/${id}`, { workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error("Failed to update project");
     const project = await res.json();
     // Optimistically update store for immediate UI feedback; socket will reconcile if needed
@@ -242,7 +241,7 @@ export function useProjects() {
   const deleteProject = async (id: string, deleteTests = false) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
     const path = `/projects/${id}${deleteTests ? `?deleteTests=true` : ''}`;
-    const res = await apiFetch(path, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
+    const res = await apiFetch(path, { workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to delete project");
     // Optimistic update: remove from trashed list immediately
     store.removeTrashedProject(id);
@@ -252,7 +251,7 @@ export function useProjects() {
   // Move project to trash
   const moveProjectToTrash = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/projects/${id}/trash`, { token, workspaceId: currentWorkspaceId, method: 'PATCH' });
+    const res = await apiFetch(`/projects/${id}/trash`, { workspaceId: currentWorkspaceId, method: 'PATCH' });
     if (!res.ok) throw new Error("Failed to move project to trash");
     const project = await res.json();
     // Optimistic update: remove from active list and add to trashed list immediately
@@ -267,7 +266,7 @@ export function useProjects() {
   // Restore project from trash
   const restoreProjectFromTrash = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/projects/${id}/restore`, { token, workspaceId: currentWorkspaceId, method: 'PATCH' });
+    const res = await apiFetch(`/projects/${id}/restore`, { workspaceId: currentWorkspaceId, method: 'PATCH' });
     if (!res.ok) throw new Error("Failed to restore project from trash");
     const project = await res.json();
     // Optimistic update: remove from trash list and add back to active list
@@ -284,7 +283,7 @@ export function useProjects() {
   // Get all tests for a project
   const getProjectTests = async (projectId: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/projects/${projectId}/tests`, { token, workspaceId: currentWorkspaceId });
+    const res = await apiFetch(`/projects/${projectId}/tests`, { workspaceId: currentWorkspaceId });
     if (!res.ok) throw new Error("Failed to fetch project tests");
     return res.json();
   };
@@ -302,7 +301,7 @@ export function useProjects() {
       return cached as unknown as TestRun[];
     }
 
-    const res = await apiFetch(`/projects/${projectId}/testruns`, { token, workspaceId: currentWorkspaceId });
+    const res = await apiFetch(`/projects/${projectId}/testruns`, { workspaceId: currentWorkspaceId });
     if (!res.ok) throw new Error("Failed to fetch project testruns");
     const runs = (await res.json()) as TestRun[];
 
@@ -323,7 +322,7 @@ export function useProjects() {
   const emptyProjectTrash = async (deleteTests?: boolean) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
     const qs = deleteTests ? '?deleteTests=true' : '';
-    const res = await apiFetch(`/projects/trash/empty${qs}`, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
+    const res = await apiFetch(`/projects/trash/empty${qs}`, { workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to empty project trash");
     const result = await res.json();
     store.emptyTrashedProjects();
