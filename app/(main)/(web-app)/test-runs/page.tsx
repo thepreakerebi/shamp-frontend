@@ -75,8 +75,8 @@ export default function TestRunsListPage() {
           ))
       ) : (
         <section className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filtered.map((run) => (
-            <TestRunCard key={run._id} run={run as TestRunSummary} />
+          {filtered.map((run, idx) => (
+            <TestRunCard key={`${run._id}_${idx}`} run={run as TestRunSummary} />
           ))}
         </section>
       )}

@@ -195,14 +195,14 @@ export function TrashedRunsList() {
         <p className="text-muted-foreground p-4">No test runs in trash.</p>
       ) : (
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 p-4" aria-label="Trashed test runs list">
-        {uniqueRuns.map(run => {
+        {uniqueRuns.map((run, idx) => {
           const rp = run as RunWithPersona;
           let avatarUrl = rp.persona ? (personasStorePersonas ?? personas)?.find(p=>p._id===rp.persona)?.avatarUrl : undefined;
           if (!avatarUrl) {
             avatarUrl = (rp as { personaAvatarUrl?: string }).personaAvatarUrl;
           }
           return (
-          <article key={run._id} className="rounded-3xl border dark:border-0 bg-card/80 p-4 flex flex-col gap-3">
+          <article key={run._id || idx} className="rounded-3xl border dark:border-0 bg-card/80 p-4 flex flex-col gap-3">
             <header className="flex items-start gap-3">
               <figure className="w-10 h-10 rounded-xl overflow-hidden bg-muted flex items-center justify-center text-xl font-bold shrink-0" aria-hidden="true">
                 {avatarUrl ? (
