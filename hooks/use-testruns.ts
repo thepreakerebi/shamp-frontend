@@ -77,7 +77,7 @@ export interface ChatMessage {
 // legacy fetcher removed – apiFetch covers CSRF + credentials
 
 export function useTestRuns() {
-  const { token, currentWorkspaceId } = useAuth();
+  const { currentWorkspaceId } = useAuth();
   const store = useTestRunsStore();
   const { refetch: refetchBilling } = useBilling();
 
@@ -101,7 +101,7 @@ export function useTestRuns() {
   const getState = useTestRunsStore.getState;
 
   // Helper to simplify API calls with latest auth context
-  const api = (path: string, options: RequestInit = {}) => apiFetch(path, { token, workspaceId: currentWorkspaceId, ...options });
+  const api = (path: string, options: RequestInit = {}) => apiFetch(path, { workspaceId: currentWorkspaceId, ...options });
 
   // Track whether we've already fetched runs / trash for each workspace during this tab lifetime
   const workspaceFetchState = useRef<Record<string, { runsFetched: boolean; trashedRunsFetched: boolean }>>({}).current;
@@ -149,7 +149,7 @@ export function useTestRuns() {
 
     socketRef.current = io(SOCKET_URL, {
       transports: ["websocket"],
-      auth: { ...(token ? { token } : {}), workspaceId: currentWorkspaceId },
+      auth: { workspaceId: currentWorkspaceId },
     });
     const socket = socketRef.current;
     // Listen for test run events
@@ -429,7 +429,7 @@ export function useTestRuns() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [token, currentWorkspaceId]);
+  }, [currentWorkspaceId]);
 
   // Fetch all test runs
   const fetchTestRuns = useCallback(async () => {
@@ -449,7 +449,7 @@ export function useTestRuns() {
     } finally {
       setTestRunsLoading(false);
     }
-  }, [token, currentWorkspaceId]);
+  }, [currentWorkspaceId]);
 
   // Count successful/failed runs
   const fetchCounts = useCallback(async () => {
@@ -478,7 +478,7 @@ export function useTestRuns() {
     } finally {
       store.setCountsLoading(false);
     }
-  }, [token, currentWorkspaceId]);
+  }, [currentWorkspaceId]);
 
   // Fetch trashed test runs
   const fetchTrashedTestRuns = useCallback(async () => {
@@ -490,7 +490,7 @@ export function useTestRuns() {
     } catch {
       // silent fail for trashed runs
     }
-  }, [token, currentWorkspaceId]);
+  }, [currentWorkspaceId]);
 
   // One-time startup fetch per workspace
   useEffect(() => {

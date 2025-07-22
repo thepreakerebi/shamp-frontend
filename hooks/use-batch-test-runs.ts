@@ -22,7 +22,7 @@ export interface BatchTestActionResult {
 }
 
 export function useBatchTestRuns() {
-  const { token, currentWorkspaceId } = useAuth();
+  const { currentWorkspaceId } = useAuth();
   const { addTestRunToList, updateTestRunInList } = useTestRunsStore();
 
   // We rely on the auth cookie; token may be null. Workspace id is required
@@ -32,7 +32,7 @@ export function useBatchTestRuns() {
 
   const startBatchTestRuns = async (batchTestId: string) => {
     if (!currentWorkspaceId) throw new Error('No workspace context');
-      const res = await apiFetch('/batchtestruns/start', { token, workspaceId: currentWorkspaceId, method: 'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ batchTestId: batchTestId.toString() }) });
+      const res = await apiFetch('/batchtestruns/start', { workspaceId: currentWorkspaceId, method: 'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ batchTestId: batchTestId.toString() }) });
       if (!res.ok) throw new Error("Failed to start batch test runs");
     const data = await res.json();
     const runs: unknown[] = Array.isArray(data.testRuns) ? data.testRuns : [];
@@ -50,7 +50,7 @@ export function useBatchTestRuns() {
     // Background-refresh full run list so we don't miss earlier runs
     (async () => {
       try {
-        const resFull = await apiFetch(`/batchtests/${batchTestId}/testruns`, { token, workspaceId: currentWorkspaceId });
+        const resFull = await apiFetch(`/batchtests/${batchTestId}/testruns`, { workspaceId: currentWorkspaceId });
         if (resFull.ok) {
           const fullRuns = (await resFull.json()) as TestRun[];
           const dedupFull = Array.from(new Map(fullRuns.map(r => [ (r as { _id: string })._id, r ])).values());
@@ -71,7 +71,7 @@ export function useBatchTestRuns() {
 
   const postAction = async (id: string, action: "pause" | "resume" | "stop") => {
     if (!currentWorkspaceId) throw new Error('No workspace context');
-    const res = await apiFetch(`/batchtestruns/${id}/${action}`, { token, workspaceId: currentWorkspaceId, method: 'POST' });
+    const res = await apiFetch(`/batchtestruns/${id}/${action}`, { workspaceId: currentWorkspaceId, method: 'POST' });
     if (!res.ok) throw new Error("Failed to post action");
     const data = await res.json();
     const runs: unknown[] = Array.isArray(data.testRuns) ? data.testRuns : [];
