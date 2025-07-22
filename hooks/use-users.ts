@@ -5,16 +5,16 @@ import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api-client';
 
 export function useUsers() {
-  const { token, currentWorkspaceId } = useAuth();
+  const { currentWorkspaceId } = useAuth();
   const store = useUsersStore();
   const { users, loading, error, setUsers, setLoading, setError, removeUser } = store;
 
   const fetchUsers = useCallback(async () => {
-    if (!token || !currentWorkspaceId) return;
+    if (!currentWorkspaceId) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await apiFetch('/users', { token, workspaceId: currentWorkspaceId });
+      const res = await apiFetch('/users', { workspaceId: currentWorkspaceId });
       if (!res.ok) {
         throw new Error((await res.json()).error || 'Failed to load users');
       }
@@ -25,7 +25,7 @@ export function useUsers() {
     } finally {
       setLoading(false);
     }
-  }, [token, currentWorkspaceId, setLoading, setError, setUsers]);
+  }, [currentWorkspaceId, setLoading, setError, setUsers]);
 
   useEffect(() => { 
     if (users === null && currentWorkspaceId) {
@@ -34,21 +34,21 @@ export function useUsers() {
   }, [users, fetchUsers, currentWorkspaceId]);
 
   const inviteMember = useCallback(async (payload: { email: string; }) => {
-    if (!token || !currentWorkspaceId) throw new Error('Not authenticated or no workspace context');
-    const res = await apiFetch('/users/invite', { token, workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (!currentWorkspaceId) throw new Error('No workspace context');
+    const res = await apiFetch('/users/invite', { workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error((await res.json()).error || 'Failed to send invite');
     const result = await res.json();
     toast.success(`Invite sent${result.userType ? ` (${result.userType})` : ''}`);
     return result;
-  }, [token, currentWorkspaceId]);
+  }, [currentWorkspaceId]);
 
   const deleteMember = useCallback(async (id: string) => {
-    if (!token || !currentWorkspaceId) throw new Error('Not authenticated or no workspace context');
-    const res = await apiFetch(`/users/${id}`, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
+    if (!currentWorkspaceId) throw new Error('No workspace context');
+    const res = await apiFetch(`/users/${id}`, { workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete member');
     removeUser(id);
     toast.success('Member removed from workspace');
-  }, [token, currentWorkspaceId, removeUser]);
+  }, [currentWorkspaceId, removeUser]);
 
   return { 
     users, 
