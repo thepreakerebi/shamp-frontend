@@ -21,16 +21,16 @@ interface Plan {
 
 const monthlyPlans: Plan[] = [
   { id: "free", name: "Free", price: "$0", secondary: "per month", description: "Explore how Shamp helps with basic testing", features: ["100 credits / mo", "2 tests", "1 project", "2 personas", "Issues board", "AI insights"], },
-  { id: "hobby", name: "Hobby", price: "$14.99", secondary: "per month", description: "Expanded limits for hobby projects", features: ["1,200 credits / mo (then $0.06 ea)", "10 tests", "5 projects", "15 personas", "Chat personas", "Issues board", "AI insights"], },
-  { id: "pro", name: "Pro", price: "$49.99", secondary: "per month", popular: true, description: "Advanced features & higher limits", features: ["3,000 credits / mo", "35 tests", "15 projects", "30 personas", "Scheduled & recurring runs", "Device types", "Chat personas", "AI insights"], },
-  { id: "ultra", name: "Ultra", price: "$99.99", secondary: "per month", description: "Unlimited scale and full capabilities", features: ["8,000 credits / mo", "Unlimited tests", "Unlimited projects", "Unlimited personas", "Batch personas & tests", "Scheduled & recurring runs", "Device types", "Chat personas", "AI insights"], },
+  { id: "hobby", name: "Hobby", price: "$19.99", secondary: "per month", description: "Expanded limits for hobby projects", features: ["500 credits / mo (then $0.06 ea)", "10 tests", "5 projects", "15 personas", "Chat personas", "Issues board", "AI insights"], },
+  { id: "pro", name: "Pro", price: "$49.99", secondary: "per month", popular: true, description: "Advanced features & higher limits", features: ["1250 credits / mo", "35 tests", "15 projects", "30 personas", "Scheduled & recurring runs", "Device types", "Chat personas", "AI insights"], },
+  { id: "ultra", name: "Ultra", price: "$99.99", secondary: "per month", description: "Unlimited scale and full capabilities", features: ["2500 credits / mo", "Unlimited tests", "Unlimited projects", "Unlimited personas", "Batch personas & tests", "Scheduled & recurring runs", "Device types", "Chat personas", "AI insights"], },
 ];
 
 const annualPlans: Plan[] = [
   { id: "free", name: "Free", price: "$0", secondary: "$0 / mo", description: monthlyPlans[0].description, features: monthlyPlans[0].features },
-  { id: "hobby_annual", name: "Hobby", price: "$152.90", secondary: "$12.74 / mo (billed yearly)", description: monthlyPlans[1].description, features: monthlyPlans[1].features },
-  { id: "pro_annual", name: "Pro", price: "$509.93", secondary: "$42.38 / mo (billed yearly)", popular: true, description: monthlyPlans[2].description, features: monthlyPlans[2].features },
-  { id: "ultra_annual", name: "Ultra", price: "$1,019.89", secondary: "$84.75 / mo (billed yearly)", description: monthlyPlans[3].description, features: monthlyPlans[3].features },
+  { id: "hobby_annual", name: "Hobby", price: "$203.90", secondary: "$16.99 / mo (billed yearly)", description: monthlyPlans[1].description, features: monthlyPlans[1].features },
+  { id: "pro_annual", name: "Pro", price: "$509.90", secondary: "$42.49 / mo (billed yearly)", popular: true, description: monthlyPlans[2].description, features: monthlyPlans[2].features },
+  { id: "ultra_annual", name: "Ultra", price: "$1,019.90", secondary: "$84.99 / mo (billed yearly)", description: monthlyPlans[3].description, features: monthlyPlans[3].features },
 ];
 
 export default function PricingPage() {
