@@ -76,7 +76,7 @@ export interface TestSearchParams {
 // Legacy fetcher removed – apiFetch covers credentials, CSRF and optional auth
 
 export function useTests() {
-  const { token, currentWorkspaceId } = useAuth();
+  const { currentWorkspaceId } = useAuth();
   const store = useTestsStore();
   const previousWorkspaceId = useRef<string | null>(null);
 
@@ -92,7 +92,7 @@ export function useTests() {
     store.setTestsLoading(true);
     store.setTestsError(null);
     try {
-      const res = await apiFetch('/tests', { token, workspaceId: currentWorkspaceId });
+      const res = await apiFetch('/tests', { workspaceId: currentWorkspaceId });
       const data = await res.json();
       // Handle paginated response - extract tests from data.data array
       const tests = data.data || data;
@@ -106,7 +106,7 @@ export function useTests() {
     } finally {
       store.setTestsLoading(false);
     }
-  }, [token, currentWorkspaceId, store]);
+  }, [currentWorkspaceId, store]);
 
   // Fetch trashed tests
   const fetchTrashedTests = useCallback(async () => {
@@ -115,7 +115,7 @@ export function useTests() {
       return;
     }
     try {
-      const res = await apiFetch('/tests/trashed', { token, workspaceId: currentWorkspaceId });
+      const res = await apiFetch('/tests/trashed', { workspaceId: currentWorkspaceId });
       const data = await res.json();
       // Handle paginated response - extract tests from data.data array
       const trashedTests = data.data || data;
@@ -124,7 +124,7 @@ export function useTests() {
       // Silently handle errors for trashed tests - don't interfere with main error state
       console.error("Failed to fetch trashed tests:", err);
     }
-  }, [token, currentWorkspaceId, store]);
+  }, [currentWorkspaceId, store]);
 
   // Fetch count
   const fetchCount = useCallback(async () => {
@@ -137,7 +137,7 @@ export function useTests() {
     store.setCountLoading(true);
     store.setCountError(null);
     try {
-      const res = await apiFetch('/tests/count', { token, workspaceId: currentWorkspaceId });
+      const res = await apiFetch('/tests/count', { workspaceId: currentWorkspaceId });
       const data = await res.json();
       store.setCount(typeof data.count === "number" ? data.count : 0);
     } catch (err: unknown) {
@@ -149,7 +149,7 @@ export function useTests() {
     } finally {
       store.setCountLoading(false);
     }
-  }, [token, currentWorkspaceId, store]);
+  }, [currentWorkspaceId, store]);
 
   // Refetch all
   const refetch = useCallback(() => {
@@ -191,7 +191,7 @@ export function useTests() {
     if (!currentWorkspaceId) return;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
-      auth: { token, workspaceId: currentWorkspaceId },
+      auth: { workspaceId: currentWorkspaceId },
     });
     
     const handleTestCreated = (data: { test?: Test; workspace?: string }) => {
@@ -280,12 +280,12 @@ export function useTests() {
       socket.off("test:trashEmptied", handleTrashEmptied);
       socket.disconnect();
     };
-  }, [refetch, token, currentWorkspaceId, store]);
+  }, [refetch, currentWorkspaceId, store]);
 
   // Create a test
   const createTest = async (payload: TestPayload) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch('/tests', { token, workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const res = await apiFetch('/tests', { workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error("Failed to create test");
     const test = await res.json();
     // Let Socket.IO handle the store update
@@ -295,7 +295,7 @@ export function useTests() {
   // Get a single test by ID
   const getTestById = async (id: string): Promise<Test> => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/tests/${id}`, { token, workspaceId: currentWorkspaceId });
+    const res = await apiFetch(`/tests/${id}`, { workspaceId: currentWorkspaceId });
     if (res.status === 404) throw new Error("Not found");
     if (!res.ok) throw new Error("Failed to fetch test");
     const test = await res.json();
@@ -306,7 +306,7 @@ export function useTests() {
   // Update a test
   const updateTest = async (id: string, payload: TestPayload) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/tests/${id}`, { token, workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const res = await apiFetch(`/tests/${id}`, { workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error("Failed to update test");
     const test = await res.json();
     // Let Socket.IO handle the store update
@@ -317,7 +317,7 @@ export function useTests() {
   const deleteTest = async (id: string, deleteTestRuns = false) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
     const path = `/tests/${id}${deleteTestRuns ? '?deleteTestRuns=true' : ''}`;
-    const res = await apiFetch(path, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
+    const res = await apiFetch(path, { workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to delete test");
     // Let Socket.IO handle the store update
     return res.json();
@@ -326,7 +326,7 @@ export function useTests() {
   // Move test to trash
   const moveTestToTrash = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/tests/${id}/trash`, { token, workspaceId: currentWorkspaceId, method: 'PATCH' });
+    const res = await apiFetch(`/tests/${id}/trash`, { workspaceId: currentWorkspaceId, method: 'PATCH' });
     if (!res.ok) throw new Error("Failed to move test to trash");
     const test = await res.json();
     // Let Socket.IO handle the store update
@@ -336,7 +336,7 @@ export function useTests() {
   // Restore test from trash
   const restoreTestFromTrash = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/tests/${id}/restore`, { token, workspaceId: currentWorkspaceId, method: 'PATCH' });
+    const res = await apiFetch(`/tests/${id}/restore`, { workspaceId: currentWorkspaceId, method: 'PATCH' });
     if (!res.ok) throw new Error("Failed to restore test from trash");
     const test = await res.json();
     // Let Socket.IO handle the store update
@@ -346,7 +346,7 @@ export function useTests() {
   // Duplicate a test
   const duplicateTest = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/tests/${id}/duplicate`, { token, workspaceId: currentWorkspaceId, method: 'POST' });
+    const res = await apiFetch(`/tests/${id}/duplicate`, { workspaceId: currentWorkspaceId, method: 'POST' });
     if (!res.ok) throw new Error("Failed to duplicate test");
     const test = await res.json();
     // Let Socket.IO handle the store update
@@ -356,7 +356,7 @@ export function useTests() {
   // Analyze all test runs for a test (aggregate analysis)
   const analyzeTestOutputs = async (id: string): Promise<TestAnalysis> => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/tests/${id}/analyze-outputs`, { token, workspaceId: currentWorkspaceId });
+    const res = await apiFetch(`/tests/${id}/analyze-outputs`, { workspaceId: currentWorkspaceId });
     if (!res.ok) throw new Error("Failed to analyze test outputs");
     return res.json();
   };
@@ -364,7 +364,7 @@ export function useTests() {
   // Get full analysis history for a test
   const getTestAnalysisHistory = async (id: string): Promise<TestAnalysisHistoryEntry[]> => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/tests/${id}/analysis-history`, { token, workspaceId: currentWorkspaceId });
+    const res = await apiFetch(`/tests/${id}/analysis-history`, { workspaceId: currentWorkspaceId });
     if (!res.ok) throw new Error("Failed to fetch test analysis history");
     return res.json();
   };
@@ -391,7 +391,7 @@ export function useTests() {
         path = `/tests/search?${params.toString()}`;
       }
       
-      const res = await apiFetch(path, { token, workspaceId: currentWorkspaceId });
+      const res = await apiFetch(path, { workspaceId: currentWorkspaceId });
       if (!res.ok) throw new Error("Failed to search tests");
       const results = await res.json();
       const queryStr = typeof query === 'string' ? query : JSON.stringify(query);
@@ -420,7 +420,7 @@ export function useTests() {
       return cached as unknown as TestRun[];
     }
 
-    const res = await apiFetch(`/tests/${testId}/testruns`, { token, workspaceId: currentWorkspaceId });
+    const res = await apiFetch(`/tests/${testId}/testruns`, { workspaceId: currentWorkspaceId });
     if (!res.ok) throw new Error("Failed to fetch test runs");
     const runs = (await res.json()) as TestRun[];
 
@@ -441,7 +441,7 @@ export function useTests() {
   const emptyTestTrash = async (deleteTestRuns?: boolean) => {
     if (!currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     const endpoint = deleteTestRuns ? '/tests/trash/empty?deleteTestRuns=true' : '/tests/trash/empty';
-    const res = await apiFetch(endpoint, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
+    const res = await apiFetch(endpoint, { workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to empty test trash");
     const result = await res.json();
     // Let Socket.IO handle the store update
