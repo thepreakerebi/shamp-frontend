@@ -25,18 +25,13 @@ export function useBatchTestRuns() {
   const { token, currentWorkspaceId } = useAuth();
   const { addTestRunToList, updateTestRunInList } = useTestRunsStore();
 
-  if (!token || !currentWorkspaceId) {
-    // Return no-op functions when unauthenticated to avoid extra guards in callers
-    return {
-      startBatchTestRuns: async () => { throw new Error("Not authenticated or no workspace context"); },
-      pauseBatchTestRuns: async () => { throw new Error("Not authenticated or no workspace context"); },
-      resumeBatchTestRuns: async () => { throw new Error("Not authenticated or no workspace context"); },
-      stopBatchTestRuns: async () => { throw new Error("Not authenticated or no workspace context"); },
-      hasWorkspaceContext: false,
-    } as const;
-  }
+  // We rely on the auth cookie; token may be null. Workspace id is required
+  // for backend access control, but callers already handle the no-context
+  // scenario by disabling the run buttons. Therefore we expose the functions
+  // unconditionally and let them throw only when workspaceId is missing.
 
   const startBatchTestRuns = async (batchTestId: string) => {
+    if (!currentWorkspaceId) throw new Error('No workspace context');
       const res = await apiFetch('/batchtestruns/start', { token, workspaceId: currentWorkspaceId, method: 'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ batchTestId: batchTestId.toString() }) });
       if (!res.ok) throw new Error("Failed to start batch test runs");
     const data = await res.json();
@@ -75,6 +70,7 @@ export function useBatchTestRuns() {
   };
 
   const postAction = async (id: string, action: "pause" | "resume" | "stop") => {
+    if (!currentWorkspaceId) throw new Error('No workspace context');
     const res = await apiFetch(`/batchtestruns/${id}/${action}`, { token, workspaceId: currentWorkspaceId, method: 'POST' });
     if (!res.ok) throw new Error("Failed to post action");
     const data = await res.json();
