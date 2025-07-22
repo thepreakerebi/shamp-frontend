@@ -38,14 +38,14 @@ type BatchPersonaPayload = {
   additionalContext?: string;
 };
 
-const fetcher = (url: string, token: string | null, workspaceId?: string | null) =>
-  apiFetch(url, { token, workspaceId }).then(res => {
+const fetcher = (url: string, workspaceId?: string | null) =>
+  apiFetch(url, { workspaceId }).then(res => {
     if (!res.ok) throw new Error('Failed to fetch');
     return res.json();
   });
 
 export function useBatchPersonas(enabled: boolean = true) {
-  const { token, currentWorkspaceId } = useAuth();
+  const { currentWorkspaceId } = useAuth();
   const store = useBatchPersonasStore();
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export function useBatchPersonas(enabled: boolean = true) {
     store.setBatchPersonasLoading(true);
     store.setBatchPersonasError(null);
     try {
-      const data = await fetcher("/batchpersonas", token, currentWorkspaceId);
+      const data = await fetcher("/batchpersonas", currentWorkspaceId);
       store.setBatchPersonas(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -68,14 +68,14 @@ export function useBatchPersonas(enabled: boolean = true) {
       store.setBatchPersonasLoading(false);
     }
     })();
-  }, [token, currentWorkspaceId, enabled]);
+  }, [currentWorkspaceId, enabled]);
 
   useEffect(() => {
     if (!enabled) return;
     if (!currentWorkspaceId) return;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
-      auth: { token, workspaceId: currentWorkspaceId },
+      auth: { workspaceId: currentWorkspaceId },
     });
 
     const handleCreated = (data: BatchPersona & { workspace?: string }) => {
@@ -106,39 +106,39 @@ export function useBatchPersonas(enabled: boolean = true) {
       socket.off("batchPersona:updated", handleUpdated);
       socket.disconnect();
     };
-  }, [token, currentWorkspaceId, enabled, store]);
+  }, [currentWorkspaceId, enabled, store]);
 
   const getBatchPersonaById = async (id: string): Promise<BatchPersona> => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/batchpersonas/${id}`, { token, workspaceId: currentWorkspaceId });
+    const res = await apiFetch(`/batchpersonas/${id}`, { workspaceId: currentWorkspaceId });
     if (!res.ok) throw new Error("Failed to fetch batch persona");
     return res.json();
   };
 
   const createBatchPersona = async (payload: BatchPersonaPayload) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch('/batchpersonas', { token, workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const res = await apiFetch('/batchpersonas', { workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error("Failed to create batch persona");
     return res.json();
   };
 
   const deleteBatchPersona = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/batchpersonas/${id}`, { token, workspaceId: currentWorkspaceId, method: 'DELETE' });
+    const res = await apiFetch(`/batchpersonas/${id}`, { workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to delete batch persona");
     return res.json();
   };
 
   const stopBatchPersonaCreation = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/batchpersonas/${id}/stop`, { token, workspaceId: currentWorkspaceId, method: 'POST' });
+    const res = await apiFetch(`/batchpersonas/${id}/stop`, { workspaceId: currentWorkspaceId, method: 'POST' });
     if (!res.ok) throw new Error("Failed to stop batch persona creation");
     return res.json();
   };
 
   const updateBatchPersonaName = async (id: string, name: string): Promise<BatchPersona> => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/batchpersonas/${id}`, { token, workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+    const res = await apiFetch(`/batchpersonas/${id}`, { workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
     if (!res.ok) throw new Error("Failed to update batch persona");
     const updated = await res.json();
     store.updateBatchPersonaInList(updated);
