@@ -20,6 +20,8 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
   const { token, currentWorkspaceId } = useAuth();
   const { testRuns } = useTestRuns();
 
+  // Show placeholder only when Browser-Use has stopped but recording URL
+  // hasn’t arrived yet.
   const browserStopped = (() => {
     if (!data.testRunId) return false;
     const run = (testRuns ?? []).find(r => r._id === data.testRunId);
@@ -29,8 +31,11 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
   const hasAnalysis = (() => {
     if (!data.testRunId) return false;
     const run = (testRuns ?? []).find(r => r._id === data.testRunId);
-    const arr = (run as { analysis?: unknown[] })?.analysis;
-    return Array.isArray(arr) && arr.length > 0;
+    const analysis = (run as { analysis?: unknown }).analysis;
+    if (!analysis) return false;
+    if (Array.isArray(analysis)) return analysis.length > 0;
+    if (typeof analysis === 'object') return Object.keys(analysis).length > 0;
+    return false;
   })();
 
   const statusCancelled = (() => {
