@@ -144,12 +144,12 @@ export function useTestRuns() {
   // Real-time updates (initialize socket only once)
   const socketRef = useRef<ReturnType<typeof io> | null>(null);
   useEffect(() => {
-    if (!token || !currentWorkspaceId) return;
+    if (!currentWorkspaceId) return; // token may be null – rely on cookie auth
     if (socketRef.current) return; // already connected in this tab
 
     socketRef.current = io(SOCKET_URL, {
       transports: ["websocket"],
-      auth: { token, workspaceId: currentWorkspaceId },
+      auth: { ...(token ? { token } : {}), workspaceId: currentWorkspaceId },
     });
     const socket = socketRef.current;
     // Listen for test run events
@@ -554,31 +554,31 @@ export function useTestRuns() {
 
   // Stop a test run
   const stopTestRun = async (id: string) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await api(`/testruns/${id}/stop`, { method: 'POST' });
+    const wsId = currentWorkspaceId || getState().testRuns?.find(r => r._id === id)?.workspace;
+    const res = await api(`/testruns/${id}/stop`, { method: 'PATCH', ...(wsId ? { workspaceId: wsId } : {}) } as RequestInit & { workspaceId?: string });
     if (!res.ok) throw new Error("Failed to stop test run");
     return res.json();
   };
 
   // Pause a test run
   const pauseTestRun = async (id: string) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await api(`/testruns/${id}/pause`, { method: 'POST' });
+    const wsId = currentWorkspaceId || getState().testRuns?.find(r => r._id === id)?.workspace;
+    const res = await api(`/testruns/${id}/pause`, { method: 'PATCH', ...(wsId ? { workspaceId: wsId } : {}) } as RequestInit & { workspaceId?: string });
     if (!res.ok) throw new Error("Failed to pause test run");
     return res.json();
   };
 
   // Resume a test run
   const resumeTestRun = async (id: string) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await api(`/testruns/${id}/resume`, { method: 'POST' });
+    const wsId = currentWorkspaceId || getState().testRuns?.find(r => r._id === id)?.workspace;
+    const res = await api(`/testruns/${id}/resume`, { method: 'PATCH', ...(wsId ? { workspaceId: wsId } : {}) } as RequestInit & { workspaceId?: string });
     if (!res.ok) throw new Error("Failed to resume test run");
     return res.json();
   };
 
   // Delete a test run
   const deleteTestRun = async (id: string) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    if (!currentWorkspaceId) throw new Error("No workspace context");
     const res = await api(`/testruns/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to delete test run");
     removeTestRunFromList(id);
@@ -589,7 +589,7 @@ export function useTestRuns() {
 
   // Move test run to trash
   const moveTestRunToTrash = async (id: string) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    if (!currentWorkspaceId) throw new Error("No workspace context");
     const res = await api(`/testruns/${id}/trash`, { method: 'PATCH' });
     if (!res.ok) throw new Error("Failed to move test run to trash");
     const testRun = await res.json();
@@ -632,7 +632,7 @@ export function useTestRuns() {
 
   // Get test run media/artifacts
   const getTestRunMedia = async (id: string): Promise<Artifact[]> => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    if (!currentWorkspaceId) throw new Error("No workspace context");
     const res = await api(`/testruns/${id}/media`);
     if (!res.ok) throw new Error("Failed to fetch test run media");
     return res.json();
@@ -640,7 +640,7 @@ export function useTestRuns() {
 
   // Chat with agent
   const chatWithAgent = async (payload: { testId?: string; testRunId?: string; message: string }) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    if (!currentWorkspaceId) throw new Error("No workspace context");
     const res = await api('/testruns/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error("Failed to send message");
     return res.json();
@@ -648,7 +648,7 @@ export function useTestRuns() {
 
   // Get chat history
   const getChatHistory = async (params: { testId: string; testRunId?: string; personaId?: string }) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    if (!currentWorkspaceId) throw new Error("No workspace context");
     const searchParams = new URLSearchParams();
     if (params.testId) searchParams.set('testId', params.testId);
     if (params.testRunId) searchParams.set('testRunId', params.testRunId);
@@ -661,7 +661,7 @@ export function useTestRuns() {
 
   // Restore test run from trash
   const restoreTestRunFromTrash = async (id: string) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    if (!currentWorkspaceId) throw new Error("No workspace context");
     const res = await api(`/testruns/${id}/restore`, { method: 'PATCH' });
     if (!res.ok) throw new Error("Failed to restore test run from trash");
     const testRun = await res.json();
@@ -676,7 +676,7 @@ export function useTestRuns() {
     update: Partial<{ personaId: string; scheduledFor: string }>,
     personaName?: string,
   ): Promise<TestRun> => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    if (!currentWorkspaceId) throw new Error("No workspace context");
     const res = await api(`/testruns/${id}/schedule`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(update) });
     if (!res.ok) throw new Error("Failed to update scheduled test run");
     const testRun = await res.json();
@@ -693,7 +693,7 @@ export function useTestRuns() {
 
   // Empty test run trash
   const emptyTestRunTrash = async () => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    if (!currentWorkspaceId) throw new Error("No workspace context");
     const res = await api('/testruns/trash/empty', { method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to empty test run trash");
     const result = await res.json();
