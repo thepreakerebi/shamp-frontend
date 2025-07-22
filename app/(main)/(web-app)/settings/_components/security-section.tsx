@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { Loader2, Eye, EyeOff } from "lucide-react";
+import zxcvbn from "zxcvbn";
 
 export function SecuritySection() {
   const { token } = useAuth();
@@ -12,6 +13,7 @@ export function SecuritySection() {
   const [form, setForm] = useState({ current: "", newPw: "", confirm: "" });
   const [show, setShow] = useState({ current: false, newPw: false, confirm: false });
   const [saving, setSaving] = useState(false);
+  const [pwStrength, setPwStrength] = useState<{score:number;feedback:string}>({score:0,feedback:''});
   const [errors, setErrors] = useState<{current?:string; newPw?:string; confirm?:string}>({});
 
   const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
@@ -45,6 +47,12 @@ export function SecuritySection() {
     if (form.newPw !== form.confirm) return true;
     if (derivedHasPw && form.current.trim() === "") return true;
     return false;
+  };
+
+  const handleNewPwChange = (val: string) => {
+    setForm(prev => ({ ...prev, newPw: val }));
+    const res = zxcvbn(val);
+    setPwStrength({ score: res.score, feedback: res.feedback.warning || res.feedback.suggestions.join(' ') || '' });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -135,7 +143,7 @@ export function SecuritySection() {
                 id="newPw"
                 type={show.newPw ? "text" : "password"}
                 value={form.newPw}
-                onChange={e => setForm({ ...form, newPw: e.target.value })}
+                onChange={e => handleNewPwChange(e.target.value)}
                 disabled={saving}
                 aria-invalid={!!errors.newPw}
               />
@@ -145,6 +153,22 @@ export function SecuritySection() {
               {errors.newPw && <p className="text-destructive text-xs mt-1">{errors.newPw}</p>}
             </div>
           </div>
+          {/* Password strength indicator (for new password) */}
+          {form.newPw && (
+            <div className="flex items-center gap-2 mt-1">
+              <div className="flex-1 h-2 rounded bg-muted/50 overflow-hidden">
+                <div
+                  className={`h-full transition-all ${pwStrength.score<=1?'bg-destructive':pwStrength.score===2?'bg-yellow-500':pwStrength.score===3?'bg-amber-500':'bg-emerald-500'}`}
+                  style={{ width: `${(pwStrength.score+1)*20}%` }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground w-20 text-right">
+                {['Very weak','Weak','Fair','Good','Strong'][pwStrength.score]}
+              </span>
+            </div>) }
+          {form.newPw && !errors.newPw && (
+            <p className="text-[10px] text-muted-foreground mt-1">Password must be at least 8 characters and include uppercase, lowercase, number, and special character.</p>
+          )}
           <div className="space-y-2">
             <label htmlFor="confirm" className="text-sm font-medium">Confirm password</label>
             <div className="relative">

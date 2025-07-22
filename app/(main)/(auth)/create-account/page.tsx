@@ -243,8 +243,8 @@ export default function CreateAccountPage() {
                 {['Very weak','Weak','Fair','Good','Strong'][pwStrength.score]}
               </span>
             </div>) }
-          {pwStrength.feedback && !fieldErrors.password && (
-            <p className="text-[10px] text-muted-foreground mt-1">{pwStrength.feedback}</p>
+          {form.password && !fieldErrors.password && (
+            <p className="text-[10px] text-muted-foreground mt-1">Password must be at least 8 characters and include uppercase, lowercase, number, and special character.</p>
           )}
           {error && (
             <Alert variant="destructive" className="mb-4">
