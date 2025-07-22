@@ -3,7 +3,7 @@ import { useAuth } from '@/lib/auth';
 import { apiFetch } from '@/lib/api-client';
 
 export function useNarrationAudio(runId: string) {
-  const { token, currentWorkspaceId } = useAuth();
+  const { currentWorkspaceId } = useAuth();
   const [loading, setLoading] = useState(false);
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -18,7 +18,7 @@ export function useNarrationAudio(runId: string) {
   }, []);
 
   const fetchAudio = useCallback(async () => {
-    const res = await apiFetch(`/tts/testrun/${runId}`, { token, workspaceId: currentWorkspaceId, method: 'POST' });
+    const res = await apiFetch(`/tts/testrun/${runId}`, { workspaceId: currentWorkspaceId, method: 'POST' });
     if (!res.ok) {
       throw new Error(await res.text());
     }
@@ -28,7 +28,7 @@ export function useNarrationAudio(runId: string) {
     audioRef.current = new Audio(url);
     // Reset state when playback ends
     audioRef.current.addEventListener('ended', () => setPlaying(false));
-  }, [runId, token, currentWorkspaceId]);
+  }, [runId, currentWorkspaceId]);
 
   const toggle = useCallback(async () => {
     if (playing) {
