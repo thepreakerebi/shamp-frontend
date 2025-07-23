@@ -2,6 +2,7 @@
 import { useParams, useRouter } from "next/navigation";
 import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/lib/auth";
+import { apiFetch } from "@/lib/api-client";
 import { useTests } from "@/hooks/use-tests";
 import { usePersonas } from "@/hooks/use-personas";
 import type { Persona } from "@/hooks/use-personas";
@@ -25,7 +26,7 @@ import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 export default function ScheduleRunPage() {
   const { testId } = useParams<{ testId: string }>();
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, currentWorkspaceId } = useAuth();
   const { getTestById } = useTests();
   const { personas: allPersonas } = usePersonas();
   const updateTestInList = useTestsStore(state=>state.updateTestInList);
@@ -105,7 +106,6 @@ export default function ScheduleRunPage() {
 
   const doSchedule = async () => {
     if (!selectedPersona || !runDate || runHour === "" || runMinute === "") return;
-    if (!token) { toast.error("Not authenticated"); return; }
     try {
       setSubmitting(true);
       const payload: Record<string, unknown> = {
@@ -140,11 +140,11 @@ export default function ScheduleRunPage() {
       } else {
         payload.scheduledFor = dateTime.toISOString();
       }
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}${endpoint}`, {
+      const res = await apiFetch(endpoint, {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
+        token,
+        workspaceId: currentWorkspaceId,
       });
       if (!res.ok) throw new Error("Failed to schedule");
 

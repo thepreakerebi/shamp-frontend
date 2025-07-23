@@ -55,7 +55,7 @@ export default function CreateTestPage() {
     ? ((summary.products[0] as { name?: string; id?: string }).name || (summary.products[0] as { id?: string }).id || '').toLowerCase()
     : 'free';
 
-  const deviceSelectionEnabled = planName === 'pro' || planName === 'ultra';
+  const deviceSelectionEnabled = planName === 'pro' || planName === 'pro - annual' || planName === 'ultra' || planName === 'ultra - annual';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,7 +89,7 @@ export default function CreateTestPage() {
       if (newTest && newTest._id) {
         router.push(`/tests/${newTest._id}`);
       } else {
-        router.push("/tests");
+      router.push("/tests");
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to create test");

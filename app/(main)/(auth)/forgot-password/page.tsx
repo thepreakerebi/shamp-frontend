@@ -6,11 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import { apiFetch } from '@/lib/api-client';
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -29,9 +28,9 @@ export default function ForgotPasswordPage() {
       return;
     }
     try {
-      const res = await fetch(`${API_BASE}/users/forgot-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await apiFetch('/users/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
       const data = await res.json();

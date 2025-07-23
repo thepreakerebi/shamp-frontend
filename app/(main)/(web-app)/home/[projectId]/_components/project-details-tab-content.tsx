@@ -4,10 +4,12 @@ import { useProjectsStore } from "@/lib/store/projects";
 import { useAuth } from "@/lib/auth";
 import { ProjectCardDropdown } from "../../_components/project-card-dropdown";
 import { MoveProjectToTrashModal } from "../../../_components/move-project-to-trash-modal";
-import { ProjectDetailsTabContentSkeleton } from "./project-details-tab-content-skeleton";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useProjects } from "@/hooks/use-projects";
+import { toast } from "sonner";
+import { notFound } from "next/navigation";
 
 interface ProjectDetailsTabContentProps {
   projectId: string;
@@ -15,10 +17,13 @@ interface ProjectDetailsTabContentProps {
 
 export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContentProps) {
   const [trashOpen, setTrashOpen] = useState(false);
+  const [trashLoading,setTrashLoading]=useState(false);
+  const [redirecting,setRedirecting]=useState(false);
   const [visibleCredentials, setVisibleCredentials] = useState<Record<string, boolean>>({});
   const project = useProjectsStore((s) => s.projects?.find((p) => p._id === projectId) || null);
   const { user } = useAuth();
   const router = useRouter();
+  const { moveProjectToTrash } = useProjects();
 
   // Function to check if user can trash this project
   const canTrashProject = () => {
@@ -64,17 +69,35 @@ export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContent
     }));
   };
 
-  if (!project) return <ProjectDetailsTabContentSkeleton />;
+  if (project === null) {
+    return null;
+  }
 
-  // TODO: Implement actual move to trash logic
-  const handleMoveToTrash = () => {
-    // Implement move to trash logic here
-    setTrashOpen(false);
+  if (!project) {
+    if (!redirecting) {
+      notFound();
+    }
+    return null;
+  }
+
+  const handleMoveToTrash = async () => {
+    if (!project) return;
+    try {
+      setRedirecting(true); // prevent notFound flash immediately
+      setTrashLoading(true);
+      await moveProjectToTrash(project._id);
+      setTrashOpen(false);
+      router.push('/home');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to move to trash');
+    } finally {
+      setTrashLoading(false);
+    }
   };
 
   return (
     <section className="w-full">
-      <MoveProjectToTrashModal open={trashOpen} setOpen={setTrashOpen} project={project} onConfirm={handleMoveToTrash} />
+      <MoveProjectToTrashModal open={trashOpen} setOpen={setTrashOpen} project={project} onConfirm={handleMoveToTrash} loading={trashLoading} />
       <section className="flex flex-col gap-6 w-full">
         {/* Section 1: Image + Info + Dropdown */}
         <section className="flex flex-col lsm:flex-row gap-4 items-start">

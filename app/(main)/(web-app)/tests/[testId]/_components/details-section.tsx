@@ -16,6 +16,7 @@ import { useTestRunsStore } from "@/lib/store/testruns";
 import { useTestsStore } from "@/lib/store/tests";
 import { useBilling } from "@/hooks/use-billing";
 import CheckDialog from "@/components/autumn/check-dialog";
+import React from "react";
 
 /**
  * DetailsSection
@@ -94,9 +95,9 @@ export default function DetailsSection({ test }: { test: Test }) {
       } else if (popup) {
         popup.close();
       }
-    } catch {
+    } catch (err) {
       if (popup) popup.close();
-      toast.error("Failed to start test run");
+      toast.error(err instanceof Error ? err.message : 'Failed to start test run');
     }
     setRunning(false);
   };
@@ -114,6 +115,20 @@ export default function DetailsSection({ test }: { test: Test }) {
   const { getTestRunsForTest } = useTests();
   const [loadingRuns, setLoadingRuns] = useState(false);
 
+  // Determine if any run is currently running for this test
+  const { isRunning, isPaused } = React.useMemo(() => {
+    const list = testRunsStore?.filter(r => r.test === test._id) || [];
+    return {
+      isRunning: list.some(r => r.browserUseStatus === 'running'),
+      isPaused: list.some(r => r.browserUseStatus === 'paused'),
+    };
+  }, [testRunsStore, test._id]);
+
+  // Deliberately omit getTestRunsForTest from deps because its identity is
+  // not stable across renders (defined inside a hook). Including it would
+  // re-trigger the effect endlessly and cause a "maximum update depth"
+  // error. The ESLint rule is disabled for this line.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (runsSlice === undefined && !loadingRuns) {
       (async () => {
@@ -122,7 +137,7 @@ export default function DetailsSection({ test }: { test: Test }) {
         setLoadingRuns(false);
       })();
     }
-  }, [runsSlice, getTestRunsForTest, test._id, loadingRuns]);
+  }, [runsSlice, test._id, loadingRuns]);
 
   const totalRunsStore = runsSlice ? runsSlice.length : testRunsStore?.filter(r => r.test === test._id).length;
 
@@ -137,11 +152,22 @@ export default function DetailsSection({ test }: { test: Test }) {
   const deviceType = (() => {
     const w = (test as unknown as { browserViewportWidth?: number }).browserViewportWidth;
     const h = (test as unknown as { browserViewportHeight?: number }).browserViewportHeight;
+    if (!w || !h) return null;
+    // Exact presets used by create/edit pages
+    if (w === 1280 && h === 720) return "Desktop" as const;
+    if (w === 820 && h === 1180) return "Tablet" as const;
+    if (w === 800 && h === 1280) return "Mobile" as const;
+    // Legacy presets
     if (w === 1280 && h === 960) return "Desktop" as const;
     if (w === 834 && h === 1112) return "Tablet" as const;
     if (w === 390 && h === 844) return "Mobile" as const;
-    return null;
+    // Fallback based on width only
+    if (w >= 1000) return "Desktop" as const;
+    if (w >= 700) return "Tablet" as const;
+    return "Mobile" as const;
   })();
+
+  const showDeviceType = deviceType && !["free","hobby","hobby_annual"].includes((planName??"").toLowerCase());
 
   return (
     <article className="p-4 space-y-6" aria-labelledby="test-details-heading">
@@ -171,10 +197,25 @@ export default function DetailsSection({ test }: { test: Test }) {
               Schedule run
             </Button>
           )}
-          <Button onClick={handleRun} variant="secondary" disabled={running}>
-            {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Run test
-          </Button>
+          {isRunning ? (
+            <Badge variant="secondary" className="px-2 py-1 text-xs bg-primary/10 text-primary-foreground dark:text-primary flex items-center gap-1">
+              <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+              running
+            </Badge>
+          ) : isPaused ? (
+            <Badge variant="secondary" className="px-2 py-1 text-xs bg-yellow-400/20 text-yellow-700 dark:text-yellow-400 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
+              paused
+            </Badge>
+          ) : (
+            <Button onClick={handleRun} variant="secondary" disabled={running}>
+              {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Run test
+            </Button>
+          )}
           {showPaywallRun && (
             /* @ts-expect-error preview partial */
             <CheckDialog open={showPaywallRun} setOpen={setShowPaywallRun} preview={getCreditsPreview()} />
@@ -221,7 +262,7 @@ export default function DetailsSection({ test }: { test: Test }) {
         </div>
 
         {/* Device type */}
-        {deviceType && (
+        {showDeviceType && (
           <div className="space-y-2 w-full md:w-1/3">
             <h3 className="text-sm font-medium text-muted-foreground">Device</h3>
             <Badge variant="secondary" className="flex items-center gap-1 px-2 py-1 text-sm bg-primary/10 text-primary-foreground dark:text-primary" aria-label={`Device type: ${deviceType}`}>

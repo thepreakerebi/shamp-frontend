@@ -20,10 +20,22 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
   const { token, currentWorkspaceId } = useAuth();
   const { testRuns } = useTestRuns();
 
+  // Show placeholder only when Browser-Use has stopped but recording URL
+  // hasn’t arrived yet.
   const browserStopped = (() => {
     if (!data.testRunId) return false;
     const run = (testRuns ?? []).find(r => r._id === data.testRunId);
     return run?.browserUseStatus === 'stopped';
+  })();
+
+  const hasAnalysis = (() => {
+    if (!data.testRunId) return false;
+    const run = (testRuns ?? []).find(r => r._id === data.testRunId);
+    const analysis = (run as { analysis?: unknown }).analysis;
+    if (!analysis) return false;
+    if (Array.isArray(analysis)) return analysis.length > 0;
+    if (typeof analysis === 'object') return Object.keys(analysis).length > 0;
+    return false;
   })();
 
   const statusCancelled = (() => {
@@ -192,7 +204,7 @@ export default function RecordingNode({ data }: NodeProps<RecordingData>) {
 
   return (
     <section className="flex flex-col items-center justify-center max-w-[420px] border rounded-lg bg-card shadow relative">
-      { browserStopped && !hasVideo && !statusCancelled && (
+      { browserStopped && !hasVideo && !statusCancelled && hasAnalysis &&  (
         <div className="w-full h-48 flex items-center justify-center text-muted-foreground text-sm bg-muted rounded-lg text-center px-2">
           Refresh to see recording
         </div>

@@ -4,27 +4,27 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
+import { apiFetch } from '@/lib/api-client';
 import { Loader2, Eye, EyeOff } from "lucide-react";
+import zxcvbn from "zxcvbn";
 
 export function SecuritySection() {
-  const { token } = useAuth();
+  const { user } = useAuth();
   const [hasPassword, setHasPassword] = useState<boolean | null>(null);
   const [form, setForm] = useState({ current: "", newPw: "", confirm: "" });
   const [show, setShow] = useState({ current: false, newPw: false, confirm: false });
   const [saving, setSaving] = useState(false);
+  const [pwStrength, setPwStrength] = useState<{score:number;feedback:string}>({score:0,feedback:''});
   const [errors, setErrors] = useState<{current?:string; newPw?:string; confirm?:string}>({});
 
   const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
 
   useEffect(() => {
-    if (!token) return;
     (async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/users/me/has-password`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
+        const resPw = await apiFetch('/users/me/has-password');
+        if (resPw.ok) {
+          const data = await resPw.json();
           setHasPassword(!!data.hasPassword);
         } else {
           setHasPassword(false);
@@ -33,11 +33,10 @@ export function SecuritySection() {
         setHasPassword(false);
       }
     })();
-  }, [token]);
+  }, []);
 
   // Fallback: if hasPassword is still null but user.provider === 'email', assume true
-  const auth = useAuth();
-  const derivedHasPw = hasPassword === null ? (auth.user?.provider === 'email') : hasPassword;
+  const derivedHasPw = hasPassword === null ? (user?.provider === 'email') : hasPassword;
 
   const disableSubmit = () => {
     if (saving || derivedHasPw === null) return true;
@@ -45,6 +44,12 @@ export function SecuritySection() {
     if (form.newPw !== form.confirm) return true;
     if (derivedHasPw && form.current.trim() === "") return true;
     return false;
+  };
+
+  const handleNewPwChange = (val: string) => {
+    setForm(prev => ({ ...prev, newPw: val }));
+    const res = zxcvbn(val);
+    setPwStrength({ score: res.score, feedback: res.feedback.warning || res.feedback.suggestions.join(' ') || '' });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,18 +68,14 @@ export function SecuritySection() {
       if (Object.keys(newErr).length) { setErrors(newErr); return; }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body: any = { newPassword: form.newPw };
-      if (derivedHasPw) body.currentPassword = form.current;
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/users/change-password`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+      const body: any = { newPassword: form.newPw, currentPassword: derivedHasPw ? form.current : "" };
+      const resChange = await apiFetch('/users/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) {
-        const errData = await res.json();
+      if (!resChange.ok) {
+        const errData = await resChange.json();
         const msg = errData.error || "Failed to change password";
         if (msg.toLowerCase().includes("current password")) {
           setErrors(prev => ({ ...prev, current: msg }));
@@ -135,7 +136,7 @@ export function SecuritySection() {
                 id="newPw"
                 type={show.newPw ? "text" : "password"}
                 value={form.newPw}
-                onChange={e => setForm({ ...form, newPw: e.target.value })}
+                onChange={e => handleNewPwChange(e.target.value)}
                 disabled={saving}
                 aria-invalid={!!errors.newPw}
               />
@@ -145,6 +146,22 @@ export function SecuritySection() {
               {errors.newPw && <p className="text-destructive text-xs mt-1">{errors.newPw}</p>}
             </div>
           </div>
+          {/* Password strength indicator (for new password) */}
+          {form.newPw && (
+            <div className="flex items-center gap-2 mt-1">
+              <div className="flex-1 h-2 rounded bg-muted/50 overflow-hidden">
+                <div
+                  className={`h-full transition-all ${pwStrength.score<=1?'bg-destructive':pwStrength.score===2?'bg-yellow-500':pwStrength.score===3?'bg-amber-500':'bg-emerald-500'}`}
+                  style={{ width: `${(pwStrength.score+1)*20}%` }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground w-20 text-right">
+                {['Very weak','Weak','Fair','Good','Strong'][pwStrength.score]}
+              </span>
+            </div>) }
+          {form.newPw && !errors.newPw && (
+            <p className="text-[10px] text-muted-foreground mt-1">Password must be at least 8 characters and include uppercase, lowercase, number, and special character.</p>
+          )}
           <div className="space-y-2">
             <label htmlFor="confirm" className="text-sm font-medium">Confirm password</label>
             <div className="relative">

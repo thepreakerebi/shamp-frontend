@@ -1,6 +1,7 @@
 "use client";
 import { useParams, notFound } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
+import { useAuth } from "@/lib/auth";
 import { useTestRuns, TestRunStatus } from "@/hooks/use-testruns";
 import dynamic from "next/dynamic";
 import StepNode from "./_components/step-node";
@@ -27,6 +28,7 @@ const nodeTypes = {
 export default function TestRunCanvasPage() {
   const { testRunId } = useParams<{ testRunId: string }>();
   const { getTestRunStatus, testRuns } = useTestRuns();
+  const { currentWorkspaceId } = useAuth();
   const [personaName, setPersonaName] = useState<string | undefined>();
   const [nodes, setNodes] = useState<Node[]>([]);
   const [run, setRun] = useState<TestRunStatus | null>(null);
@@ -56,6 +58,17 @@ export default function TestRunCanvasPage() {
       } as Node;
     });
 
+    // If no steps yet and run still in progress, add a placeholder node
+    const runInProgress = !['finished','stopped','cancelled'].includes((run.browserUseStatus ?? '').toLowerCase());
+    if (built.length === 0 && runInProgress) {
+      built.push({
+        id: 'placeholder',
+        type: 'step',
+        position: { x: 0, y: 0 },
+        data: { placeholder: true },
+      });
+    }
+
     // Determine bounding box of steps to center recording node
     let centerX = 0;
     if (built.length) {
@@ -83,6 +96,7 @@ export default function TestRunCanvasPage() {
 
   useEffect(() => {
     if (!testRunId) return;
+    if (!currentWorkspaceId) return; // wait until workspace context resolved
     // Fetch only if we haven't loaded this run yet
     if (run) return;
 
@@ -98,7 +112,7 @@ export default function TestRunCanvasPage() {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [testRunId, run]);
+  }, [testRunId, run, currentWorkspaceId]);
 
   // Memoised live run from store
   const liveRun = useMemo(() => {
@@ -114,7 +128,8 @@ export default function TestRunCanvasPage() {
     const recLen = liveRun.recordings?.length ?? 0;
     const prevStepsLen = run.stepsWithScreenshots?.length ?? 0;
     const prevRecLen = run.recordings?.length ?? 0;
-    if (stepsLen !== prevStepsLen || recLen !== prevRecLen) {
+    const statusChanged = (liveRun.browserUseStatus ?? '') !== (run.browserUseStatus ?? '');
+    if (stepsLen !== prevStepsLen || recLen !== prevRecLen || statusChanged) {
       buildNodes(liveRun);
       setRun(prev => {
         if (!prev) return liveRun;
@@ -126,7 +141,7 @@ export default function TestRunCanvasPage() {
         } as TestRunStatus;
       });
     }
-  }, [liveRun?.stepsWithScreenshots?.length, liveRun?.recordings?.length]);
+  }, [liveRun?.stepsWithScreenshots?.length, liveRun?.recordings?.length, liveRun?.browserUseStatus]);
 
   if (fetchError) {
     notFound();

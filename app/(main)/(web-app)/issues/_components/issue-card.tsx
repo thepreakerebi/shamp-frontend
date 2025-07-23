@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useIssues } from "@/hooks/use-issues";
 import { useAuth } from "@/lib/auth";
 import { useState, useEffect } from "react";
-import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 interface IssueCardProps {
@@ -203,27 +203,29 @@ export function IssueCard({ issue }: IssueCardProps) {
           </Button>
 
           {user?.currentWorkspaceRole === 'admin' && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
+            <Dialog>
+              <DialogTrigger asChild>
                 <Button variant="ghost" size="icon" disabled={submitting || deleting} className="h-7 w-7">
                   <Trash2 className="size-3.5 text-red-500" />
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete issue?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this issue? This action cannot be undone and will permanently remove the issue from your workspace.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <Button variant="outline" disabled={deleting}>Cancel</Button>
+              </DialogTrigger>
+              <DialogContent className="rounded-3xl" data-stop-row>
+                <DialogHeader>
+                  <DialogTitle>Delete issue</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete this issue? This action cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline" disabled={deleting}>Cancel</Button>
+                  </DialogClose>
                   <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
                     {deleting ? "Deleting..." : "Delete"}
                   </Button>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           )}
         </section>
       </section>

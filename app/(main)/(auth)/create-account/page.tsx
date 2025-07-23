@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import zxcvbn from 'zxcvbn';
 
 // Force dynamic rendering to prevent static generation issues with useSearchParams
 export const dynamic = 'force-dynamic';
@@ -28,12 +29,19 @@ export default function CreateAccountPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [pwStrength, setPwStrength] = useState<{score:number;feedback:string}>({score:0,feedback:''});
   const { signup } = useAuth();
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setFieldErrors((prev) => ({ ...prev, [e.target.name]: undefined }));
+
+    // If password field changes, compute strength
+    if (e.target.name === 'password') {
+      const res = zxcvbn(e.target.value);
+      setPwStrength({ score: res.score, feedback: res.feedback.warning || res.feedback.suggestions.join(' ') || ''});
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,6 +62,10 @@ export default function CreateAccountPage() {
       }
     }
     if (!form.password) newFieldErrors.password = 'Password is required.';
+    else {
+      const s = zxcvbn(form.password).score;
+      if (s < 3) newFieldErrors.password = 'Password too weak. Use a mix of upper, lower, numbers and special characters.';
+    }
     if (Object.keys(newFieldErrors).length > 0) {
       setFieldErrors(newFieldErrors);
       setLoading(false);
@@ -218,6 +230,22 @@ export default function CreateAccountPage() {
               </div>
             )}
           </section>
+          {/* Password strength indicator */}
+          {form.password && (
+            <div className="flex items-center gap-2 mt-1">
+              <div className="flex-1 h-2 rounded bg-muted/50 overflow-hidden">
+                <div
+                  className={`h-full transition-all ${pwStrength.score<=1?'bg-destructive':pwStrength.score===2?'bg-yellow-500':pwStrength.score===3?'bg-amber-500':'bg-emerald-500'}`}
+                  style={{ width: `${(pwStrength.score+1)*20}%` }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground w-20 text-right">
+                {['Very weak','Weak','Fair','Good','Strong'][pwStrength.score]}
+              </span>
+            </div>) }
+          {form.password && !fieldErrors.password && (
+            <p className="text-[10px] text-muted-foreground mt-1">Password must be at least 8 characters and include uppercase, lowercase, number, and special character.</p>
+          )}
           {error && (
             <Alert variant="destructive" className="mb-4">
               <AlertDescription>{error}</AlertDescription>

@@ -34,7 +34,7 @@ export function MoveProjectToTrashModal({ open, setOpen, project, onConfirm, loa
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={loading}>Cancel</Button>
           </DialogClose>
-          <Button variant="destructive" onClick={onConfirm} disabled={loading}>
+          <Button variant="default" onClick={onConfirm} disabled={loading}>
             {loading ? "Moving..." : "Move to Trash"}
           </Button>
         </DialogFooter>

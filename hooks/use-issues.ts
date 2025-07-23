@@ -1,25 +1,15 @@
 import { useAuth } from "@/lib/auth";
 import { useEffect, useRef } from "react";
 import io from "socket.io-client";
+import { apiFetch } from '@/lib/api-client';
 import { useIssuesStore, Issue } from "@/lib/store/issues";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
-const fetcher = (url: string, token: string, workspaceId?: string | null) =>
-  fetch(`${API_BASE}${url}`, {
-    credentials: "include",
-    headers: { 
-      Authorization: `Bearer ${token}`,
-      ...(workspaceId ? { 'X-Workspace-ID': workspaceId } : {})
-    },
-  }).then((res) => {
-    if (!res.ok) throw new Error("Failed to fetch");
-    return res.json();
-  });
+// legacy fetcher removed – use apiFetch
 
 export function useIssues(enabled: boolean = true) {
-  const { token, currentWorkspaceId } = useAuth();
+  const { currentWorkspaceId } = useAuth();
   const store = useIssuesStore();
   const prevWorkspaceId = useRef<string | null>(null);
 
@@ -32,12 +22,13 @@ export function useIssues(enabled: boolean = true) {
     prevWorkspaceId.current = currentWorkspaceId;
 
     if (!enabled) return;
-    if (!token || !currentWorkspaceId) return;
+    if (!currentWorkspaceId) return;
     (async () => {
       store.setIssuesLoading(true);
       store.setIssuesError(null);
       try {
-        const data: Issue[] = await fetcher("/issues", token, currentWorkspaceId);
+        const res = await apiFetch('/issues', { workspaceId: currentWorkspaceId });
+        const data: Issue[] = await res.json();
         store.setIssues(Array.isArray(data) ? data : []);
       } catch (err: unknown) {
         store.setIssuesError(err instanceof Error ? err.message : "Failed to fetch issues");
@@ -45,20 +36,21 @@ export function useIssues(enabled: boolean = true) {
         store.setIssuesLoading(false);
       }
     })();
-  }, [token, currentWorkspaceId, enabled]);
+  }, [currentWorkspaceId, enabled]);
 
   // Socket listeners
   useEffect(() => {
     if (!enabled) return;
-    if (!token || !currentWorkspaceId) return;
+    if (!currentWorkspaceId) return;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
-      auth: { token, workspaceId: currentWorkspaceId },
+      auth: { workspaceId: currentWorkspaceId },
     });
 
     const handleRefresh = async () => {
       try {
-        const data: Issue[] = await fetcher("/issues", token, currentWorkspaceId);
+        const res = await apiFetch('/issues', { workspaceId: currentWorkspaceId });
+        const data: Issue[] = await res.json();
         store.setIssues(Array.isArray(data) ? data : []);
       } catch {}
     };
@@ -92,34 +84,18 @@ export function useIssues(enabled: boolean = true) {
       socket.off("issues:updated", handleRefresh);
       socket.disconnect();
     };
-  }, [token, currentWorkspaceId, enabled]);
+  }, [currentWorkspaceId, enabled]);
 
   // Actions
   const resolveIssue = async (id: string, resolved: boolean) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const method = "PUT";
-    const endpoint = `/issues/${id}/${resolved ? "resolve" : "unresolve"}`;
-    const res = await fetch(`${API_BASE}${endpoint}`, {
-      method,
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const res = await apiFetch(`/issues/${id}/${resolved ? 'resolve' : 'unresolve'}`, { workspaceId: currentWorkspaceId, method: 'PUT' });
     if (!res.ok) throw new Error("Failed to update issue");
   };
 
   const deleteIssue = async (id: string) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
-    const res = await fetch(`${API_BASE}/issues/${id}`, {
-      method: "DELETE",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'X-Workspace-ID': currentWorkspaceId
-      },
-    });
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const res = await apiFetch(`/issues/${id}`, { workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to delete issue");
   };
 

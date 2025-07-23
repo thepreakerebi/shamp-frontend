@@ -6,7 +6,6 @@ import { Persona } from "@/hooks/use-personas";
 import { PersonaCard } from "../../_components/persona-card";
 import { PersonaListSkeleton } from "../../_components/persona-list-skeleton";
 import BatchPersonaNotFound from "./not-found";
-import Link from "next/link";
 
 export default function BatchPersonaPage() {
   const { batchPersonasId } = useParams();
@@ -57,13 +56,7 @@ export default function BatchPersonaPage() {
           {(batchPersona.personas as Persona[])
             .filter((p) => typeof p === "object" && p !== null && "_id" in p)
             .map((persona) => (
-              <Link
-                key={(persona as Persona)._id}
-                href={`/personas/${(persona as Persona)._id}?batch=${batchPersona._id}`}
-                className="contents"
-              >
-                <PersonaCard persona={persona as Persona} />
-              </Link>
+              <PersonaCard key={(persona as Persona)._id} persona={persona as Persona} />
             ))}
         </section>
       )}

@@ -7,8 +7,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+import zxcvbn from 'zxcvbn';
+import { apiFetch } from '@/lib/api-client';
 
 // Force dynamic rendering to prevent static generation issues with useSearchParams
 export const dynamic = 'force-dynamic';
@@ -18,6 +18,7 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pwStrength, setPwStrength] = useState<{score:number;feedback:string}>({score:0,feedback:''});
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [token, setToken] = useState<string | null>(null);
@@ -51,9 +52,9 @@ export default function ResetPasswordPage() {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/users/reset-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await apiFetch('/users/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword: password }),
       });
       const data = await res.json();
@@ -105,7 +106,11 @@ export default function ResetPasswordPage() {
                 name="password"
                 type={passwordVisible ? "text" : "password"}
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={e => {
+                  setPassword(e.target.value);
+                  const res = zxcvbn(e.target.value);
+                  setPwStrength({ score: res.score, feedback: res.feedback.warning || res.feedback.suggestions.join(' ') || '' });
+                }}
                 autoComplete="new-password"
                 aria-invalid={!!error}
                 aria-describedby={error ? "password-error" : undefined}
@@ -122,6 +127,23 @@ export default function ResetPasswordPage() {
               </button>
             </div>
           </section>
+          {/* Password strength meter */}
+          {password && (
+            <div className="flex items-center gap-2 mt-1">
+              <div className="flex-1 h-2 rounded bg-muted/50 overflow-hidden">
+                <div
+                  className={`h-full transition-all ${pwStrength.score<=1?'bg-destructive':pwStrength.score===2?'bg-yellow-500':pwStrength.score===3?'bg-amber-500':'bg-emerald-500'}`}
+                  style={{ width: `${(pwStrength.score+1)*20}%` }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground w-20 text-right">
+                {['Very weak','Weak','Fair','Good','Strong'][pwStrength.score]}
+              </span>
+            </div>)}
+          {password && (
+            <p className="text-[10px] text-muted-foreground mt-1">Password must be at least 8 characters and include uppercase, lowercase, number, and special character.</p>
+          )}
+
           <Button
             type="submit"
             className="w-full font-semibold text-base py-5 mt-2 hover:border-secondary/30 hover:border-1"

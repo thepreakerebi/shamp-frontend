@@ -1,7 +1,8 @@
 "use client";
 import { useParams, notFound, useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth";
 import { useTests } from "@/hooks/use-tests";
 import type { Test as TestType } from "@/hooks/use-tests";
 import { useTestsStore } from "@/lib/store/tests";
@@ -18,6 +19,7 @@ export default function TestDetailPage() {
   const { testId } = useParams<{ testId: string }>();
   const router = useRouter();
   const { tests, getTestById } = useTests();
+  const { currentWorkspaceId } = useAuth();
   const storeTest = useTestsStore(state => state.tests?.find(t => t._id === testId));
   const [test, setTest] = useState(() => tests?.find(t => t._id === testId));
   const [loading, setLoading] = useState(!test);
@@ -33,8 +35,12 @@ export default function TestDetailPage() {
     setTab(initialTab);
   }, []);
 
+  // Fetch the test once we have a workspace context. Without the header the
+  // backend returns 400/403 which previously triggered the catch→notFound
+  // path even though the test exists.
   useEffect(() => {
     if (!testId) return;
+    if (!currentWorkspaceId) return; // wait until workspace resolved
     let needsFetch = false;
     if (!test) {
       needsFetch = true;
@@ -56,14 +62,16 @@ export default function TestDetailPage() {
         }
       })();
     }
-  }, [testId, test, getTestById]);
+  }, [testId, test, currentWorkspaceId]);
 
   // Sync local state when store updates (e.g., via Socket.IO after edit)
   useEffect(() => {
     const testsLoaded = useTestsStore.getState().tests !== null;
     if (storeTest) {
-      // If store has the test, update local copy (may include new changes)
-      if (!test || storeTest !== test) {
+      // Update local copy only if content actually changed (using updatedAt or reference absence)
+      const storeUpdatedAt = (storeTest as { updatedAt?: string }).updatedAt;
+      const localUpdatedAt = (test as { updatedAt?: string } | null)?.updatedAt;
+      if (!test || storeUpdatedAt !== localUpdatedAt) {
         setTest(storeTest);
         setLoading(false);
       }
@@ -71,11 +79,11 @@ export default function TestDetailPage() {
       if (storeTest.trashed) {
         router.push('/tests');
       }
-    } else if (testsLoaded) {
-      // Store loaded but test missing – navigate away
+    } else if (testsLoaded && !loading) {
+      // Store loaded and not currently fetching, but test still missing → redirect
       router.push('/tests');
     }
-  }, [storeTest]);
+  }, [storeTest, loading]);
 
   // Prevent rendering until client-side mount to avoid hydration issues
   if (!mounted) {

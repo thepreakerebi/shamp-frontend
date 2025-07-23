@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { apiFetch } from '@/lib/api-client';
 
 export interface User {
   _id: string;
@@ -87,39 +88,13 @@ export function useAuth() {
   return ctx;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
+// All API calls go through apiFetch; base URL is appended there.
 
-async function fetchWithToken(url: string, token: string | null, workspaceId?: string | null, options: RequestInit = {}) {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  
-  // Add existing headers from options if they are properly typed
-  if (options.headers) {
-    const existingHeaders = options.headers as Record<string, string>;
-    Object.assign(headers, existingHeaders);
-  }
-  
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  
-  if (workspaceId) {
-    headers['X-Workspace-ID'] = workspaceId;
-  }
-
-  return fetch(url, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
-}
+// fetchWithToken helper removed – apiFetch handles credentials, CSRF and optional auth
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(
-    typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
-  );
+  const [token, setToken] = useState<string | null>(null);
   const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(
     typeof window !== 'undefined' ? localStorage.getItem('currentWorkspaceId') : null
   );
@@ -128,10 +103,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [workspaceAdmin, setWorkspaceAdmin] = useState<WorkspaceAdmin | null>(null);
   const [switchingWorkspace, setSwitchingWorkspace] = useState(false);
 
-  // On mount, try to fetch user if token exists
+  // On mount (and whenever token changes) try to fetch current user. If token is null we
+  // still attempt – the backend may authenticate via HttpOnly cookie.
   useEffect(() => {
-    if (token) {
-      fetchWithToken(`${API_BASE}/users/me`, token, currentWorkspaceId)
+      apiFetch('/users/me', { token, workspaceId: currentWorkspaceId })
         .then(async (res) => {
           if (res.ok) {
             const userData = await res.json();
@@ -151,8 +126,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               const workspaceIdToUse = currentWorkspaceId || userData.currentWorkspace?._id;
               try {
                 const [wsRes, adminRes] = await Promise.all([
-                  fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, token, workspaceIdToUse),
-                  fetchWithToken(`${API_BASE}/users/workspace/admin`, token, workspaceIdToUse)
+                  apiFetch('/users/workspace/max-agent-steps', { token, workspaceId: workspaceIdToUse }),
+                  apiFetch('/users/workspace/admin', { token, workspaceId: workspaceIdToUse })
                 ]);
               if (wsRes.ok) {
                 const wsData = await wsRes.json();
@@ -168,40 +143,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUser(null);
             setToken(null);
             setCurrentWorkspaceId(null);
-            localStorage.removeItem('authToken');
             localStorage.removeItem('currentWorkspaceId');
           }
         })
         .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
   }, [token]);
 
-  // Listen for storage changes (e.g., from TokenHandler setting authToken)
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'authToken' && e.newValue !== token) {
-        // Token changed in localStorage, update our state
-        setToken(e.newValue);
-      }
-    };
-
-    // Listen for custom event from TokenHandler
-    const handleTokenChanged = (e: CustomEvent) => {
-      const newToken = e.detail?.token;
-      if (newToken && newToken !== token) {
-        setToken(newToken);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('authTokenChanged', handleTokenChanged as EventListener);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('authTokenChanged', handleTokenChanged as EventListener);
-    };
-  }, [token]);
+  // Token persistence removed – cookies hold the session.
 
   // Keep the 'ws' cookie in sync with the current workspace – this is used by server components
   useEffect(() => {
@@ -216,14 +164,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentWorkspaceId]);
 
+  /* Silent session refresh disabled – cookie now valid for 24h.
+     Keep code commented for potential future re-enable. */
+   
   // Login method
   const login = async (email: string, password: string) => {
     setLoading(true);
-    const res = await fetch(`${API_BASE}/users/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    const res = await apiFetch('/users/login', { method: 'POST', body: JSON.stringify({ email, password }) });
     if (!res.ok) {
       const errorData = await res.json();
       setLoading(false);
@@ -241,11 +188,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       throw new Error('No auth token returned');
     }
-    localStorage.setItem('authToken', authToken);
     setToken(authToken);
     
     // Fetch user info to get workspace context
-    const userRes = await fetchWithToken(`${API_BASE}/users/me`, authToken);
+    const userRes = await apiFetch('/users/me', { token });
     if (!userRes.ok) {
       setLoading(false);
       throw new Error('Failed to fetch user info');
@@ -262,8 +208,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Fetch workspace-specific data
       try {
         const [wsRes, adminRes] = await Promise.all([
-          fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken, initialWorkspaceId),
-          fetchWithToken(`${API_BASE}/users/workspace/admin`, authToken, initialWorkspaceId)
+          apiFetch('/users/workspace/max-agent-steps', { token, workspaceId: initialWorkspaceId }),
+          apiFetch('/users/workspace/admin', { token, workspaceId: initialWorkspaceId })
         ]);
       if (wsRes.ok) {
         const wsData = await wsRes.json();
@@ -300,11 +246,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Signup method
   const signup = async (data: SignupData): Promise<string | undefined> => {
     setLoading(true);
-    const res = await fetch(`${API_BASE}/users/create-account`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
+    const res = await apiFetch('/users/create-account', { method: 'POST', body: JSON.stringify(data) });
     if (!res.ok) {
       setLoading(false);
       throw new Error((await res.json()).error || 'Signup failed');
@@ -317,11 +259,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Update profile (first & last name)
   const updateProfile = async (changes: { firstName?: string; lastName?: string }) => {
-    if (!token || !user) throw new Error("Not authenticated");
-    const res = await fetchWithToken(`${API_BASE}/users/${user._id}`, token, currentWorkspaceId, {
-      method: 'PUT',
-      body: JSON.stringify(changes),
-    });
+    if (!user) throw new Error("Not authenticated");
+    const res = await apiFetch(`/users/${user._id}`, { method: 'PUT', token, workspaceId: currentWorkspaceId, body: JSON.stringify(changes) });
     if (!res.ok) {
       throw new Error((await res.json()).error || 'Failed to update profile');
     }
@@ -340,12 +279,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Update workspace settings
   const updateWorkspace = async (data: { name?: string; description?: string; maxAgentStepsDefault?: number }) => {
-    if (!token || !currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
+    if (!currentWorkspaceId) throw new Error("Not authenticated or no workspace context");
     
-    const res = await fetchWithToken(`${API_BASE}/users/workspace`, token, currentWorkspaceId, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    const res = await apiFetch('/users/workspace', { method: 'PUT', token, workspaceId: currentWorkspaceId, body: JSON.stringify(data) });
     
     if (!res.ok) {
       const errorData = await res.json();
@@ -384,15 +320,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Join workspace via invite (for existing users)
   const joinWorkspace = async (inviteToken: string) => {
-    if (!token) throw new Error("Not authenticated");
-    const res = await fetch(`${API_BASE}/users/join-workspace`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ token: inviteToken }),
-    });
+    const res = await apiFetch('/users/join-workspace', { method: 'POST', body: JSON.stringify({ token: inviteToken }), token });
     if (!res.ok) {
       throw new Error((await res.json()).error || 'Failed to join workspace');
     }
@@ -408,11 +336,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const seamlessJoinWorkspace = async (inviteToken: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/users/seamless-join-workspace`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: inviteToken }),
-      });
+      const res = await apiFetch('/users/seamless-join-workspace', { method: 'POST', body: JSON.stringify({ token: inviteToken }), headers: { 'Content-Type': 'application/json' } });
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.error || 'Failed to join workspace');
@@ -433,7 +357,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch {}
 
       // Store token and update state
-      localStorage.setItem('authToken', authToken);
       setToken(authToken);
 
       if (workspaceIdFromToken) {
@@ -442,7 +365,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Fetch full user info to populate context and workspace details
-      const userRes = await fetchWithToken(`${API_BASE}/users/me`, authToken);
+      const userRes = await apiFetch('/users/me', { token: authToken });
       if (userRes.ok) {
         const userData = await userRes.json();
         setUser(userData);
@@ -456,8 +379,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Fetch workspace specific settings & admin info
           try {
             const [wsRes, adminRes] = await Promise.all([
-              fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken, wsId),
-              fetchWithToken(`${API_BASE}/users/workspace/admin`, authToken, wsId),
+              apiFetch('/users/workspace/max-agent-steps', { token: authToken, workspaceId: wsId }),
+              apiFetch('/users/workspace/admin', { token: authToken, workspaceId: wsId }),
             ]);
             if (wsRes.ok) setWorkspaceSettings(await wsRes.json());
             if (adminRes.ok) setWorkspaceAdmin(await adminRes.json());
@@ -478,22 +401,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setCurrentWorkspaceId(null);
     setWorkspaceSettings(null);
     setWorkspaceAdmin(null);
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('currentWorkspaceId');
+    // token already cleared
+
+    // Expire auth cookie client-side (best-effort)
+    if (typeof document !== 'undefined') {
+      document.cookie = 'auth=; path=/; max-age=0; SameSite=Lax;';
+    }
   };
 
   // Refresh session (re-fetch user info)
   const refresh = async () => {
     if (!token) return;
     setLoading(true);
-    const res = await fetchWithToken(`${API_BASE}/users/me`, token, currentWorkspaceId);
+    const res = await apiFetch('/users/me', { token, workspaceId: currentWorkspaceId });
     if (res.ok) {
       setUser(await res.json());
     } else {
       setUser(null);
       setToken(null);
       setCurrentWorkspaceId(null);
-      localStorage.removeItem('authToken');
       localStorage.removeItem('currentWorkspaceId');
     }
     setLoading(false);
@@ -502,7 +428,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Get current user info from backend
   const getUser = async () => {
     if (!token) return null;
-    const res = await fetchWithToken(`${API_BASE}/users/me`, token, currentWorkspaceId);
+    const res = await apiFetch('/users/me', { token, workspaceId: currentWorkspaceId });
     if (!res.ok) return null;
     return res.json();
   };
@@ -510,11 +436,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Accept invite
   const acceptInvite = async ({ token: inviteToken, firstName, lastName, password, profilePicture }: { token: string; firstName: string; lastName: string; password: string; profilePicture?: string }) => {
     setLoading(true);
-    const res = await fetch(`${API_BASE}/users/accept-invite`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: inviteToken, firstName, lastName, password, profilePicture }),
-    });
+    const res = await apiFetch('/users/accept-invite', { method: 'POST', body: JSON.stringify({ token: inviteToken, firstName, lastName, password, profilePicture }), token });
     if (!res.ok) {
       setLoading(false);
       throw new Error((await res.json()).error || 'Failed to accept invite');
@@ -525,7 +447,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       throw new Error('No auth token returned');
     }
-    localStorage.setItem('authToken', authToken);
     setToken(authToken);
     setUser(data.user);
     
@@ -538,8 +459,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // fetch workspace settings and admin info
       try {
         const [wsRes, adminRes] = await Promise.all([
-          fetchWithToken(`${API_BASE}/users/workspace/max-agent-steps`, authToken, initialWorkspaceId),
-          fetchWithToken(`${API_BASE}/users/workspace/admin`, authToken, initialWorkspaceId)
+          apiFetch('/users/workspace/max-agent-steps', { token: authToken, workspaceId: initialWorkspaceId }),
+          apiFetch('/users/workspace/admin', { token: authToken, workspaceId: initialWorkspaceId })
         ]);
       if (wsRes.ok) {
         setWorkspaceSettings(await wsRes.json());

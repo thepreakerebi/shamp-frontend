@@ -173,9 +173,9 @@ export default function PersonaPage() {
           if (!persona) return;
           setDeleteLoading(true);
           try {
+            setJustDeleted(true); // prevents not-found flash
             await deletePersona(persona._id);
             toast.success("Persona deleted!");
-            setJustDeleted(true);
             router.push("/personas");
           } catch (err) {
             toast.error(err instanceof Error ? err.message : "Failed to delete persona");

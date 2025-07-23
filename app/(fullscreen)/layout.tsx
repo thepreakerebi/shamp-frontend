@@ -1,6 +1,5 @@
 "use client";
 import React from "react";
-import { TokenGate } from "@/components/TokenHandler";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AuthProvider } from "@/lib/auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -19,7 +18,6 @@ function SocketProvider({ children }: { children: React.ReactNode }) {
 
 export default function FullscreenLayout({ children }: { children: React.ReactNode }) {
   return (
-    <TokenGate>
       <ThemeProvider
         attribute="class"
         defaultTheme="light"
@@ -37,6 +35,5 @@ export default function FullscreenLayout({ children }: { children: React.ReactNo
           </SocketProvider>
         </AuthProvider>
       </ThemeProvider>
-    </TokenGate>
   );
 } 

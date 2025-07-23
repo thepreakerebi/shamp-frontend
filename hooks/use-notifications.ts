@@ -2,24 +2,18 @@ import { useEffect, useCallback, useRef } from "react";
 import io from "socket.io-client";
 import { useNotificationsStore, Notification } from "@/lib/store/notifications";
 import { useAuth } from "@/lib/auth";
+import { apiFetch } from '@/lib/api-client';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 
-const fetcher = (url: string, token: string, workspaceId?: string | null) =>
-  fetch(`${API_BASE}${url}`, {
-    credentials: "include",
-    headers: { 
-      Authorization: `Bearer ${token}`,
-      ...(workspaceId ? { 'X-Workspace-ID': workspaceId } : {})
-    },
-  }).then((res) => {
-    if (!res.ok) throw new Error("Failed to fetch");
+const fetcher = (url: string, workspaceId?: string | null) =>
+  apiFetch(url, { workspaceId }).then(res => {
+    if (!res.ok) throw new Error('Failed to fetch');
     return res.json();
   });
 
 export function useNotifications({ enabled = true, scope = 'current' }: { enabled?: boolean; scope?: 'current' | 'all' } = {}) {
-  const { token, currentWorkspaceId } = useAuth();
+  const { currentWorkspaceId } = useAuth();
   const store = useNotificationsStore();
   const key = scope === 'all' ? 'all' : currentWorkspaceId ?? '';
   // Track last workspace key across hook instances to avoid clearing store on initial mount
@@ -31,13 +25,13 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
 
   // Initial fetch
   useEffect(() => {
-    if (!enabled || !token || (scope === 'current' && !currentWorkspaceId)) return;
+    if (!enabled || (scope === 'current' && !currentWorkspaceId)) return;
     (async () => {
       store.setNotificationsLoading(true);
       store.setNotificationsError(null);
       try {
         const endpoint = scope === 'all' ? "/notifications?workspace=all" : "/notifications";
-        const data = await fetcher(endpoint, token, effectiveWorkspaceId);
+        const data = await fetcher(endpoint, effectiveWorkspaceId);
         store.setNotifications(Array.isArray(data) ? data : []);
       } catch (err: unknown) {
         if (err instanceof Error) store.setNotificationsError(err.message);
@@ -46,7 +40,7 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
         store.setNotificationsLoading(false);
       }
     })();
-  }, [token, currentWorkspaceId, enabled, scope]);
+  }, [currentWorkspaceId, enabled, scope]);
 
   // Reset store when workspace scope changes to avoid showing stale notifications
   useEffect(() => {
@@ -64,8 +58,8 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
 
   // Socket real-time updates
   useEffect(() => {
-    if (!enabled || !token) return; // connect as soon as we have token
-    const socketAuth: { token: string; workspaceId?: string } = { token };
+    if (!enabled) return; // connect as soon as enabled
+    const socketAuth: { workspaceId?: string } = {};
     if (effectiveWorkspaceId) socketAuth.workspaceId = effectiveWorkspaceId;
     const socket = io(SOCKET_URL, { transports: ["websocket"], auth: socketAuth });
 
@@ -123,7 +117,7 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
       socket.off("notifications:cleared");
       socket.disconnect();
     };
-  }, [token, currentWorkspaceId, enabled, scope, effectiveWorkspaceId]);
+  }, [currentWorkspaceId, enabled, scope, effectiveWorkspaceId]);
 
   // Flush pending notifications once workspace ID becomes available
   useEffect(() => {
@@ -156,50 +150,29 @@ export function useNotifications({ enabled = true, scope = 'current' }: { enable
     // Optimistically update locally
     store.markReadLocally(id);
 
-    if (!token || (scope === 'current' && !currentWorkspaceId)) return;
+    if (scope === 'current' && !currentWorkspaceId) return;
     const endpoint = `/notifications/${id}/read`;
     try {
-      await fetch(`${API_BASE}${endpoint}`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          ...(effectiveWorkspaceId ? { 'X-Workspace-ID': effectiveWorkspaceId } : {}),
-        },
-      });
+      await apiFetch(endpoint, { method: 'PUT', workspaceId: effectiveWorkspaceId ?? undefined });
     } catch {
       // ignore, backend will sync later
     }
-  }, [token, currentWorkspaceId, scope, effectiveWorkspaceId]);
+  }, [currentWorkspaceId, scope, effectiveWorkspaceId]);
 
   // API mutations
   const markAllAsRead = useCallback(async () => {
-    if (!token || (scope === 'current' && !currentWorkspaceId)) return;
+    if (scope === 'current' && !currentWorkspaceId) return;
     const endpoint = scope === 'all' ? `/notifications/mark-all-read?workspace=all` : `/notifications/mark-all-read`;
-    await fetch(`${API_BASE}${endpoint}`, {
-      method: "PUT",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        ...(effectiveWorkspaceId ? { 'X-Workspace-ID': effectiveWorkspaceId } : {})
-      },
-    });
+    await apiFetch(endpoint, { method: 'PUT', workspaceId: effectiveWorkspaceId ?? undefined });
     store.markAllReadLocally();
-  }, [token, currentWorkspaceId, scope]);
+  }, [currentWorkspaceId, scope]);
 
   const clearAll = useCallback(async () => {
-    if (!token || (scope === 'current' && !currentWorkspaceId)) return;
+    if (scope === 'current' && !currentWorkspaceId) return;
     const endpoint = scope === 'all' ? `/notifications/clear-all?workspace=all` : `/notifications/clear-all`;
-    await fetch(`${API_BASE}${endpoint}`, {
-      method: "DELETE",
-      credentials: "include",
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        ...(effectiveWorkspaceId ? { 'X-Workspace-ID': effectiveWorkspaceId } : {})
-      },
-    });
+    await apiFetch(endpoint, { method: 'DELETE', workspaceId: effectiveWorkspaceId ?? undefined });
     store.clearAllLocally();
-  }, [token, currentWorkspaceId, scope]);
+  }, [currentWorkspaceId, scope]);
 
   return {
     notifications: store.notifications,
