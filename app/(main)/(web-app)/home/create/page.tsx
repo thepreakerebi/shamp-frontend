@@ -8,13 +8,20 @@ import { useProjects } from "@/hooks/use-projects";
 import { useRouter } from "next/navigation";
 import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 import { toast } from "sonner";
+import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
 export default function CreateProjectPage() {
   const { createProject } = useProjects();
+  const { startAuthSession, finishAuthSession } = useProjects();
   const router = useRouter();
 
   const [form, setForm] = useState({ name: "", description: "", url: "" });
   const [authCredentials, setAuthCredentials] = useState<{ key: string; value: string }[]>([]);
+  // OAuth session capture state
+  const [liveUrl, setLiveUrl] = useState<string | null>(null);
+  const [taskId, setTaskId] = useState<string | null>(null);
+  const [profileId, setProfileId] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [paymentCredentials, setPaymentCredentials] = useState<{ key: string; value: string }[]>([]);
   const [errors, setErrors] = useState<{ name?: string; url?: string }>({});
   const [loading, setLoading] = useState(false);
@@ -25,10 +32,10 @@ export default function CreateProjectPage() {
     if (loading) return false;
     return (
       form.name || form.description || form.url ||
-      authCredentials.some(c => c.key || c.value) ||
+      authCredentials.some(c => c.key || c.value) || profileId ||
       paymentCredentials.some(c => c.key || c.value)
     );
-  }, [form, authCredentials, paymentCredentials, loading]);
+  }, [form, authCredentials, paymentCredentials, loading, profileId]);
 
   // Broadcast loading state to listeners (e.g., Topbar)
   useEffect(() => {
@@ -74,6 +81,39 @@ export default function CreateProjectPage() {
     else setPaymentCredentials(prev => prev.filter((_, i) => i !== idx));
   };
 
+  const handleRecordLogin = async () => {
+    if (loading || !form.url || !validateUrl(form.url)) return;
+    try {
+      setLoading(true);
+      const res = await startAuthSession(form.url);
+      setLiveUrl(res.live_url);
+      setTaskId(res.taskId);
+      setProfileId(res.browserProfileId || null);
+      setDrawerOpen(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to start login session';
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFinishLogin = async () => {
+    if (!taskId) return;
+    try {
+      setLoading(true);
+      const res = await finishAuthSession(taskId, profileId || undefined);
+      if (res.browserProfileId) setProfileId(res.browserProfileId);
+      toast.success('Login captured');
+      setDrawerOpen(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to finish login session';
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: typeof errors = {};
@@ -96,6 +136,7 @@ export default function CreateProjectPage() {
         url: form.url,
         authCredentials: authCredObj,
         paymentCredentials: paymentCredObj,
+        ...(profileId ? { browserProfileId: profileId } : {}),
       });
       toast.success("New project created!");
       router.push("/home");
@@ -158,6 +199,10 @@ export default function CreateProjectPage() {
             <p className="text-xs text-muted-foreground mb-1">Full address starting with http:// or https://</p>
             <Input id="url" name="url" value={form.url} onChange={handleChange} aria-invalid={!!errors.url} />
             {errors.url && <p className="text-destructive text-xs mt-1">{errors.url}</p>}
+            {validateUrl(form.url) && !profileId && (
+              <Button type="button" variant="secondary" size="sm" className="mt-2" onClick={handleRecordLogin} disabled={loading}>Record Login</Button>
+            )}
+            {profileId && <p className="text-xs text-green-600 mt-1">Login captured ✓</p>}
           </section>
           {/* Description */}
           <section>
@@ -290,6 +335,25 @@ export default function CreateProjectPage() {
           }
         }}
       />
+      {/* Drawer for interactive login */}
+      <Drawer open={drawerOpen} onOpenChange={(o)=>setDrawerOpen(o)}>
+        {drawerOpen && (
+          <DrawerContent className="h-[90vh]">
+            <DrawerHeader>
+              <DrawerTitle>Complete Login</DrawerTitle>
+            </DrawerHeader>
+            {liveUrl && (
+              <iframe src={liveUrl} className="flex-1 w-full h-full border-t" />
+            )}
+            <DrawerFooter className="border-t">
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={()=>setDrawerOpen(false)} disabled={loading}>Cancel</Button>
+                <Button onClick={handleFinishLogin} disabled={loading}>Finish</Button>
+              </div>
+            </DrawerFooter>
+          </DrawerContent>
+        )}
+      </Drawer>
     </main>
   );
 } 
