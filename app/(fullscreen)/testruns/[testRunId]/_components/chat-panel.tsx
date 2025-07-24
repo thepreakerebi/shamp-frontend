@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useBilling } from "@/hooks/use-billing";
 import CheckDialog from "@/components/autumn/check-dialog";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 interface ChatMessage extends BaseChatMessage {
   id?: string;
@@ -211,17 +212,38 @@ export function ChatPanel({ run, personaName }: Props) {
           }}
           className="flex items-end gap-2"
         >
-          <div className="flex-1 rounded-full px-4 py-2 flex items-center">
-            <Textarea
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={onKeyDown}
-              placeholder="Type a message..."
-              rows={1}
-              disabled={!canChat}
-              className="flex-1 resize-none border-0 bg-transparent p-0 focus-visible:ring-0 text-sm disabled:opacity-50"
-            />
-          </div>
+          {/* Input container with optional tooltip when run is still active */}
+          {isRunDone ? (
+            <div className="flex-1 rounded-full px-4 py-2 flex items-center">
+              <Textarea
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="Type a message..."
+                rows={1}
+                disabled={!canChat}
+                className="flex-1 resize-none border-0 bg-transparent p-0 focus-visible:ring-0 text-sm disabled:opacity-50"
+              />
+            </div>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex-1 rounded-full px-4 py-2 flex items-center cursor-not-allowed">
+                  <Textarea
+                    value={input}
+                    onChange={() => {}}
+                    placeholder="Test run is still running…"
+                    rows={1}
+                    disabled
+                    className="flex-1 resize-none border-0 bg-transparent p-0 focus-visible:ring-0 text-sm disabled:opacity-50"
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent sideOffset={6} className="max-w-xs bg-secondary text-secondary-foreground text-center">
+                Test is still running. Chat will be available once the run is finished or stopped.
+              </TooltipContent>
+            </Tooltip>
+          )}
           <Button size="icon" type="submit" disabled={!canChat || sending || !input.trim()} aria-label="Send message">
             ➤
           </Button>
