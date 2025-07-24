@@ -261,7 +261,7 @@ export default function EditProjectPage() {
           </fieldset>
 
           {/* Payment Credentials */}
-          <fieldset className="border rounded-md p-3">
+          {/* <fieldset className="border rounded-md p-3">
             <legend className="text-sm font-medium px-1">Payment Credentials <span className="text-muted-foreground">(optional)</span></legend>
             <div className="flex items-center justify-between mb-1 mt-2">
               <span className="block text-xs text-muted-foreground">
@@ -311,7 +311,7 @@ export default function EditProjectPage() {
                 </Button>
               </section>
             ))}
-          </fieldset>
+          </fieldset> */}
 
           {/* Action buttons */}
           <div className="flex justify-end gap-2 pt-2">
