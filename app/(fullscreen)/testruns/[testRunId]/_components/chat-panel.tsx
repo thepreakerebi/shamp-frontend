@@ -198,7 +198,12 @@ export function ChatPanel({ run, personaName }: Props) {
       </section>
 
       {/* Input */}
-      <footer className="border-t p-4">
+      <footer
+        className="border-t p-4"
+        onClick={() => {
+          if (paywallClickable) setShowPaywall(true);
+        }}
+      >
         <form
           onSubmit={e => {
             e.preventDefault();
@@ -206,12 +211,7 @@ export function ChatPanel({ run, personaName }: Props) {
           }}
           className="flex items-end gap-2"
         >
-          <div
-            className="flex-1 rounded-full px-4 py-2 flex items-center"
-            onClick={() => {
-              if (paywallClickable) setShowPaywall(true);
-            }}
-          >
+          <div className="flex-1 rounded-full px-4 py-2 flex items-center">
             <Textarea
               value={input}
               onChange={e => setInput(e.target.value)}
