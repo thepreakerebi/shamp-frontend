@@ -35,7 +35,6 @@ export interface ProjectPayload {
   url?: string;
   authCredentials?: Record<string, string>;
   paymentCredentials?: Record<string, string>;
-  browserProfileId?: string;
 }
 
 export function useProjects() {
@@ -330,39 +329,6 @@ export function useProjects() {
     return result;
   };
 
-  // ----------------- OAuth helpers -----------------
-
-  const startAuthSession = async (url: string): Promise<{ live_url: string; taskId: string; browserProfileId?: string }> => {
-    if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch('/projects/auth-session', {
-      workspaceId: currentWorkspaceId,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url }),
-    });
-    if (!res.ok) throw new Error('Failed to start auth session');
-    return res.json();
-  };
-
-  const finishAuthSession = async (taskId: string, browserProfileId?: string): Promise<{ browserProfileId?: string }> => {
-    if (!currentWorkspaceId) throw new Error("No workspace context");
-    const res = await apiFetch(`/projects/auth-session/${taskId}/complete`, {
-      workspaceId: currentWorkspaceId,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ browserProfileId }),
-    });
-    if (!res.ok) throw new Error('Failed to finish auth session');
-    return res.json();
-  };
-
-  const getAuthSessionStatus = async (taskId: string): Promise<{ live_url: string | null }> => {
-    if (!currentWorkspaceId) throw new Error('No workspace context');
-    const res = await apiFetch(`/browseruse/task/${taskId}`, { workspaceId: currentWorkspaceId });
-    if (!res.ok) throw new Error('Failed to fetch auth session status');
-    return res.json();
-  };
-
   return {
     projects: store.projects,
     projectsError: store.projectsError,
@@ -384,9 +350,6 @@ export function useProjects() {
     getProjectTests,
     getProjectTestruns,
     emptyProjectTrash,
-    startAuthSession,
-    finishAuthSession,
-    getAuthSessionStatus,
     hasWorkspaceContext: !!currentWorkspaceId,
   };
-}
+} 
