@@ -39,7 +39,11 @@ export function ChatPanel({ run, personaName }: Props) {
 
   const isFreePlan = !billingLoading && planName.startsWith('free');
 
-  const canChat = ["finished", "stopped"].includes(browserStatus ?? "") && !isFreePlan;
+  const isRunDone = ["finished", "stopped"].includes(browserStatus ?? "");
+  const canChat = isRunDone && !isFreePlan;
+
+  // Free-plan users who try to click the input after a run is done should see the paywall
+  const paywallClickable = isRunDone && isFreePlan;
 
   const getChatPreview = () => {
     const nextProduct = {
@@ -202,7 +206,12 @@ export function ChatPanel({ run, personaName }: Props) {
           }}
           className="flex items-end gap-2"
         >
-          <div className="flex-1 rounded-full px-4 py-2 flex items-center">
+          <div
+            className="flex-1 rounded-full px-4 py-2 flex items-center"
+            onClick={() => {
+              if (paywallClickable) setShowPaywall(true);
+            }}
+          >
             <Textarea
               value={input}
               onChange={e => setInput(e.target.value)}
@@ -211,9 +220,6 @@ export function ChatPanel({ run, personaName }: Props) {
               rows={1}
               disabled={!canChat}
               className="flex-1 resize-none border-0 bg-transparent p-0 focus-visible:ring-0 text-sm disabled:opacity-50"
-              onClick={() => {
-                if (isFreePlan) setShowPaywall(true);
-              }}
             />
           </div>
           <Button size="icon" type="submit" disabled={!canChat || sending || !input.trim()} aria-label="Send message">
