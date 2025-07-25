@@ -196,7 +196,7 @@ export default function EditProjectPage() {
           {/* URL */}
           <section>
             <label htmlFor="url" className="block text-sm font-medium">URL</label>
-            <p className="text-xs text-muted-foreground mb-1">Full address starting with http:// or https://</p>
+            <p className="text-xs text-muted-foreground mb-1">Full address starting with http:// or https:// (e.g. https://www.example.com)</p>
             <Input id="url" name="url" value={form.url} onChange={handleChange} aria-invalid={!!errors.url} />
             {errors.url && <p className="text-destructive text-xs mt-1">{errors.url}</p>}
           </section>
