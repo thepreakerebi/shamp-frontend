@@ -165,7 +165,7 @@ export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContent
           {/* Auth Credentials */}
           {project.authCredentials && Object.keys(project.authCredentials).length > 0 && (
             <section className="flex-1 min-w-0">
-              <header className="mb-1 font-semibold text-base">Auth Credentials</header>
+              <header className="mb-1 font-semibold text-base">{project.authMode === 'oauth' ? 'OAuth Credentials' : 'Auth Credentials'}</header>
               <div className="flex flex-col">
                 {Object.entries(project.authCredentials).map(([key, value]) => {
                   const credentialKey = `auth-${key}`;
