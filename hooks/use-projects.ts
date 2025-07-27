@@ -15,10 +15,6 @@ export interface Project {
   url?: string;
   authCredentials?: Record<string, string>;
   paymentCredentials?: Record<string, string>;
-  /** How Shamp authenticates for this project */
-  authMode?: 'credentials' | 'oauth';
-  /** Stored Browser-Use profile id for OAuth projects */
-  browserUseProfileId?: string;
   testRunsCount?: number;
   testsCount?: number;
   lastTestRunAt?: string | null;
@@ -39,10 +35,6 @@ export interface ProjectPayload {
   url?: string;
   authCredentials?: Record<string, string>;
   paymentCredentials?: Record<string, string>;
-  /** How Shamp should authenticate */
-  authMode?: 'credentials' | 'oauth';
-  /** Internal – only sent on updates */
-  browserUseProfileId?: string;
 }
 
 export function useProjects() {

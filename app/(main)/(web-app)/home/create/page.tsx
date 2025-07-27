@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useProjects } from "@/hooks/use-projects";
 import { useRouter } from "next/navigation";
 import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
@@ -17,7 +16,6 @@ export default function CreateProjectPage() {
   const [form, setForm] = useState({ name: "", description: "", url: "" });
   const [authCredentials, setAuthCredentials] = useState<{ key: string; value: string }[]>([]);
   const [paymentCredentials, setPaymentCredentials] = useState<{ key: string; value: string }[]>([]);
-  const [authMode, setAuthMode] = useState<'credentials' | 'oauth'>('credentials');
   const [errors, setErrors] = useState<{ name?: string; url?: string }>({});
   const [loading, setLoading] = useState(false);
   const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
@@ -28,10 +26,9 @@ export default function CreateProjectPage() {
     return (
       form.name || form.description || form.url ||
       authCredentials.some(c => c.key || c.value) ||
-      paymentCredentials.some(c => c.key || c.value) ||
-      authMode !== 'credentials'
+      paymentCredentials.some(c => c.key || c.value)
     );
-  }, [form, authCredentials, paymentCredentials, authMode, loading]);
+  }, [form, authCredentials, paymentCredentials, loading]);
 
   // Broadcast loading state to listeners (e.g., Topbar)
   useEffect(() => {
@@ -93,12 +90,10 @@ export default function CreateProjectPage() {
     try {
       const authCredObj = Object.fromEntries(authCredentials.filter(c => c.key).map(c => [c.key, c.value]));
       const paymentCredObj = Object.fromEntries(paymentCredentials.filter(c => c.key).map(c => [c.key, c.value]));
-
       await createProject({
         name: form.name,
         description: form.description,
         url: form.url,
-        authMode,
         authCredentials: authCredObj,
         paymentCredentials: paymentCredObj,
       });
@@ -171,29 +166,9 @@ export default function CreateProjectPage() {
             <Textarea id="description" name="description" value={form.description} onChange={handleChange} />
           </section>
 
-          {/* Authentication Mode */}
-          <section>
-            <label className="block text-sm font-medium">Authentication Mode</label>
-            <p className="text-xs text-muted-foreground mb-1">Choose how Personas should authenticate for this project, whether with email/password or OAuth(like Google, Apple, etc.)</p>
-            <RadioGroup
-              value={authMode}
-              onValueChange={(v) => setAuthMode(v as 'credentials' | 'oauth')}
-              className="flex gap-6"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="credentials" id="auth-credentials" />
-                <label htmlFor="auth-credentials" className="text-sm">Credentials</label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="oauth" id="auth-oauth" />
-                <label htmlFor="auth-oauth" className="text-sm">OAuth</label>
-              </div>
-            </RadioGroup>
-          </section>
-
           {/* Auth Credentials */}
           <fieldset className="border rounded-md p-3">
-            <legend className="text-sm font-medium px-1">{authMode === 'oauth' ? 'OAuth Credentials' : 'Auth Credentials'} <span className="text-muted-foreground">(optional)</span></legend>
+            <legend className="text-sm font-medium px-1">Auth Credentials <span className="text-muted-foreground">(optional)</span></legend>
             <div className="flex items-center justify-between mb-1 mt-2">
               <span className="block text-xs text-muted-foreground">
                 Add authentication keys and values for this project. <em>(Press Enter to add another)</em>
