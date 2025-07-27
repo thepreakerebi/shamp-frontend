@@ -218,6 +218,9 @@ export default function CreateProjectPage() {
               </section>
             ))}
           </fieldset>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Your credentials are encrypted at rest and only decrypted inside secured test runs owned by your workspace.
+          </p>
 
           {/* Payment Credentials */}
           {/* <fieldset className="border rounded-md p-3">
