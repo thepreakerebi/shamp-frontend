@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useProjects } from "@/hooks/use-projects";
 import { useProjectsStore } from "@/lib/store/projects";
@@ -19,17 +19,16 @@ export const dynamic = 'force-dynamic';
 
 export function Breadcrumbs() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const projectIdQuery = searchParams.get("project");
   const [mounted, setMounted] = useState(false);
   const [batchQueryId, setBatchQueryId] = useState<string | null>(null);
-  const [projectIdQuery, setProjectIdQuery] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    // Get search params from URL once component mounts on client
-    const urlParams = new URLSearchParams(window.location.search);
-    setBatchQueryId(urlParams.get("batch"));
-    setProjectIdQuery(urlParams.get("project"));
-  }, []);
+    // batch query param may change on client navigation
+    setBatchQueryId(searchParams.get("batch"));
+  }, [searchParams]);
 
   const segments = pathname.split("/").filter(Boolean);
   let path = "";
@@ -200,7 +199,7 @@ export function Breadcrumbs() {
   }
 
   // Special-cased breadcrumb for tests detail with project context via query param
-  const isTestDetailWithProject = segments[0] === "tests" && !!projectIdQuery;
+  const isTestDetailWithProject = segments[0] === "tests" && (!!projectIdQuery || !!projectName);
 
   if (isTestDetailWithProject) {
     // Build manually: Home > Project > Test

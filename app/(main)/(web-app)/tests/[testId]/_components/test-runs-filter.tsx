@@ -48,8 +48,8 @@ export default function TestRunsFilter({ personaOptions, filters, onChange }: Pr
                 <SelectItem value="any">Any</SelectItem>
                 <SelectItem value="running">Running</SelectItem>
                 <SelectItem value="paused">Paused</SelectItem>
-                <SelectItem value="finished">Finished</SelectItem>
-                <SelectItem value="stopped">Stopped</SelectItem>
+                {/* <SelectItem value="finished">Finished</SelectItem> */}
+                {/* <SelectItem value="stopped">Stopped</SelectItem> */}
               </SelectContent>
             </Select>
           </div>
