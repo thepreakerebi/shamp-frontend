@@ -81,16 +81,16 @@ const ProjectCard: React.FC<ProjectCardProps> = React.memo(
             <div className="flex-1 min-w-0">
               <h3 className="font-medium truncate text-md text-foreground leading-tight">{project.name}</h3>
               <p className="text-muted-foreground w-full text-sm truncate">
-                {project.url ? (
+                {(project.shortUrl || project.url) ? (
                   <span
                     className="underline hover:text-secondary transition-colors cursor-pointer"
                     title={project.url}
                     onClick={(e: React.MouseEvent) => {
                       e.stopPropagation();
-                      window.open(project.url, "_blank", "noopener,noreferrer");
+                      window.open(project.shortUrl || project.url, "_blank", "noopener,noreferrer");
                     }}
                   >
-                    {project.url}
+                    {project.shortUrl || project.url}
                   </span>
                 ) : (
                   "No URL"
@@ -117,7 +117,7 @@ const ProjectCard: React.FC<ProjectCardProps> = React.memo(
   (prev, next) =>
     prev.project._id === next.project._id &&
     prev.project.name === next.project.name &&
-    prev.project.url === next.project.url &&
+    prev.project.shortUrl === next.project.shortUrl && prev.project.url === next.project.url &&
     prev.project.previewImageUrl === next.project.previewImageUrl &&
     prev.project.testRunsCount === next.project.testRunsCount &&
     prev.canEdit === next.canEdit &&
