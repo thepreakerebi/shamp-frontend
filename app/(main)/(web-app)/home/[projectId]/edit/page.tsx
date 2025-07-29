@@ -199,6 +199,11 @@ export default function EditProjectPage() {
             <p className="text-xs text-muted-foreground mb-1">Full address starting with http:// or https:// (e.g. https://www.example.com)</p>
             <Input id="url" name="url" value={form.url} onChange={handleChange} aria-invalid={!!errors.url} />
             {errors.url && <p className="text-destructive text-xs mt-1">{errors.url}</p>}
+            {form.url.startsWith("https://www.figma.com/proto/") && !errors.url && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Tip: This is a Figma prototype link. Ensure the prototype has interactive connections between screens that mirror actions an AI persona can perform (click, tap, type) so navigation works during testing.
+              </p>
+            )}
           </section>
           {/* Description */}
           <section>
