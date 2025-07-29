@@ -128,7 +128,8 @@ export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContent
                       className="underline hover:text-secondary transition-colors"
                       title={project.url}
                     >
-                      {project.shortUrl || project.url}
+                      {/* Friendlier anchor text */}
+                      {(project.shortUrl || (project.url?.startsWith("https://www.figma.com/proto/"))) ? "Prototype link" : project.url}
                     </a>
                   ) : (
                     "No URL"

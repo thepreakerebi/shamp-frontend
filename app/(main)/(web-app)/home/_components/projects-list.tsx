@@ -90,7 +90,8 @@ const ProjectCard: React.FC<ProjectCardProps> = React.memo(
                       window.open(project.shortUrl || project.url, "_blank", "noopener,noreferrer");
                     }}
                   >
-                    {project.shortUrl || project.url}
+                    {/* Friendlier anchor text for prototypes */}
+                    {(project.shortUrl || (project.url?.startsWith("https://www.figma.com/proto/"))) ? "Prototype link" : project.url}
                   </span>
                 ) : (
                   "No URL"
