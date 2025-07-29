@@ -197,8 +197,8 @@ export function TestRunCard({ run }: { run: MinimalRun }) {
           {/* Main status / browser badges */}
           <div className="flex items-center gap-2 mt-1">
             {run.status === 'pending' && statusBadge('pending')}
-            {run.browserUseStatus === 'stopped' && statusBadge(run.status)}
-            {run.status !== 'cancelled' && run.browserUseStatus !== 'stopped' && browserStatusBadge(run.browserUseStatus)}
+            {['stopped', 'finished'].includes((run.browserUseStatus ?? '')) && statusBadge(run.status)}
+            {run.status !== 'cancelled' && !['stopped', 'finished'].includes((run.browserUseStatus ?? '')) && browserStatusBadge(run.browserUseStatus)}
           </div>
           {run.status === 'pending' && run.scheduledFor && (
             <p className="text-xs text-muted-foreground mt-0.5">
