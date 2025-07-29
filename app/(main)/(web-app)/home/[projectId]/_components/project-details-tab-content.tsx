@@ -120,15 +120,16 @@ export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContent
               </header>
               <footer className="flex items-center gap-2">
                 <span className="text-muted-foreground text-sm truncate">
-                  {project.url ? (
+                  {(project.shortUrl || project.url) ? (
                     <a
-                      href={project.url}
+                      href={project.shortUrl || project.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="underline hover:text-secondary transition-colors"
                       title={project.url}
                     >
-                      {project.url}
+                      {/* Friendlier anchor text */}
+                      {(project.shortUrl || (project.url?.startsWith("https://www.figma.com/proto/"))) ? "Prototype link" : project.url}
                     </a>
                   ) : (
                     "No URL"

@@ -163,7 +163,8 @@ export function TrashedProjectsList() {
               </header>
               <footer className="flex items-center gap-2">
                 <h3 className="text-muted-foreground w-full text-sm truncate">
-                  {project.url || "No URL"}
+                  {/* Friendlier text for prototypes */}
+                  {project.shortUrl || (project.url?.startsWith("https://www.figma.com/proto/")) ? "Prototype link" : (project.url || "No URL")}
                 </h3>
                 {(user?.currentWorkspaceRole === 'admin' || project.createdBy?._id === user?._id) && (
                   <TrashCardActionsDropdown

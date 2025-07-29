@@ -13,6 +13,7 @@ export interface Project {
   name: string;
   description?: string;
   url?: string;
+  shortUrl?: string;
   authCredentials?: Record<string, string>;
   paymentCredentials?: Record<string, string>;
   testRunsCount?: number;
