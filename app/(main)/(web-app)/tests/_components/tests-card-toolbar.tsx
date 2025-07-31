@@ -131,7 +131,7 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
   },[query, projSel, persSel, runStatus, role]);
 
   return (
-    <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-2 py-4">
+    <section className="sticky top-[60px] z-10 bg-background flex items-center gap-4 py-4">
       <div className="relative max-w-xs">
         <Input
           placeholder="Search tests…"
