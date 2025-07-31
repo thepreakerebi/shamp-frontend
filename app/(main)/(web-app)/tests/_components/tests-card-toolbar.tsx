@@ -17,12 +17,16 @@ interface TestsCardToolbarProps {
   projectId?: string; // when inside ProjectTestsTabContent
 }
 
+import SelectTestsDialog from "@/app/(main)/(web-app)/home/[projectId]/_components/select-tests-dialog";
+
 export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
   const [query, setQuery] = useState("");
   // Project suite controls
   const { runProjectTests, pauseProjectTests, resumeProjectTests, stopProjectTests, getProjectTestruns } = useProjects();
   const { projects } = useProjects();
   const storeProject = projects?.find(p=>p._id===projectId);
+  const [selectOpen,setSelectOpen] = useState(false);
+
   const [optimisticStatus,setOptimisticStatus] = useState<Project["testsRunStatus"] | undefined>();
   const effectiveStatus: Project["testsRunStatus"] = optimisticStatus ?? storeProject?.testsRunStatus ?? 'idle';
   const [actionLoading,setActionLoading]=useState(false);
@@ -205,7 +209,11 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
         </PopoverContent>
       </Popover>
       {projectId && (
-        <section className="flex items-center gap-2 ml-auto">
+               <section className="flex items-center gap-2 ml-auto">
+                 <Button size="sm" variant="outline" onClick={()=>setSelectOpen(true)} className="gap-1">
+                   Select tests
+                 </Button>
+                 <SelectTestsDialog projectId={projectId} open={selectOpen} setOpen={setSelectOpen} onStarted={()=>setOptimisticStatus('running')} />
           {(effectiveStatus==='idle' || effectiveStatus==='done') && (
             <Button size="sm" variant="secondary" disabled={actionLoading} onClick={handleRun} className="gap-1">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin"/>} Run tests
@@ -233,6 +241,8 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
           )}
         </section>
       )}
+
+      
     </section>
   );
 } 
