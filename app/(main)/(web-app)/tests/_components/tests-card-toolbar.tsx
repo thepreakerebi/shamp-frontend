@@ -20,14 +20,16 @@ interface TestsCardToolbarProps {
 export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
   const [query, setQuery] = useState("");
   // Project suite controls
-  const { runProjectTests, pauseProjectTests, resumeProjectTests, stopProjectTests } = useProjects();
+  const { runProjectTests, pauseProjectTests, resumeProjectTests, stopProjectTests, getProjectTestruns } = useProjects();
   const storeProject = useProjects().projects?.find(p=>p._id===projectId);
   const [projStatus,setProjStatus] = useState<Project["testsRunStatus"]>(storeProject?.testsRunStatus ?? 'idle');
   const [actionLoading,setActionLoading]=useState(false);
   // sync with store
-  useEffect(()=>{
-    if(storeProject && storeProject.testsRunStatus!==projStatus) setProjStatus(storeProject.testsRunStatus);
-  },[storeProject, projStatus]);
+  useEffect(() => {
+    if (storeProject) {
+      setProjStatus(storeProject.testsRunStatus);
+    }
+  }, [storeProject?.testsRunStatus]);
   const { searchTests } = useTests();
 
   // Handlers for project suite controls
@@ -36,6 +38,8 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
     setActionLoading(true);
     try {
       await runProjectTests(projectId);
+      // Immediately fetch latest runs so badges update without tab switch
+      try { await getProjectTestruns(projectId, true); } catch { /* ignore */ }
       toast.success("Project tests started");
       setProjStatus('running');
     } catch (err: unknown) {

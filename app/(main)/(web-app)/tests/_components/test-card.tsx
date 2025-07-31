@@ -69,7 +69,7 @@ export function TestCard({ test, projectId }: { test: Test; projectId?: string }
   const isRunning = React.useMemo(() => {
     return (
       testRunsStore?.some(
-        r => r.test === test._id && r.browserUseStatus === "running"
+        r => r.test === test._id && (["running","pending"].includes(r.browserUseStatus ?? "") || ["running","pending"].includes(r.status))
       ) ?? false
     );
   }, [testRunsStore, test._id]);
