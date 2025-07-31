@@ -10,6 +10,7 @@ import { useProjects, type Project } from "@/hooks/use-projects";
 import { toast } from "sonner";
 import { usePersonas, type Persona as PersonaType } from "@/hooks/use-personas";
 import { useAuth } from "@/lib/auth";
+import { useBilling } from "@/hooks/use-billing";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { useTests } from "@/hooks/use-tests";
 
@@ -24,6 +25,11 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
   // Project suite controls
   const { runProjectTests, pauseProjectTests, resumeProjectTests, stopProjectTests, getProjectTestruns } = useProjects();
   const { projects } = useProjects();
+  const { summary } = useBilling();
+  const isFreePlan = !summary?.products || (
+    Array.isArray(summary.products) &&
+    ((summary.products[0] as unknown as { id?: string })?.id === 'free')
+  );
   const storeProject = projects?.find(p=>p._id===projectId);
   const [selectOpen,setSelectOpen] = useState(false);
 
@@ -210,13 +216,13 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
       </Popover>
       {projectId && (
                <section className="flex items-center gap-2 ml-auto">
-                 {(effectiveStatus==='idle' || effectiveStatus==='done') && (
+                 {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (
                  <Button size="sm" variant="outline" onClick={()=>setSelectOpen(true)} className="gap-1">
                    Select tests
                  </Button>
                )}
                  <SelectTestsDialog projectId={projectId} open={selectOpen} setOpen={setSelectOpen} onStarted={()=>setOptimisticStatus('running')} />
-          {(effectiveStatus==='idle' || effectiveStatus==='done') && (
+          {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (
             <Button size="sm" variant="secondary" disabled={actionLoading} onClick={handleRun} className="gap-1">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin"/>} Run tests
             </Button>
