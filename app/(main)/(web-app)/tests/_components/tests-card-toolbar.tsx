@@ -210,9 +210,11 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
       </Popover>
       {projectId && (
                <section className="flex items-center gap-2 ml-auto">
+                 {(effectiveStatus==='idle' || effectiveStatus==='done') && (
                  <Button size="sm" variant="outline" onClick={()=>setSelectOpen(true)} className="gap-1">
                    Select tests
                  </Button>
+               )}
                  <SelectTestsDialog projectId={projectId} open={selectOpen} setOpen={setSelectOpen} onStarted={()=>setOptimisticStatus('running')} />
           {(effectiveStatus==='idle' || effectiveStatus==='done') && (
             <Button size="sm" variant="secondary" disabled={actionLoading} onClick={handleRun} className="gap-1">
