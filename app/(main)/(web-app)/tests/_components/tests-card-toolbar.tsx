@@ -21,13 +21,15 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
   const [query, setQuery] = useState("");
   // Project suite controls
   const { runProjectTests, pauseProjectTests, resumeProjectTests, stopProjectTests, getProjectTestruns } = useProjects();
-  const storeProject = useProjects().projects?.find(p=>p._id===projectId);
-  const [projStatus,setProjStatus] = useState<Project["testsRunStatus"]>(storeProject?.testsRunStatus ?? 'idle');
+  const { projects } = useProjects();
+  const storeProject = projects?.find(p=>p._id===projectId);
+  const [optimisticStatus,setOptimisticStatus] = useState<Project["testsRunStatus"] | undefined>();
+  const effectiveStatus: Project["testsRunStatus"] = optimisticStatus ?? storeProject?.testsRunStatus ?? 'idle';
   const [actionLoading,setActionLoading]=useState(false);
   // sync with store
   useEffect(() => {
     if (storeProject) {
-      setProjStatus(storeProject.testsRunStatus);
+      setOptimisticStatus(storeProject.testsRunStatus);
     }
   }, [storeProject?.testsRunStatus]);
   const { searchTests } = useTests();
@@ -41,7 +43,7 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
       // Immediately fetch latest runs so badges update without tab switch
       try { await getProjectTestruns(projectId, true); } catch { /* ignore */ }
       toast.success("Project tests started");
-      setProjStatus('running');
+      setOptimisticStatus('running');
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to start tests');
     } finally { setActionLoading(false); }
@@ -52,7 +54,7 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
     try {
       await pauseProjectTests(projectId);
       toast.success('Tests paused');
-      setProjStatus('paused');
+      setOptimisticStatus('paused');
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed');
     } finally { setActionLoading(false); } };
@@ -62,7 +64,7 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
     try {
       await resumeProjectTests(projectId);
       toast.success('Tests resumed');
-      setProjStatus('running');
+      setOptimisticStatus('running');
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed');
     } finally { setActionLoading(false); } };
@@ -72,14 +74,13 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
     try {
       await stopProjectTests(projectId);
       toast.success('Tests stopped');
-      setProjStatus('done');
+      setOptimisticStatus('done');
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed');
     } finally { setActionLoading(false); } };
 
 
   // Filter state
-  const { projects } = useProjects();
   const { personas } = usePersonas();
   const { user } = useAuth();
   const [projSel, setProjSel] = useState<string[]>([]);
@@ -205,12 +206,12 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
       </Popover>
       {projectId && (
         <section className="flex items-center gap-2 ml-auto">
-          {(projStatus==='idle' || projStatus==='done') && (
+          {(effectiveStatus==='idle' || effectiveStatus==='done') && (
             <Button size="sm" variant="secondary" disabled={actionLoading} onClick={handleRun} className="gap-1">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin"/>} Run tests
             </Button>
           )}
-          {projStatus==='running' && (
+          {effectiveStatus==='running' && (
             <>
               <Button size="sm" variant="outline" disabled={actionLoading} onClick={handlePause} className="gap-1">
                 {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Pause className="w-4 h-4"/>} Pause
@@ -220,7 +221,7 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
               </Button>
             </>
           )}
-          {projStatus==='paused' && (
+          {effectiveStatus==='paused' && (
             <>
               <Button size="sm" variant="outline" disabled={actionLoading} onClick={handleResume} className="gap-1">
                 {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Play className="w-4 h-4"/>} Resume
