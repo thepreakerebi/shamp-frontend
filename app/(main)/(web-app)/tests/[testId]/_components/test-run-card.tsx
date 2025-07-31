@@ -155,7 +155,16 @@ export function TestRunCard({ run }: { run: MinimalRun }) {
     }
   };
 
-  const runWithTest = run as unknown as { test?: string; createdBy?: string };
+  const runWithTest = run as unknown as { test?: string | { _id?: string; name?: string }; createdBy?: string };
+  const testName = (() => {
+    const runRecord = run as unknown as Record<string, unknown>;
+    if (typeof runRecord.testName === 'string') return runRecord.testName;
+    const tProp = runWithTest.test;
+    if (tProp && typeof tProp === 'object' && 'name' in tProp) {
+      return (tProp as { name?: string }).name;
+    }
+    return undefined;
+  })();
   const canEditSchedule = run.status === 'pending' && (
     user?.currentWorkspaceRole === 'admin' || runWithTest.createdBy === user?._id
   );
@@ -194,6 +203,9 @@ export function TestRunCard({ run }: { run: MinimalRun }) {
           <h3 className="font-semibold leading-tight truncate" title={run.personaName}>
             {run.personaName}
           </h3>
+          {testName && (
+            <p className="text-sm text-muted-foreground truncate" title={testName}>{testName}</p>
+          )}
           {/* Main status / browser badges */}
           <div className="flex items-center gap-2 mt-1">
             {run.status === 'pending' && statusBadge('pending')}

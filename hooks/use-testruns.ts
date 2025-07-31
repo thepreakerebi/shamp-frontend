@@ -30,6 +30,7 @@ export interface TestRun {
   personaName?: string;
   personaAvatarUrl?: string;
   workspace: string;
+  testName?: string;
   createdBy?: {
     _id: string;
     name?: string;
