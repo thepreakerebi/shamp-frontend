@@ -146,7 +146,7 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
         </PopoverTrigger>
         <PopoverContent align="end">
           <div className="space-y-4">
-            {projects && projects.length>0 && (
+            {!projectId && projects && projects.length>0 && (
               <div>
                 <p className="text-sm font-medium mb-1">Projects</p>
                 <ScrollArea className="h-24 border rounded p-2">
