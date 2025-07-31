@@ -19,6 +19,7 @@ export interface Project {
   testRunsCount?: number;
   testsCount?: number;
   lastTestRunAt?: string | null;
+  testsRunStatus?: 'idle' | 'running' | 'paused' | 'done';
   previewImageUrl?: string;
   trashed?: boolean;
   createdBy?: {
@@ -194,6 +195,11 @@ export function useProjects() {
         }
       }
     });
+    socket.on("project:testsStatusUpdated", (data: { _id: string; testsRunStatus: Project["testsRunStatus"]; workspace?: string }) => {
+      if (data.workspace === currentWorkspaceId) {
+        store.updateProjectInList({ _id: data._id, testsRunStatus: data.testsRunStatus } as Project);
+      }
+    });
     socket.on("project:trashEmptied", (data: { deletedCount: number; workspace?: string }) => {
       // Only process events for the current workspace
       if (data.workspace === currentWorkspaceId) {
@@ -319,6 +325,40 @@ export function useProjects() {
     return sorted;
   };
 
+  // Run tests for a project
+  const runProjectTests = async (projectId: string, testIds?: string[]) => {
+    if (!currentWorkspaceId) throw new Error("No workspace context");
+    const res = await apiFetch(`/projects/${projectId}/run-tests`, {
+      workspaceId: currentWorkspaceId,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testIds && testIds.length ? { testIds } : {}),
+    });
+    if (!res.ok) throw new Error('Failed to start tests');
+    return res.json();
+  };
+
+  const pauseProjectTests = async (projectId: string) => {
+    if (!currentWorkspaceId) throw new Error('No workspace context');
+    const res = await apiFetch(`/projects/${projectId}/tests/pause`, { workspaceId: currentWorkspaceId, method: 'PATCH' });
+    if (!res.ok) throw new Error('Failed to pause tests');
+    return res.json();
+  };
+
+  const resumeProjectTests = async (projectId: string) => {
+    if (!currentWorkspaceId) throw new Error('No workspace context');
+    const res = await apiFetch(`/projects/${projectId}/tests/resume`, { workspaceId: currentWorkspaceId, method: 'PATCH' });
+    if (!res.ok) throw new Error('Failed to resume tests');
+    return res.json();
+  };
+
+  const stopProjectTests = async (projectId: string) => {
+    if (!currentWorkspaceId) throw new Error('No workspace context');
+    const res = await apiFetch(`/projects/${projectId}/tests/stop`, { workspaceId: currentWorkspaceId, method: 'PATCH' });
+    if (!res.ok) throw new Error('Failed to stop tests');
+    return res.json();
+  };
+
   // Empty trash - permanently delete all trashed projects
   const emptyProjectTrash = async (deleteTests?: boolean) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
@@ -350,6 +390,10 @@ export function useProjects() {
     restoreProjectFromTrash,
     getProjectTests,
     getProjectTestruns,
+    runProjectTests,
+    pauseProjectTests,
+    resumeProjectTests,
+    stopProjectTests,
     emptyProjectTrash,
     hasWorkspaceContext: !!currentWorkspaceId,
   };
