@@ -5,16 +5,74 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Filter, X } from "lucide-react";
+import { Filter, X, Loader2, Pause, Play, Square } from "lucide-react";
 import { useProjects, type Project } from "@/hooks/use-projects";
+import { toast } from "sonner";
 import { usePersonas, type Persona as PersonaType } from "@/hooks/use-personas";
 import { useAuth } from "@/lib/auth";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { useTests } from "@/hooks/use-tests";
 
-export function TestsCardToolbar() {
+interface TestsCardToolbarProps {
+  projectId?: string; // when inside ProjectTestsTabContent
+}
+
+export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
   const [query, setQuery] = useState("");
+  // Project suite controls
+  const { runProjectTests, pauseProjectTests, resumeProjectTests, stopProjectTests } = useProjects();
+  const storeProject = useProjects().projects?.find(p=>p._id===projectId);
+  const [projStatus,setProjStatus] = useState<Project["testsRunStatus"]>(storeProject?.testsRunStatus ?? 'idle');
+  const [actionLoading,setActionLoading]=useState(false);
+  // sync with store
+  useEffect(()=>{
+    if(storeProject && storeProject.testsRunStatus!==projStatus) setProjStatus(storeProject.testsRunStatus);
+  },[storeProject, projStatus]);
   const { searchTests } = useTests();
+
+  // Handlers for project suite controls
+  const handleRun = async () => {
+    if (!projectId || actionLoading) return;
+    setActionLoading(true);
+    try {
+      await runProjectTests(projectId);
+      toast.success("Project tests started");
+      setProjStatus('running');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to start tests');
+    } finally { setActionLoading(false); }
+  };
+  const handlePause = async () => {
+    if (!projectId || actionLoading) return;
+    setActionLoading(true);
+    try {
+      await pauseProjectTests(projectId);
+      toast.success('Tests paused');
+      setProjStatus('paused');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed');
+    } finally { setActionLoading(false); } };
+  const handleResume = async () => {
+    if (!projectId || actionLoading) return;
+    setActionLoading(true);
+    try {
+      await resumeProjectTests(projectId);
+      toast.success('Tests resumed');
+      setProjStatus('running');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed');
+    } finally { setActionLoading(false); } };
+  const handleStop = async () => {
+    if (!projectId || actionLoading) return;
+    setActionLoading(true);
+    try {
+      await stopProjectTests(projectId);
+      toast.success('Tests stopped');
+      setProjStatus('done');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed');
+    } finally { setActionLoading(false); } };
+
 
   // Filter state
   const { projects } = useProjects();
@@ -141,6 +199,35 @@ export function TestsCardToolbar() {
           </div>
         </PopoverContent>
       </Popover>
+      {projectId && (
+        <section className="flex items-center gap-2 ml-auto">
+          {(projStatus==='idle' || projStatus==='done') && (
+            <Button size="sm" variant="secondary" disabled={actionLoading} onClick={handleRun} className="gap-1">
+              {actionLoading && <Loader2 className="w-4 h-4 animate-spin"/>} Run tests
+            </Button>
+          )}
+          {projStatus==='running' && (
+            <>
+              <Button size="sm" variant="outline" disabled={actionLoading} onClick={handlePause} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Pause className="w-4 h-4"/>} Pause
+              </Button>
+              <Button size="sm" variant="destructive" disabled={actionLoading} onClick={handleStop} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Square className="w-4 h-4"/>} Stop
+              </Button>
+            </>
+          )}
+          {projStatus==='paused' && (
+            <>
+              <Button size="sm" variant="outline" disabled={actionLoading} onClick={handleResume} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Play className="w-4 h-4"/>} Resume
+              </Button>
+              <Button size="sm" variant="destructive" disabled={actionLoading} onClick={handleStop} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Square className="w-4 h-4"/>} Stop
+              </Button>
+            </>
+          )}
+        </section>
+      )}
     </section>
   );
 } 

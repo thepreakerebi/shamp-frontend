@@ -38,7 +38,7 @@ export function ProjectTestsTabContent() {
   return (
     <section>
       <section className="flex flex-col">
-        <TestsCardToolbar />
+        <TestsCardToolbar projectId={projectId as string} />
         <section className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 py-1">
           {filtered.map(test => (
             <TestCard key={test._id} test={test} projectId={projectId as string} />
