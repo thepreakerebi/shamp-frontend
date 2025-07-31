@@ -371,11 +371,22 @@ export function useTests() {
 
   // Search tests
   const searchTests = async (query: string | TestSearchParams): Promise<TestSearch> => {
+    const { setTests } = useTestsStore.getState();
     if (!currentWorkspaceId) {
       const queryStr = typeof query === 'string' ? query : '';
       return { query: queryStr, results: [], loading: false, error: "Not authenticated or no workspace context" };
     }
     
+    // Early exit: if query is an object with no meaningful filters, just refresh full list
+    if (typeof query !== 'string') {
+      const obj = query as TestSearchParams;
+      const hasFilters = Object.values(obj).some(v => v !== undefined && v !== null && v !== '');
+      if (!hasFilters) {
+        await fetchTests();
+        return { query: '', results: store.tests ?? [], loading: false, error: null } as TestSearch;
+      }
+    }
+
     try {
       let path: string;
       if (typeof query === 'string') {
@@ -393,9 +404,18 @@ export function useTests() {
       
       const res = await apiFetch(path, { workspaceId: currentWorkspaceId });
       if (!res.ok) throw new Error("Failed to search tests");
-      const results = await res.json();
+      const raw: unknown = await res.json();
+      const dataField = (raw as { data?: unknown }).data;
+      const arrayResultsUnknown = Array.isArray(raw)
+        ? (raw as unknown[])
+        : Array.isArray(dataField)
+        ? (dataField as unknown[])
+        : [];
+      const arrayResults = arrayResultsUnknown as Test[];
+      // Update store so UI lists re-render without flicker
+      setTests(arrayResults);
       const queryStr = typeof query === 'string' ? query : JSON.stringify(query);
-      return { query: queryStr, results: Array.isArray(results) ? results : [], loading: false, error: null };
+      return { query: queryStr, results: arrayResults, loading: false, error: null };
     } catch (err) {
       const queryStr = typeof query === 'string' ? query : JSON.stringify(query);
       return { 
