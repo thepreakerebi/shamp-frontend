@@ -7,6 +7,7 @@ import React from "react";
 import { ProjectListSkeleton } from "./project-list-skeleton";
 import { ProjectCardDropdown } from "./project-card-dropdown";
 import { MoveProjectToTrashModal } from "../../_components/move-project-to-trash-modal";
+import { useProjectsStore } from "@/lib/store/projects";
 import { DeleteProjectModal } from "../../trash/_components/delete-project-modal";
 import { toast } from "sonner";
 import { ProjectListEmpty } from "./project-list-empty";
@@ -215,6 +216,8 @@ function ProjectsListInner() {
     if (!projectToDelete) return;
     setDeleteLoading(true);
     try {
+      // Immediate optimistic removal to avoid flicker while waiting for API + socket events
+      useProjectsStore.getState().removeProjectFromList(projectToDelete._id);
       await deleteProject(projectToDelete._id, deleteTests);
       toast.success("Project permanently deleted");
       setDeleteModalOpen(false);
