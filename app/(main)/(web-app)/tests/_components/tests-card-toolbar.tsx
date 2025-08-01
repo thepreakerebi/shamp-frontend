@@ -15,6 +15,7 @@ import { useBilling } from "@/hooks/use-billing";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { useUsers } from "@/hooks/use-users";
 import { useTestRuns } from "@/hooks/use-testruns";
+
 import SelectWorkspaceTestsDialog from "@/app/(main)/(web-app)/home/[projectId]/_components/select-workspace-tests-dialog";
 import { useTests } from "@/hooks/use-tests";
 
@@ -40,22 +41,13 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
   const storeProject = projects?.find(p=>p._id===projectId);
   const [selectOpen,setSelectOpen] = useState(false);
 
-  const { testRuns } = useTestRuns();
+  // const { testRuns } = useTestRuns();
   const [optimisticStatus,setOptimisticStatus] = useState<Project["testsRunStatus"] | undefined>();
-  // Derive workspace status from currently loaded runs
-  const workspaceDerivedStatus: Project["testsRunStatus"] = React.useMemo(()=>{
-    if (projectId) return 'idle';
-    const anyRunning = testRuns?.some(r=>['running','pending'].includes(r.browserUseStatus ?? r.status));
-    if (anyRunning) return 'running';
-    const anyPaused = testRuns?.some(r=> r.browserUseStatus==='paused');
-    if (anyPaused) return 'paused';
-    const anyDone = testRuns?.some(r=> ['finished','succeeded','failed','cancelled','stopped'].includes(r.browserUseStatus ?? r.status));
-    return anyDone ? 'done' : 'idle';
-  }, [projectId, testRuns]);
-
+    const { workspaceTestsRunStatus, setWorkspaceTestsRunStatus } = useUsers();
+  // Derive effective status
   const effectiveStatus: Project["testsRunStatus"] = projectId
     ? (optimisticStatus ?? storeProject?.testsRunStatus ?? 'idle')
-    : (optimisticStatus ?? workspaceDerivedStatus ?? 'idle');
+    : (optimisticStatus ?? workspaceTestsRunStatus ?? 'idle');
   const [actionLoading,setActionLoading]=useState(false);
   // sync with store
   useEffect(() => {
@@ -77,6 +69,7 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
       } else {
         await runWorkspaceTests();
         await refetchRuns();
+        setWorkspaceTestsRunStatus('running');
         toast.success("Workspace tests started");
       }
       setOptimisticStatus('running');
@@ -93,6 +86,7 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
       } else {
         await pauseWorkspaceTests();
       await refetchRuns();
+      setWorkspaceTestsRunStatus('paused');
       }
       toast.success('Tests paused');
       setOptimisticStatus('paused');
@@ -108,6 +102,7 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
       } else {
         await resumeWorkspaceTests();
       await refetchRuns();
+      setWorkspaceTestsRunStatus('running');
       }
       toast.success('Tests resumed');
       setOptimisticStatus('running');
@@ -123,6 +118,7 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
       } else {
         await stopWorkspaceTests();
       await refetchRuns();
+      setWorkspaceTestsRunStatus('done');
       }
       toast.success('Tests stopped');
       setOptimisticStatus('done');

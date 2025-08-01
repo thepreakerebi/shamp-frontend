@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useUsersStore } from '@/lib/store/users';
 import { useAuth } from '@/lib/auth';
+import io from 'socket.io-client';
 import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api-client';
 
@@ -26,6 +27,17 @@ export function useUsers() {
       setLoading(false);
     }
   }, [currentWorkspaceId, setLoading, setError, setUsers]);
+
+  // Workspace tests status socket
+  useEffect(()=>{
+    if(!currentWorkspaceId) return;
+    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL as string, { transports:['websocket'], auth:{workspaceId: currentWorkspaceId} });
+    socket.on('workspace:testsStatusUpdated', (payload: { workspace?: string; testsRunStatus: 'idle'|'running'|'paused'|'done' })=>{
+      if(payload.workspace && payload.workspace!==currentWorkspaceId) return;
+      store.setWorkspaceStatus(payload.testsRunStatus);
+    });
+    return () => { socket.disconnect(); };
+  },[currentWorkspaceId, store]);
 
   useEffect(() => { 
     if (users === null && currentWorkspaceId) {
@@ -88,6 +100,8 @@ export function useUsers() {
     pauseWorkspaceTests,
     resumeWorkspaceTests,
     stopWorkspaceTests,
+    workspaceTestsRunStatus: store.workspaceTestsRunStatus,
+    setWorkspaceTestsRunStatus: store.setWorkspaceStatus,
     hasWorkspaceContext: !!currentWorkspaceId
   };
 } 
