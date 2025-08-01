@@ -13,12 +13,14 @@ interface ProjectCardDropdownProps {
   onOpen?: () => void;
   onEdit?: () => void;
   onTrash?: () => void;
+  onDelete?: () => void;
   showOpen?: boolean;
   showEdit?: boolean;
   showTrash?: boolean;
+  showDelete?: boolean;
 }
 
-export function ProjectCardDropdown({ onOpen, onEdit, onTrash, showOpen = true, showEdit = true, showTrash = true }: ProjectCardDropdownProps) {
+export function ProjectCardDropdown({ onOpen, onEdit, onTrash, onDelete, showOpen = true, showEdit = true, showTrash = true, showDelete = false }: ProjectCardDropdownProps) {
   return (
     <CustomDropdownMenu>
       <CustomDropdownMenuTrigger asChild>
@@ -34,7 +36,10 @@ export function ProjectCardDropdown({ onOpen, onEdit, onTrash, showOpen = true, 
           <CustomDropdownMenuItem onSelect={onEdit}>Edit</CustomDropdownMenuItem>
         )}
         {showTrash && (
-          <CustomDropdownMenuItem onSelect={onTrash} variant="destructive">Move to Trash</CustomDropdownMenuItem>
+          <CustomDropdownMenuItem onSelect={onTrash}>Move to Trash</CustomDropdownMenuItem>
+        )}
+        {showDelete && (
+          <CustomDropdownMenuItem onSelect={onDelete} variant="destructive">Delete</CustomDropdownMenuItem>
         )}
       </CustomDropdownMenuContent>
     </CustomDropdownMenu>
