@@ -16,16 +16,21 @@ import { useTests } from "@/hooks/use-tests";
 
 interface TestsCardToolbarProps {
   projectId?: string; // when inside ProjectTestsTabContent
+  workspaceControls?: boolean; // global tests list
 }
 
 import SelectTestsDialog from "@/app/(main)/(web-app)/home/[projectId]/_components/select-tests-dialog";
 
-export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
+import { useUsers } from "@/hooks/use-users";
+
+
+export function TestsCardToolbar({ projectId, workspaceControls = false }: TestsCardToolbarProps) {
   const [query, setQuery] = useState("");
   // Project suite controls
   const { runProjectTests, pauseProjectTests, resumeProjectTests, stopProjectTests, getProjectTestruns } = useProjects();
   const { projects } = useProjects();
   const { summary } = useBilling();
+  const { runWorkspaceTests, pauseWorkspaceTests, resumeWorkspaceTests, stopWorkspaceTests } = useUsers();
   const isFreePlan = !summary?.products || (
     Array.isArray(summary.products) &&
     ((summary.products[0] as unknown as { id?: string })?.id === 'free')
@@ -41,12 +46,24 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
     if (storeProject) {
       setOptimisticStatus(storeProject.testsRunStatus);
     }
-  }, [storeProject?.testsRunStatus]);
+  }, [storeProject?.testsRunStatus, storeProject]);
   const { searchTests } = useTests();
 
   // Handlers for project suite controls
   const handleRun = async () => {
-    if (!projectId || actionLoading) return;
+    if (actionLoading) return;
+    if (workspaceControls) {
+      setActionLoading(true);
+      try {
+        await runWorkspaceTests();
+        toast.success("Workspace tests started");
+        setOptimisticStatus('running');
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : 'Failed to start tests');
+      } finally { setActionLoading(false); }
+      return;
+    }
+    if (!projectId) return;
     setActionLoading(true);
     try {
       await runProjectTests(projectId);
@@ -59,7 +76,15 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
     } finally { setActionLoading(false); }
   };
   const handlePause = async () => {
-    if (!projectId || actionLoading) return;
+    if (actionLoading) return;
+    if (workspaceControls) {
+      setActionLoading(true);
+      try { await pauseWorkspaceTests(); toast.success('Tests paused'); setOptimisticStatus('paused'); }
+      catch (err: unknown) { toast.error(err instanceof Error ? err.message : 'Failed'); }
+      finally { setActionLoading(false); }
+      return;
+    }
+    if (!projectId) return;
     setActionLoading(true);
     try {
       await pauseProjectTests(projectId);
@@ -69,7 +94,15 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
       toast.error(err instanceof Error ? err.message : 'Failed');
     } finally { setActionLoading(false); } };
   const handleResume = async () => {
-    if (!projectId || actionLoading) return;
+    if (actionLoading) return;
+    if (workspaceControls) {
+      setActionLoading(true);
+      try { await resumeWorkspaceTests(); toast.success('Tests resumed'); setOptimisticStatus('running'); }
+      catch (err: unknown) { toast.error(err instanceof Error ? err.message : 'Failed'); }
+      finally { setActionLoading(false); }
+      return;
+    }
+    if (!projectId) return;
     setActionLoading(true);
     try {
       await resumeProjectTests(projectId);
@@ -79,7 +112,15 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
       toast.error(err instanceof Error ? err.message : 'Failed');
     } finally { setActionLoading(false); } };
   const handleStop = async () => {
-    if (!projectId || actionLoading) return;
+    if (actionLoading) return;
+    if (workspaceControls) {
+      setActionLoading(true);
+      try { await stopWorkspaceTests(); toast.success('Tests stopped'); setOptimisticStatus('done'); }
+      catch (err: unknown) { toast.error(err instanceof Error ? err.message : 'Failed'); }
+      finally { setActionLoading(false); }
+      return;
+    }
+    if (!projectId) return;
     setActionLoading(true);
     try {
       await stopProjectTests(projectId);
@@ -214,6 +255,36 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
           </div>
         </PopoverContent>
       </Popover>
+      {workspaceControls && !projectId && (
+        <section className="flex items-center gap-2 ml-auto">
+          {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (
+            <Button size="sm" variant="secondary" disabled={actionLoading} onClick={handleRun} className="gap-1">
+              {actionLoading && <Loader2 className="w-4 h-4 animate-spin"/>} Run tests
+            </Button>
+          )}
+          {effectiveStatus==='running' && (
+            <>
+              <Button size="sm" variant="outline" disabled={actionLoading} onClick={handlePause} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Pause className="w-4 h-4"/>} Pause
+              </Button>
+              <Button size="sm" variant="destructive" disabled={actionLoading} onClick={handleStop} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Square className="w-4 h-4"/>} Stop
+              </Button>
+            </>
+          )}
+          {effectiveStatus==='paused' && (
+            <>
+              <Button size="sm" variant="outline" disabled={actionLoading} onClick={handleResume} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Play className="w-4 h-4"/>} Resume
+              </Button>
+              <Button size="sm" variant="destructive" disabled={actionLoading} onClick={handleStop} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Square className="w-4 h-4"/>} Stop
+              </Button>
+            </>
+          )}
+        </section>
+      )}
+
       {projectId && (
                <section className="flex items-center gap-2 ml-auto">
                  {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (

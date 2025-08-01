@@ -38,7 +38,7 @@ export function TestsList() {
   return (
     <section>
       <section className="flex flex-col">
-        <TestsCardToolbar />
+        <TestsCardToolbar workspaceControls />
         <section className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 py-1">
           {filteredTests.map(test => (
             <TestCard key={test._id} test={test} />
