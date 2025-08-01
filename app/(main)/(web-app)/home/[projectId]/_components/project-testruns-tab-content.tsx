@@ -33,7 +33,7 @@ export function ProjectTestrunsTabContent() {
 
   const [runs, setRuns] = useState<import("@/hooks/use-testruns").TestRun[] | null>(cached ?? null);
   const [loading, setLoading] = useState(cached ? false : true);
-  const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any" });
+  const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any", testName: "any" });
 
   // Track whether we've seen at least one Socket.IO event for this project's
   // test runs. Until then we ignore merge attempts that would wipe the list
@@ -182,11 +182,19 @@ export function ProjectTestrunsTabContent() {
     )
   ) as string[];
 
+  const testNameOptions = Array.from(
+    new Set(
+      (runs ?? []).map(r => (r as { testName?: string }).testName).filter(Boolean)
+    )
+  ) as string[];
+
   const filtered = (runs ?? []).filter(r => {
     if (filters.result !== "any" && r.status !== filters.result) return false;
     if (filters.run !== "any" && r.browserUseStatus !== filters.run) return false;
     const pName = (r as { personaName?: string }).personaName || (r.persona && typeof r.persona === "object" ? (r.persona as { name?: string }).name : undefined);
     if (filters.persona !== "any" && pName !== filters.persona) return false;
+    const tName = (r as { testName?: string }).testName;
+    if (filters.testName !== "any" && tName !== filters.testName) return false;
     return true;
   });
 
@@ -194,7 +202,7 @@ export function ProjectTestrunsTabContent() {
     <section className="p-4 space-y-4">
       <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">
         <h2 className="text-xl font-semibold">Project test runs · {(runs ?? []).length}</h2>
-        <TestRunsFilter personaOptions={personaOptions} filters={filters} onChange={setFilters} />
+        <TestRunsFilter personaOptions={personaOptions} testNameOptions={testNameOptions} filters={filters} onChange={setFilters} />
       </section>
 
       {filtered.length === 0 ? (
