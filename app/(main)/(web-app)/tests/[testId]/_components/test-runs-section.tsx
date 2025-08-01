@@ -15,7 +15,7 @@ export default function TestRunsSection({ test }: { test: Test }) {
   const testsStore = useTestsStore();
   const [runs, setRuns] = useState<TestRunSummary[] | null>(null);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({ result: 'any', run: 'any', persona: 'any' });
+  const [filters, setFilters] = useState({ result: 'any', run: 'any', persona: 'any', testName: 'any' });
 
   // Fetch runs once per test id change; we intentionally omit store/actions from deps to
   // avoid infinite loops triggered by state updates (socket events). eslint rule disabled.
@@ -71,15 +71,17 @@ export default function TestRunsSection({ test }: { test: Test }) {
     if (filters.run !== 'any' && r.browserUseStatus !== filters.run) return false;
     const pName = (r as { personaName?: string }).personaName;
     if (filters.persona !== 'any' && pName !== filters.persona) return false;
+    if (filters.testName !== 'any' && (r as { testName?: string }).testName !== filters.testName) return false;
     return true;
   });
 
   const personaOptions = Array.from(new Set((displayRuns ?? []).map(r=>(r as { personaName?: string }).personaName).filter(Boolean))) as string[];
 
+
   return (
     <section className="p-4 space-y-4">
       <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">
-        <h2 className="text-xl font-semibold">Test runs · {(displayRuns ?? []).length}</h2>
+        <h2 className="text-xl font-semibold">Test runs · {filtered.length}</h2>
         <TestRunsFilter personaOptions={personaOptions} filters={filters} onChange={setFilters} />
       </section>
       {loading && !runs && <TestRunsCardSkeleton />}
