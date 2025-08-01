@@ -149,9 +149,15 @@ function ProjectsListInner() {
   const [projectToDelete, setProjectToDelete] = React.useState<Project | null>(null);
 
   const uniqueProjects = React.useMemo(() => {
-    if (!projects) return [];
+    if (!projects) return [] as Project[];
     const trashedIds = new Set(trashedProjects?.map(p => p._id) || []);
-    return projects.filter(p => !trashedIds.has(p._id));
+    const map = new Map<string, Project>();
+    projects.forEach(p => {
+      if (!trashedIds.has(p._id) && !map.has(p._id)) {
+        map.set(p._id, p);
+      }
+    });
+    return Array.from(map.values());
   }, [projects, trashedProjects]);
 
   // Function to check if user can trash a project
