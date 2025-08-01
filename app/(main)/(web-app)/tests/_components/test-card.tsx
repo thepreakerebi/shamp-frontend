@@ -66,19 +66,31 @@ export function TestCard({ test, projectId }: { test: Test; projectId?: string }
     ? storeCount
     : (loadingRuns ? 0 : ('totalRuns' in test ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns : successfulRuns + failedRuns));
 
+  // Helper to extract test id from run.test
+  const getRunTestId = (val: unknown): string | undefined => {
+    if (typeof val === 'string') return val;
+    if (val && typeof val === 'object' && '_id' in val && typeof (val as { _id?: unknown })._id === 'string') {
+      return (val as { _id: string })._id;
+    }
+    return undefined;
+  };
+
   const isRunning = React.useMemo(() => {
     return (
-      testRunsStore?.some(
-        r => r.test === test._id && (["running","pending"].includes(r.browserUseStatus ?? "") || ["running","pending"].includes(r.status))
-      ) ?? false
+      testRunsStore?.some(r => {
+        // match by id regardless of test field shape
+        const match = getRunTestId(r.test) === test._id;
+        return match && (["running","pending"].includes(r.browserUseStatus ?? "") || ["running","pending"].includes(r.status));
+      }) ?? false
     );
   }, [testRunsStore, test._id]);
 
   const isPaused = React.useMemo(() => {
     return (
-      testRunsStore?.some(
-        r => r.test === test._id && r.browserUseStatus === "paused"
-      ) ?? false
+      testRunsStore?.some(r => {
+        const match = getRunTestId(r.test) === test._id;
+        return match && r.browserUseStatus === "paused";
+      }) ?? false
     );
   }, [testRunsStore, test._id]);
 
