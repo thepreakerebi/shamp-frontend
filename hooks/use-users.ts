@@ -50,6 +50,33 @@ export function useUsers() {
     toast.success('Member removed from workspace');
   }, [currentWorkspaceId, removeUser]);
 
+    const runWorkspaceTests = useCallback(async (testIds?: string[]) => {
+    if (!currentWorkspaceId) throw new Error('No workspace context');
+    const res = await apiFetch('/users/workspace/run-tests', {
+      workspaceId: currentWorkspaceId,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testIds && testIds.length ? { testIds } : {}),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'Failed to start workspace tests');
+    return res.json();
+  }, [currentWorkspaceId]);
+
+  const pauseWorkspaceTests = useCallback(async () => {
+    if (!currentWorkspaceId) throw new Error('No workspace context');
+    await apiFetch('/users/workspace/tests/pause', { workspaceId: currentWorkspaceId, method: 'PATCH' });
+  }, [currentWorkspaceId]);
+
+  const resumeWorkspaceTests = useCallback(async () => {
+    if (!currentWorkspaceId) throw new Error('No workspace context');
+    await apiFetch('/users/workspace/tests/resume', { workspaceId: currentWorkspaceId, method: 'PATCH' });
+  }, [currentWorkspaceId]);
+
+  const stopWorkspaceTests = useCallback(async () => {
+    if (!currentWorkspaceId) throw new Error('No workspace context');
+    await apiFetch('/users/workspace/tests/stop', { workspaceId: currentWorkspaceId, method: 'PATCH' });
+  }, [currentWorkspaceId]);
+
   return { 
     users, 
     loading, 
@@ -57,6 +84,10 @@ export function useUsers() {
     refetch: fetchUsers, 
     inviteMember, 
     deleteMember,
+    runWorkspaceTests,
+    pauseWorkspaceTests,
+    resumeWorkspaceTests,
+    stopWorkspaceTests,
     hasWorkspaceContext: !!currentWorkspaceId
   };
 } 
