@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -39,17 +40,29 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
   const storeProject = projects?.find(p=>p._id===projectId);
   const [selectOpen,setSelectOpen] = useState(false);
 
+  const { testRuns } = useTestRuns();
   const [optimisticStatus,setOptimisticStatus] = useState<Project["testsRunStatus"] | undefined>();
+  // Derive workspace status from currently loaded runs
+  const workspaceDerivedStatus: Project["testsRunStatus"] = React.useMemo(()=>{
+    if (projectId) return 'idle';
+    const anyRunning = testRuns?.some(r=>['running','pending'].includes(r.browserUseStatus ?? r.status));
+    if (anyRunning) return 'running';
+    const anyPaused = testRuns?.some(r=> r.browserUseStatus==='paused');
+    if (anyPaused) return 'paused';
+    const anyDone = testRuns?.some(r=> ['finished','succeeded','failed','cancelled','stopped'].includes(r.browserUseStatus ?? r.status));
+    return anyDone ? 'done' : 'idle';
+  }, [projectId, testRuns]);
+
   const effectiveStatus: Project["testsRunStatus"] = projectId
     ? (optimisticStatus ?? storeProject?.testsRunStatus ?? 'idle')
-    : (optimisticStatus ?? 'idle');
+    : (optimisticStatus ?? workspaceDerivedStatus ?? 'idle');
   const [actionLoading,setActionLoading]=useState(false);
   // sync with store
   useEffect(() => {
     if (storeProject) {
       setOptimisticStatus(storeProject.testsRunStatus);
     }
-  }, [storeProject?.testsRunStatus]);
+  }, [storeProject]);
   const { searchTests } = useTests();
 
   // Handlers for project suite controls
