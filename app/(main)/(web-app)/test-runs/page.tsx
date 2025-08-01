@@ -77,7 +77,7 @@ export default function TestRunsListPage() {
     <section className="p-4 space-y-4">
       <section className="sticky top-[60px] z-10 bg-background flex flex-col gap-4 py-2">
         <section className="flex justify-between w-full">
-          <h1 className="text-2xl font-semibold">Test runs · {(runs ?? []).length}</h1>
+          <h1 className="text-2xl font-semibold">Test runs · {filtered.length}</h1>
           <TestRunsFilter personaOptions={personaOptions} testNameOptions={testNameOptions} filters={filters} onChange={setFilters} />
         </section>
         {activeBadges().length > 0 && (
