@@ -139,6 +139,11 @@ function NotificationRow({ notification }: NotificationRowProps) {
         path = "/tests?tab=schedules";
         break;
       }
+      case "projectTestsCompleted": {
+        const pid = (notification.data as any).projectId as string | undefined;
+        if (pid) path = `/home/${pid}?tab=tests`;
+        break;
+      }
       default:
         break;
     }
@@ -192,7 +197,7 @@ function NotificationAvatar({ notification }: { notification: NotificationRowPro
   return (
     <Avatar className="size-8 bg-muted">
       <AvatarFallback>
-        {type === "batchTestCompleted" ? "B" : "T"}
+        {type === "batchTestCompleted" ? "B" : type === "projectTestsCompleted" ? "P" : "T"}
       </AvatarFallback>
     </Avatar>
   );
@@ -223,6 +228,14 @@ function renderNotificationText(notification: NotificationRowProps["notification
       return (
         <span>
           Scheduled run for <strong>{testName}</strong> {personaName && `(${personaName})`} coming up at {new Date(runTime).toLocaleString()}.
+        </span>
+      );
+    }
+    case "projectTestsCompleted": {
+      const { projectName, testsCount } = data;
+      return (
+        <span>
+          Project <strong>{projectName}</strong> test suite completed ({testsCount} {testsCount === 1 ? "test" : "tests"}).
         </span>
       );
     }
