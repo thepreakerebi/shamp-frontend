@@ -11,7 +11,7 @@ export default function BatchTestRunsSection({ batch }: { batch: BatchTest }) {
   const { getTestRunsForBatchTest } = useBatchTests();
   const batchStore = useBatchTestsStore();
   const [runs, setRuns] = useState<import("@/hooks/use-testruns").TestRun[] | null>(null);
-  const [filters, setFilters] = useState({ result: 'any', run: 'any', persona: 'any' });
+  const [filters, setFilters] = useState({ result: 'any', run: 'any', persona: 'any', testName: 'any' });
   const [loading, setLoading] = useState(false);
 
   // Load from cache first, then refresh
@@ -66,6 +66,7 @@ export default function BatchTestRunsSection({ batch }: { batch: BatchTest }) {
     if (filters.run !== 'any' && r.browserUseStatus !== filters.run) return false;
     const pName = (r as { personaName?: string }).personaName;
     if (filters.persona !== 'any' && pName !== filters.persona) return false;
+    if (filters.testName !== 'any' && (r as { testName?: string }).testName !== filters.testName) return false;
     return true;
   });
 
