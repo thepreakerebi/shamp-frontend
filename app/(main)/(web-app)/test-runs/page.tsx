@@ -36,7 +36,7 @@ export default function TestRunsListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any" });
+  const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any", testName: "any" });
 
   if ((!initialDone && loading) || (loading && (runs === null || runs.length === 0))) {
     return <TestRunsCardSkeleton />;
@@ -51,6 +51,7 @@ export default function TestRunsListPage() {
     if (filters.run !== "any" && r.browserUseStatus !== filters.run) return false;
     const pName = (r as { personaName?: string }).personaName;
     if (filters.persona !== "any" && pName !== filters.persona) return false;
+    if (filters.testName !== "any" && (r as { testName?: string }).testName !== filters.testName) return false;
     return true;
   });
 
@@ -58,11 +59,15 @@ export default function TestRunsListPage() {
     new Set((runs ?? []).map((r) => (r as { personaName?: string }).personaName).filter(Boolean))
   ) as string[];
 
+  const testNameOptions = Array.from(
+    new Set((runs ?? []).map((r) => (r as { testName?: string }).testName).filter(Boolean))
+  ) as string[];
+
   return (
     <section className="p-4 space-y-4">
       <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">
         <h1 className="text-2xl font-semibold">Test runs · {(runs ?? []).length}</h1>
-        <TestRunsFilter personaOptions={personaOptions} filters={filters} onChange={setFilters} />
+        <TestRunsFilter personaOptions={personaOptions} testNameOptions={testNameOptions} filters={filters} onChange={setFilters} />
       </section>
 
       {filtered.length === 0 ? (

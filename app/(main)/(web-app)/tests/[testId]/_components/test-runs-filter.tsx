@@ -6,15 +6,17 @@ import { Filter } from "lucide-react";
 
 interface Props {
   personaOptions: string[];
+  testNameOptions?: string[];
   filters: {
     result: string;
     run: string;
     persona: string;
+    testName: string;
   };
   onChange: (f: Props["filters"]) => void;
 }
 
-export default function TestRunsFilter({ personaOptions, filters, onChange }: Props) {
+export default function TestRunsFilter({ personaOptions, testNameOptions, filters, onChange }: Props) {
   const handle = (field: keyof Props["filters"], value: string) => {
     onChange({ ...filters, [field]: value });
   };
@@ -50,6 +52,19 @@ export default function TestRunsFilter({ personaOptions, filters, onChange }: Pr
                 <SelectItem value="paused">Paused</SelectItem>
                 {/* <SelectItem value="finished">Finished</SelectItem> */}
                 {/* <SelectItem value="stopped">Stopped</SelectItem> */}
+              </SelectContent>
+            </Select>
+          </div>
+          {/* Test Name */}
+          <div>
+            <p className="text-sm font-medium mb-1">Test</p>
+            <Select value={filters.testName} onValueChange={v => handle("testName", v)}>
+              <SelectTrigger className="w-full h-8"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">All tests</SelectItem>
+                {(testNameOptions ?? []).map(t => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
