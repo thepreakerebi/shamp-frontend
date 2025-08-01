@@ -37,7 +37,8 @@ export function useUsers() {
       store.setWorkspaceStatus(payload.testsRunStatus);
     });
     return () => { socket.disconnect(); };
-  },[currentWorkspaceId, store]);
+  // Store object is unstable; depend only on workspaceId so we don't recreate socket on every state change
+  },[currentWorkspaceId]);
 
   useEffect(() => { 
     if (users === null && currentWorkspaceId) {

@@ -42,7 +42,7 @@ export default function SelectWorkspaceTestsDialog({ open, setOpen, onStarted }:
     <Dialog open={open} onOpenChange={v=>{setOpen(v); if(!v) setSelected([]);}}>
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>Select tests to run</DialogTitle></DialogHeader>
-        <ScrollArea className="h-[30vh] pr-2">
+        <ScrollArea className="h-[50vh] pr-2 py-2">
         <section className="space-y-3">
           {available.map(t=>{
             const checked=selected.includes(t._id);

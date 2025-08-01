@@ -61,7 +61,7 @@ export default function SelectTestsDialog({ projectId, open, setOpen, onStarted 
         <DialogHeader>
           <DialogTitle>Select tests to run</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="h-[30vh] pr-2">
+        <ScrollArea className="h-[50vh] pr-2 py-2">
           <section className="space-y-3">
           {projectTests.map((t) => {
             const checked = selected.includes(t._id);
