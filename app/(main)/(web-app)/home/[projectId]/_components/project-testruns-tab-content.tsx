@@ -8,6 +8,7 @@ import { useTestRuns } from "@/hooks/use-testruns";
 import { TestRunCard, MinimalRun } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card";
 import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-card-skeleton";
 import TestRunsFilter from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-filter";
+import { Badge } from "@/components/ui/badge";
 import { TestRunsListEmpty } from "@/app/(main)/(web-app)/test-runs/_components/test-runs-list-empty";
 import { useAuth } from "@/lib/auth";
 import { usePersonasStore } from "@/lib/store/personas";
@@ -34,6 +35,15 @@ export function ProjectTestrunsTabContent() {
   const [runs, setRuns] = useState<import("@/hooks/use-testruns").TestRun[] | null>(cached ?? null);
   const [loading, setLoading] = useState(cached ? false : true);
   const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any", testName: "any" });
+
+  const activeBadges = () => {
+    const arr: { label: string; key: string }[] = [];
+    if (filters.result !== "any") arr.push({ label: `Result: ${filters.result}`, key: "result" });
+    if (filters.run !== "any") arr.push({ label: `Run: ${filters.run}`, key: "run" });
+    if (filters.persona !== "any") arr.push({ label: `Persona: ${filters.persona}`, key: "persona" });
+    if (filters.testName !== "any") arr.push({ label: `Test: ${filters.testName}`, key: "testName" });
+    return arr;
+  };
 
   // Track whether we've seen at least one Socket.IO event for this project's
   // test runs. Until then we ignore merge attempts that would wipe the list
@@ -204,6 +214,14 @@ export function ProjectTestrunsTabContent() {
         <h2 className="text-xl font-semibold">Project test runs · {filtered.length}</h2>
         <TestRunsFilter personaOptions={personaOptions} testNameOptions={testNameOptions} filters={filters} onChange={setFilters} />
       </section>
+      {activeBadges().length > 0 && (
+        <section className="flex flex-wrap gap-2 py-1">
+          <p className="text-muted-foreground text-sm">Filters:</p>
+          {activeBadges().map(b => (
+            <Badge key={b.key} variant="outline" className="text-xs">{b.label}</Badge>
+          ))}
+        </section>
+      )}
 
       {filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground">No runs match the selected filters.</p>
