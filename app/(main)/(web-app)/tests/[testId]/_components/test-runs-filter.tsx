@@ -83,6 +83,17 @@ export default function TestRunsFilter({ personaOptions, testNameOptions, filter
               </SelectContent>
             </Select>
           </div>
+          {/* Reset button */}
+          <div className="flex justify-end pt-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={filters.result==='any' && filters.run==='any' && filters.persona==='any' && filters.testName==='any'}
+              onClick={()=> onChange({ result:'any', run:'any', persona:'any', testName:'any' })}
+            >
+              Reset
+            </Button>
+          </div>
         </div>
       </PopoverContent>
     </Popover>
