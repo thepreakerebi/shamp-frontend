@@ -1,5 +1,6 @@
 "use client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo } from "react";
@@ -60,7 +61,8 @@ export default function SelectTestsDialog({ projectId, open, setOpen, onStarted 
         <DialogHeader>
           <DialogTitle>Select tests to run</DialogTitle>
         </DialogHeader>
-        <section className="max-h-[60vh] overflow-auto space-y-2">
+        <ScrollArea className="h-[30vh] pr-2">
+          <section className="space-y-3">
           {projectTests.map((t) => {
             const checked = selected.includes(t._id);
             return (
@@ -85,7 +87,8 @@ export default function SelectTestsDialog({ projectId, open, setOpen, onStarted 
           {projectTests.length === 0 && (
             <p className="text-sm text-muted-foreground">No tests found for this project.</p>
           )}
-        </section>
+          </section>
+        </ScrollArea>
         <DialogFooter className="pt-4">
           <Button variant="outline" onClick={() => setOpen(false)} disabled={loading}>
             Cancel
