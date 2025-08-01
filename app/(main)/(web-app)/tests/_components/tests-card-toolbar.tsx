@@ -19,7 +19,8 @@ interface TestsCardToolbarProps {
   workspaceControls?: boolean; // global tests list
 }
 
-import SelectTestsDialog from "@/app/(main)/(web-app)/home/[projectId]/_components/select-tests-dialog";
+import ProjectSelectTestsDialog from "@/app/(main)/(web-app)/home/[projectId]/_components/select-tests-dialog";
+import WorkspaceSelectTestsDialog from "./select-workspace-tests-dialog";
 
 import { useUsers } from "@/hooks/use-users";
 
@@ -37,6 +38,7 @@ export function TestsCardToolbar({ projectId, workspaceControls = false }: Tests
   );
   const storeProject = projects?.find(p=>p._id===projectId);
   const [selectOpen,setSelectOpen] = useState(false);
+  const [wsSelectOpen, setWsSelectOpen] = useState(false);
 
   const [optimisticStatus,setOptimisticStatus] = useState<Project["testsRunStatus"] | undefined>();
   const effectiveStatus: Project["testsRunStatus"] = optimisticStatus ?? storeProject?.testsRunStatus ?? 'idle';
@@ -256,7 +258,14 @@ export function TestsCardToolbar({ projectId, workspaceControls = false }: Tests
         </PopoverContent>
       </Popover>
       {workspaceControls && !projectId && (
+        <>
+        <WorkspaceSelectTestsDialog open={wsSelectOpen} setOpen={setWsSelectOpen} onStarted={()=>setOptimisticStatus('running')} />
         <section className="flex items-center gap-2 ml-auto">
+          {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (
+            <Button size="sm" variant="outline" onClick={() => setWsSelectOpen(true)} className="gap-1">
+              Select tests
+            </Button>
+          )}
           {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (
             <Button size="sm" variant="secondary" disabled={actionLoading} onClick={handleRun} className="gap-1">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin"/>} Run tests
@@ -283,16 +292,18 @@ export function TestsCardToolbar({ projectId, workspaceControls = false }: Tests
             </>
           )}
         </section>
+        </>
       )}
 
       {projectId && (
+        <>
                <section className="flex items-center gap-2 ml-auto">
                  {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (
                  <Button size="sm" variant="outline" onClick={()=>setSelectOpen(true)} className="gap-1">
                    Select tests
                  </Button>
                )}
-                 <SelectTestsDialog projectId={projectId} open={selectOpen} setOpen={setSelectOpen} onStarted={()=>setOptimisticStatus('running')} />
+                 <ProjectSelectTestsDialog projectId={projectId} open={selectOpen} setOpen={setSelectOpen} onStarted={()=>setOptimisticStatus('running')} />
           {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (
             <Button size="sm" variant="secondary" disabled={actionLoading} onClick={handleRun} className="gap-1">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin"/>} Run tests
@@ -319,6 +330,7 @@ export function TestsCardToolbar({ projectId, workspaceControls = false }: Tests
             </>
           )}
         </section>
+        </>
       )}
 
       
