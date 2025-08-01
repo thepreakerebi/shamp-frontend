@@ -250,8 +250,11 @@ export function useProjects() {
     const path = `/projects/${id}${deleteTests ? `?deleteTests=true` : ''}`;
     const res = await apiFetch(path, { workspaceId: currentWorkspaceId, method: 'DELETE' });
     if (!res.ok) throw new Error("Failed to delete project");
-    // Optimistic update: remove from trashed list immediately
+    // Optimistic update: remove from active and trashed lists immediately
+    store.removeProjectFromList(id);
     store.removeTrashedProject(id);
+    const { projects } = useProjectsStore.getState();
+    store.setCount(Array.isArray(projects) ? projects.length : 0);
     return res.json();
   };
 
