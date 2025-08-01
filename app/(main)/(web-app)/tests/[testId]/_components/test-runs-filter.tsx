@@ -87,7 +87,7 @@ export default function TestRunsFilter({ personaOptions, testNameOptions, filter
           <div className="flex justify-end pt-2">
             <Button
               size="sm"
-              variant="outline"
+              variant="ghost"
               disabled={filters.result==='any' && filters.run==='any' && filters.persona==='any' && filters.testName==='any'}
               onClick={()=> onChange({ result:'any', run:'any', persona:'any', testName:'any' })}
             >

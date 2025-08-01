@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/auth";
 import { useBilling } from "@/hooks/use-billing";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { useUsers } from "@/hooks/use-users";
+import { Badge } from "@/components/ui/badge";
 import { useTestRuns } from "@/hooks/use-testruns";
 
 import SelectWorkspaceTestsDialog from "@/app/(main)/(web-app)/home/[projectId]/_components/select-workspace-tests-dialog";
@@ -135,6 +136,21 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
   const [runStatus, setRunStatus] = useState<string>("any");
   const [role, setRole] = useState<string>("any");
 
+  const activeBadges = () => {
+    const arr: { key: string; label: string }[] = [];
+    if (projSel.length && projects && projects.length) {
+      const names = projects.filter(p=>projSel.includes(p._id)).map(p=>p.name);
+      arr.push({ key: 'projects', label: `Projects: ${names.join(', ')}` });
+    }
+    if (persSel.length && personas && personas.length) {
+      const names = personas.filter(p=>persSel.includes(p._id)).map(p=>p.name);
+      arr.push({ key: 'personas', label: `Personas: ${names.join(', ')}` });
+    }
+    if (runStatus !== 'any') arr.push({ key: 'run', label: `Run: ${runStatus}` });
+    if (role !== 'any') arr.push({ key: 'role', label: `Role: ${role}` });
+    return arr;
+  };
+
   const toggleId = (arr: string[], id: string, setter: (v: string[]) => void) => {
     if (arr.includes(id)) setter(arr.filter(i => i !== id));
     else setter([...arr, id]);
@@ -168,7 +184,8 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
   },[query, projSel, persSel, runStatus, role]);
 
   return (
-    <section className="sticky top-[60px] z-10 bg-background flex items-center gap-4 py-4">
+    <section className="sticky top-[60px] z-10 bg-background flex flex-col gap-4 py-4">
+      <section className="flex items-center gap-4 w-full">
       <div className="relative max-w-xs">
         <Input
           placeholder="Search tests…"
@@ -285,6 +302,7 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
           )}
         </section>
       ) : (
+        /* placeholder */
         /* -------- Workspace controls -------- */
         <section className="flex items-center gap-2 ml-auto">
           {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (
@@ -320,6 +338,15 @@ export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
       )}
 
       
+      </section>
+    {activeBadges().length > 0 && (
+      <section className="flex flex-wrap gap-2 w-full mt-2">
+        <p className="text-muted-foreground text-sm">Filters:</p>
+        {activeBadges().map(b => (
+          <Badge key={b.key} variant="outline" className="text-xs">{b.label}</Badge>
+        ))}
+      </section>
+    )}
     </section>
   );
 } 
