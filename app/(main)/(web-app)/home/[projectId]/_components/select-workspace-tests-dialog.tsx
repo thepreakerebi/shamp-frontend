@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo } from "react";
 import { useTests } from "@/hooks/use-tests";
+import { useTestRuns } from "@/hooks/use-testruns";
 import { useUsers } from "@/hooks/use-users";
 import { toast } from "sonner";
 
@@ -17,6 +18,7 @@ interface SelectWorkspaceTestsDialogProps {
 export default function SelectWorkspaceTestsDialog({ open, setOpen, onStarted }: SelectWorkspaceTestsDialogProps) {
   const { tests } = useTests();
   const { runWorkspaceTests } = useUsers();
+  const { refetch: refetchRuns } = useTestRuns();
   const [selected, setSelected] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -28,6 +30,7 @@ export default function SelectWorkspaceTestsDialog({ open, setOpen, onStarted }:
     setLoading(true);
     try {
       await runWorkspaceTests(selected);
+      await refetchRuns();
       toast.success("Selected tests started");
       onStarted?.();
       setOpen(false); setSelected([]);
