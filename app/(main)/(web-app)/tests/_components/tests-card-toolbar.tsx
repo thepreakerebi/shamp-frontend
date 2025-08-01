@@ -12,7 +12,8 @@ import { usePersonas, type Persona as PersonaType } from "@/hooks/use-personas";
 import { useAuth } from "@/lib/auth";
 import { useBilling } from "@/hooks/use-billing";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { useTests } from "@/hooks/use-tests";
+import { useTests, type Test } from "@/hooks/use-tests";
+import { useTestRunsStore } from "@/lib/store/testruns";
 
 interface TestsCardToolbarProps {
   projectId?: string; // when inside ProjectTestsTabContent
@@ -49,9 +50,34 @@ export function TestsCardToolbar({ projectId, workspaceControls = false }: Tests
       setOptimisticStatus(storeProject.testsRunStatus);
     }
   }, [storeProject?.testsRunStatus, storeProject]);
-  const { searchTests } = useTests();
+  const { searchTests, getTestRunsForTest, tests } = useTests();
 
-  // Handlers for project suite controls
+  // Sync status based on testRuns store (workspace-wide)
+  const runsStore = useTestRunsStore(state=>state.testRuns);
+  useEffect(()=>{
+    if (!workspaceControls) return;
+    if (!runsStore || runsStore.length===0) return;
+    if (runsStore.some(r=>["running","pending"].includes(r.browserUseStatus ?? r.status))) {
+      setOptimisticStatus('running');
+    } else if (runsStore.some(r=>r.browserUseStatus === 'paused')) {
+      setOptimisticStatus('paused');
+    } else {
+      setOptimisticStatus('done');
+    }
+  },[workspaceControls, runsStore]);
+
+  // Helper to refresh runs for all tests
+  const refreshAllRuns = async () => {
+    const latestTests = (await import("@/lib/store/tests")).useTestsStore.getState().tests as Test[] | null;
+    const list = latestTests && latestTests.length ? latestTests : tests;
+    if (list && list.length) {
+      try {
+        await Promise.all(list.map((t: Test) => getTestRunsForTest(t._id, true)));
+      } catch {/* ignore */}
+    }
+  };
+
+  // Sync status based on testRuns store (workspace-wide)
   const handleRun = async () => {
     if (actionLoading) return;
     if (workspaceControls) {
@@ -60,6 +86,9 @@ export function TestsCardToolbar({ projectId, workspaceControls = false }: Tests
         await runWorkspaceTests();
         toast.success("Workspace tests started");
         setOptimisticStatus('running');
+        // Fetch latest runs so badges update quickly
+        await refreshAllRuns();
+        setTimeout(()=>refreshAllRuns(), 1500);
       } catch (err: unknown) {
         toast.error(err instanceof Error ? err.message : 'Failed to start tests');
       } finally { setActionLoading(false); }
@@ -81,7 +110,7 @@ export function TestsCardToolbar({ projectId, workspaceControls = false }: Tests
     if (actionLoading) return;
     if (workspaceControls) {
       setActionLoading(true);
-      try { await pauseWorkspaceTests(); toast.success('Tests paused'); setOptimisticStatus('paused'); }
+      try { await pauseWorkspaceTests(); toast.success('Tests paused'); setOptimisticStatus('paused'); await refreshAllRuns(); }
       catch (err: unknown) { toast.error(err instanceof Error ? err.message : 'Failed'); }
       finally { setActionLoading(false); }
       return;
@@ -99,7 +128,7 @@ export function TestsCardToolbar({ projectId, workspaceControls = false }: Tests
     if (actionLoading) return;
     if (workspaceControls) {
       setActionLoading(true);
-      try { await resumeWorkspaceTests(); toast.success('Tests resumed'); setOptimisticStatus('running'); }
+      try { await resumeWorkspaceTests(); toast.success('Tests resumed'); setOptimisticStatus('running'); await refreshAllRuns(); setTimeout(()=>refreshAllRuns(), 1500); }
       catch (err: unknown) { toast.error(err instanceof Error ? err.message : 'Failed'); }
       finally { setActionLoading(false); }
       return;
@@ -117,7 +146,7 @@ export function TestsCardToolbar({ projectId, workspaceControls = false }: Tests
     if (actionLoading) return;
     if (workspaceControls) {
       setActionLoading(true);
-      try { await stopWorkspaceTests(); toast.success('Tests stopped'); setOptimisticStatus('done'); }
+      try { await stopWorkspaceTests(); toast.success('Tests stopped'); setOptimisticStatus('done'); await refreshAllRuns(); setTimeout(()=>refreshAllRuns(), 1500); }
       catch (err: unknown) { toast.error(err instanceof Error ? err.message : 'Failed'); }
       finally { setActionLoading(false); }
       return;
