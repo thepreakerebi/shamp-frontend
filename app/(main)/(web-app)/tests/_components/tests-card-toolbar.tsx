@@ -12,34 +12,26 @@ import { usePersonas, type Persona as PersonaType } from "@/hooks/use-personas";
 import { useAuth } from "@/lib/auth";
 import { useBilling } from "@/hooks/use-billing";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { useTests, type Test } from "@/hooks/use-tests";
-import { useTestRunsStore } from "@/lib/store/testruns";
+import { useTests } from "@/hooks/use-tests";
 
 interface TestsCardToolbarProps {
   projectId?: string; // when inside ProjectTestsTabContent
-  workspaceControls?: boolean; // global tests list
 }
 
-import ProjectSelectTestsDialog from "@/app/(main)/(web-app)/home/[projectId]/_components/select-tests-dialog";
-import WorkspaceSelectTestsDialog from "./select-workspace-tests-dialog";
+import SelectTestsDialog from "@/app/(main)/(web-app)/home/[projectId]/_components/select-tests-dialog";
 
-import { useUsers } from "@/hooks/use-users";
-
-
-export function TestsCardToolbar({ projectId, workspaceControls = false }: TestsCardToolbarProps) {
+export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
   const [query, setQuery] = useState("");
   // Project suite controls
   const { runProjectTests, pauseProjectTests, resumeProjectTests, stopProjectTests, getProjectTestruns } = useProjects();
   const { projects } = useProjects();
   const { summary } = useBilling();
-  const { runWorkspaceTests, pauseWorkspaceTests, resumeWorkspaceTests, stopWorkspaceTests } = useUsers();
   const isFreePlan = !summary?.products || (
     Array.isArray(summary.products) &&
     ((summary.products[0] as unknown as { id?: string })?.id === 'free')
   );
   const storeProject = projects?.find(p=>p._id===projectId);
   const [selectOpen,setSelectOpen] = useState(false);
-  const [wsSelectOpen, setWsSelectOpen] = useState(false);
 
   const [optimisticStatus,setOptimisticStatus] = useState<Project["testsRunStatus"] | undefined>();
   const effectiveStatus: Project["testsRunStatus"] = optimisticStatus ?? storeProject?.testsRunStatus ?? 'idle';
@@ -49,52 +41,12 @@ export function TestsCardToolbar({ projectId, workspaceControls = false }: Tests
     if (storeProject) {
       setOptimisticStatus(storeProject.testsRunStatus);
     }
-  }, [storeProject?.testsRunStatus, storeProject]);
-  const { searchTests, getTestRunsForTest, tests } = useTests();
+  }, [storeProject?.testsRunStatus]);
+  const { searchTests } = useTests();
 
-  // Sync status based on testRuns store (workspace-wide)
-  const runsStore = useTestRunsStore(state=>state.testRuns);
-  useEffect(()=>{
-    if (!workspaceControls) return;
-    if (!runsStore || runsStore.length===0) return;
-    if (runsStore.some(r=>["running","pending"].includes(r.browserUseStatus ?? r.status))) {
-      setOptimisticStatus('running');
-    } else if (runsStore.some(r=>r.browserUseStatus === 'paused')) {
-      setOptimisticStatus('paused');
-    } else {
-      setOptimisticStatus('done');
-    }
-  },[workspaceControls, runsStore]);
-
-  // Helper to refresh runs for all tests
-  const refreshAllRuns = async () => {
-    const latestTests = (await import("@/lib/store/tests")).useTestsStore.getState().tests as Test[] | null;
-    const list = latestTests && latestTests.length ? latestTests : tests;
-    if (list && list.length) {
-      try {
-        await Promise.all(list.map((t: Test) => getTestRunsForTest(t._id, true)));
-      } catch {/* ignore */}
-    }
-  };
-
-  // Sync status based on testRuns store (workspace-wide)
+  // Handlers for project suite controls
   const handleRun = async () => {
-    if (actionLoading) return;
-    if (workspaceControls) {
-      setActionLoading(true);
-      try {
-        await runWorkspaceTests();
-        toast.success("Workspace tests started");
-        setOptimisticStatus('running');
-        // Fetch latest runs so badges update quickly
-        await refreshAllRuns();
-        setTimeout(()=>refreshAllRuns(), 1500);
-      } catch (err: unknown) {
-        toast.error(err instanceof Error ? err.message : 'Failed to start tests');
-      } finally { setActionLoading(false); }
-      return;
-    }
-    if (!projectId) return;
+    if (!projectId || actionLoading) return;
     setActionLoading(true);
     try {
       await runProjectTests(projectId);
@@ -107,15 +59,7 @@ export function TestsCardToolbar({ projectId, workspaceControls = false }: Tests
     } finally { setActionLoading(false); }
   };
   const handlePause = async () => {
-    if (actionLoading) return;
-    if (workspaceControls) {
-      setActionLoading(true);
-      try { await pauseWorkspaceTests(); toast.success('Tests paused'); setOptimisticStatus('paused'); await refreshAllRuns(); }
-      catch (err: unknown) { toast.error(err instanceof Error ? err.message : 'Failed'); }
-      finally { setActionLoading(false); }
-      return;
-    }
-    if (!projectId) return;
+    if (!projectId || actionLoading) return;
     setActionLoading(true);
     try {
       await pauseProjectTests(projectId);
@@ -125,15 +69,7 @@ export function TestsCardToolbar({ projectId, workspaceControls = false }: Tests
       toast.error(err instanceof Error ? err.message : 'Failed');
     } finally { setActionLoading(false); } };
   const handleResume = async () => {
-    if (actionLoading) return;
-    if (workspaceControls) {
-      setActionLoading(true);
-      try { await resumeWorkspaceTests(); toast.success('Tests resumed'); setOptimisticStatus('running'); await refreshAllRuns(); setTimeout(()=>refreshAllRuns(), 1500); }
-      catch (err: unknown) { toast.error(err instanceof Error ? err.message : 'Failed'); }
-      finally { setActionLoading(false); }
-      return;
-    }
-    if (!projectId) return;
+    if (!projectId || actionLoading) return;
     setActionLoading(true);
     try {
       await resumeProjectTests(projectId);
@@ -143,15 +79,7 @@ export function TestsCardToolbar({ projectId, workspaceControls = false }: Tests
       toast.error(err instanceof Error ? err.message : 'Failed');
     } finally { setActionLoading(false); } };
   const handleStop = async () => {
-    if (actionLoading) return;
-    if (workspaceControls) {
-      setActionLoading(true);
-      try { await stopWorkspaceTests(); toast.success('Tests stopped'); setOptimisticStatus('done'); await refreshAllRuns(); setTimeout(()=>refreshAllRuns(), 1500); }
-      catch (err: unknown) { toast.error(err instanceof Error ? err.message : 'Failed'); }
-      finally { setActionLoading(false); }
-      return;
-    }
-    if (!projectId) return;
+    if (!projectId || actionLoading) return;
     setActionLoading(true);
     try {
       await stopProjectTests(projectId);
@@ -286,53 +214,14 @@ export function TestsCardToolbar({ projectId, workspaceControls = false }: Tests
           </div>
         </PopoverContent>
       </Popover>
-      {workspaceControls && !projectId && (
-        <>
-        <WorkspaceSelectTestsDialog open={wsSelectOpen} setOpen={setWsSelectOpen} onStarted={()=>setOptimisticStatus('running')} />
-        <section className="flex items-center gap-2 ml-auto">
-          {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (
-            <Button size="sm" variant="outline" onClick={() => setWsSelectOpen(true)} className="gap-1">
-              Select tests
-            </Button>
-          )}
-          {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (
-            <Button size="sm" variant="secondary" disabled={actionLoading} onClick={handleRun} className="gap-1">
-              {actionLoading && <Loader2 className="w-4 h-4 animate-spin"/>} Run tests
-            </Button>
-          )}
-          {effectiveStatus==='running' && (
-            <>
-              <Button size="sm" variant="outline" disabled={actionLoading} onClick={handlePause} className="gap-1">
-                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Pause className="w-4 h-4"/>} Pause
-              </Button>
-              <Button size="sm" variant="destructive" disabled={actionLoading} onClick={handleStop} className="gap-1">
-                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Square className="w-4 h-4"/>} Stop
-              </Button>
-            </>
-          )}
-          {effectiveStatus==='paused' && (
-            <>
-              <Button size="sm" variant="outline" disabled={actionLoading} onClick={handleResume} className="gap-1">
-                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Play className="w-4 h-4"/>} Resume
-              </Button>
-              <Button size="sm" variant="destructive" disabled={actionLoading} onClick={handleStop} className="gap-1">
-                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Square className="w-4 h-4"/>} Stop
-              </Button>
-            </>
-          )}
-        </section>
-        </>
-      )}
-
       {projectId && (
-        <>
                <section className="flex items-center gap-2 ml-auto">
                  {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (
                  <Button size="sm" variant="outline" onClick={()=>setSelectOpen(true)} className="gap-1">
                    Select tests
                  </Button>
                )}
-                 <ProjectSelectTestsDialog projectId={projectId} open={selectOpen} setOpen={setSelectOpen} onStarted={()=>setOptimisticStatus('running')} />
+                 <SelectTestsDialog projectId={projectId} open={selectOpen} setOpen={setSelectOpen} onStarted={()=>setOptimisticStatus('running')} />
           {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (
             <Button size="sm" variant="secondary" disabled={actionLoading} onClick={handleRun} className="gap-1">
               {actionLoading && <Loader2 className="w-4 h-4 animate-spin"/>} Run tests
@@ -359,7 +248,6 @@ export function TestsCardToolbar({ projectId, workspaceControls = false }: Tests
             </>
           )}
         </section>
-        </>
       )}
 
       
