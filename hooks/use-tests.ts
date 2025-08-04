@@ -33,6 +33,12 @@ export interface Test {
 
 export type TestRunSummary = TestRun;
 
+export interface TestFilePayload {
+  fileName: string;
+  contentType: string;
+  data: string; // base64-encoded file contents
+}
+
 export interface TestPayload {
   name: string;
   description?: string;
@@ -41,6 +47,7 @@ export interface TestPayload {
   browserViewportWidth?: number;
   browserViewportHeight?: number;
   maxAgentSteps?: number;
+  files?: TestFilePayload[];
 }
 
 export interface TestAnalysis {
