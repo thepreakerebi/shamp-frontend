@@ -197,7 +197,7 @@ export default function EditTestPage() {
         persona: form.personaId,
         browserViewportWidth: vp.w,
         browserViewportHeight: vp.h,
-        ...(allFiles.length ? { files: allFiles as any } : {}),
+        files: allFiles as any,
       });
       toast.success("Test updated");
       router.push(`/tests/${testId}`);
