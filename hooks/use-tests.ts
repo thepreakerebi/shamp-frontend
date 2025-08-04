@@ -28,6 +28,7 @@ export interface Test {
   browserViewportWidth?: number;
   browserViewportHeight?: number;
   maxAgentSteps?: number;
+  files?: { fileName: string; contentType: string }[];
   // Add other fields as needed
 }
 

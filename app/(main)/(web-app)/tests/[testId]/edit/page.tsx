@@ -6,7 +6,9 @@ import { useTests } from "@/hooks/use-tests";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2, Laptop, Tablet, Smartphone } from "lucide-react";
+import { Loader2, Laptop, Tablet, Smartphone, X } from "lucide-react";
+import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
+import { fileToBase64 } from "@/lib/file-utils";
 import ProjectCommand from "../../create/_components/project-command";
 import PersonaCommand from "../../create/_components/persona-command";
 import { toast } from "sonner";
@@ -70,6 +72,11 @@ export default function EditTestPage() {
     };
   });
   const [errors, setErrors] = useState<{ name?: string; description?: string; projectId?: string; personaId?: string; device?: string }>({});
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const [existingFiles, setExistingFiles] = useState<{ fileName: string; contentType: string }[]>(() => {
+    if (existing && Array.isArray((existing as any).files)) return (existing as any).files as { fileName: string; contentType: string }[];
+    return [];
+  });
   const [saving, setSaving] = useState(false);
 
   // Unsaved changes dialog
@@ -153,6 +160,7 @@ export default function EditTestPage() {
           personaId: firstPersonaId,
           device: deviceInitial,
         });
+        setExistingFiles(Array.isArray((t as any).files) ? (t as any).files as any[] : []);
         setInitialLoaded(true);
       })();
     }
@@ -171,7 +179,26 @@ export default function EditTestPage() {
     try{
       const viewportMap: Record<string,{w:number;h:number}> = {desktop:{w:1280,h:720}, tablet:{w:820,h:1180}, mobile:{w:800,h:1280}};
       const vp = deviceSelectionEnabled ? viewportMap[form.device as keyof typeof viewportMap] : viewportMap["desktop"];
-      await updateTest(testId, { name: form.name, description: form.description, project: form.projectId, persona: form.personaId, browserViewportWidth: vp.w, browserViewportHeight: vp.h });
+      // Build file payloads
+      const existingMetaPayload = existingFiles.map(meta=>({ fileName: meta.fileName, contentType: meta.contentType }));
+      const newFilesPayload = await Promise.all(
+        pendingFiles.map(async ({ file })=>({
+          fileName: file.name,
+          contentType: file.type,
+          data: await fileToBase64(file),
+        }))
+      );
+      const allFiles = [...existingMetaPayload, ...newFilesPayload];
+
+      await updateTest(testId, {
+        name: form.name,
+        description: form.description,
+        project: form.projectId,
+        persona: form.personaId,
+        browserViewportWidth: vp.w,
+        browserViewportHeight: vp.h,
+        ...(allFiles.length ? { files: allFiles as any } : {}),
+      });
       toast.success("Test updated");
       router.push(`/tests/${testId}`);
     }catch(err){
@@ -230,6 +257,25 @@ export default function EditTestPage() {
           {errors.device && <p className="text-destructive text-xs mt-1">{errors.device}</p>}
         </section>
         )}
+        {/* Existing attachments */}
+        {existingFiles.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium mb-1">Current attachments</label>
+            <ul className="mt-1 space-y-1 max-h-40 overflow-auto">
+              {existingFiles.map((f, idx)=> (
+                <li key={idx} className="flex items-center justify-between text-sm border rounded px-2 py-1">
+                  <span className="truncate mr-2">{f.fileName}</span>
+                  <button type="button" onClick={()=>{
+                    const copy=[...existingFiles]; copy.splice(idx,1); setExistingFiles(copy);
+                  }} className="text-muted-foreground hover:text-foreground"><X className="size-4"/></button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {/* Add new attachments */}
+        <FileUploader files={pendingFiles} setFiles={setPendingFiles} disabled={saving} />
+
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={() => {
             if (isDirty) {
