@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +14,9 @@ interface FileUploaderProps {
   disabled?: boolean;
 }
 
+const MAX_PER_FILE = 10 * 1024 * 1024; // 10MB
+const MAX_TOTAL = 50 * 1024 * 1024; // 50MB
+
 const ALLOWED_TYPES = [
   'text/plain','text/csv','application/json','application/xml','text/xml','text/html','text/markdown',
   'image/jpeg','image/png','image/gif','image/webp',
@@ -24,17 +27,21 @@ const ALLOWED_TYPES = [
 
 export default function FileUploader({ files, setFiles, disabled }: FileUploaderProps) {
   const inputRef = useRef<HTMLInputElement|null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const onSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>)=>{
     const list = e.target.files;
     if(!list) return;
     const arr: PendingFile[] = [];
+    let totalSize = files.reduce((s,p)=>s+p.file.size,0);
     Array.from(list).forEach(f=>{
-      if(!ALLOWED_TYPES.includes(f.type)) return;
-      if(f.size>10*1024*1024) return; // 10 MB cap
+      if(!ALLOWED_TYPES.includes(f.type)) { setErrorMsg(`${f.name}: unsupported file type`); return; }
+      if(f.size>MAX_PER_FILE) { setErrorMsg(`${f.name}: exceeds 10 MB limit`); return; }
+      if(totalSize + f.size > MAX_TOTAL){ setErrorMsg(`Total attachment size cannot exceed 50 MB`); return; }
       arr.push({file:f});
+      totalSize += f.size;
     });
-    if(arr.length) setFiles([...files, ...arr]);
+    if(arr.length){ setFiles([...files, ...arr]); setErrorMsg(null);}
     e.target.value=""; // reset
   },[files,setFiles]);
 
@@ -43,18 +50,21 @@ export default function FileUploader({ files, setFiles, disabled }: FileUploader
     if(disabled) return;
     const list = e.dataTransfer.files;
     const arr: PendingFile[] = [];
+    let totalSize = files.reduce((s,p)=>s+p.file.size,0);
     Array.from(list).forEach(f=>{
-      if(!ALLOWED_TYPES.includes(f.type)) return;
-      if(f.size>10*1024*1024) return;
+      if(!ALLOWED_TYPES.includes(f.type)) { setErrorMsg(`${f.name}: unsupported file type`); return; }
+      if(f.size>MAX_PER_FILE) { setErrorMsg(`${f.name}: exceeds 10 MB limit`); return; }
+      if(totalSize + f.size > MAX_TOTAL){ setErrorMsg(`Total attachment size cannot exceed 50 MB`); return; }
       arr.push({file:f});
+      totalSize += f.size;
     });
-    if(arr.length) setFiles([...files, ...arr]);
+    if(arr.length){ setFiles([...files, ...arr]); setErrorMsg(null);}
   },[files,setFiles,disabled]);
 
   return (
     <div>
       <label className="block text-sm font-medium mb-1">Attachments (optional)</label>
-      <p className="text-xs text-muted-foreground mb-2">Add files for personas to use during the test run (e.g., CSV, images).</p>
+      <p className="text-xs text-muted-foreground mb-2">Add files for personas to use during the test run (e.g. .txt, .csv, .json, .xml, .html, .md, .pdf, .doc, .docx, .xls, .xlsx, .ppt, .pptx, .jpeg, .png, .gif, .webp).</p>
       <div
         className={cn("w-full border-dashed border-2 rounded-md p-4 text-center text-sm cursor-pointer hover:bg-muted transition-colors", disabled && "opacity-50 cursor-not-allowed")}
         onClick={()=>{ if(inputRef.current && !disabled) inputRef.current.click(); }}
@@ -64,6 +74,7 @@ export default function FileUploader({ files, setFiles, disabled }: FileUploader
         Drag & drop files here, or <span className="underline">browse</span>
         <input ref={inputRef} type="file" multiple className="hidden" onChange={onSelect} disabled={disabled} />
       </div>
+      {errorMsg && (<p className="text-destructive text-xs mt-1">{errorMsg}</p>)}
       {files.length>0 && (
         <ul className="mt-2 space-y-1 max-h-40 overflow-auto">
           {files.map((p,i)=>(
