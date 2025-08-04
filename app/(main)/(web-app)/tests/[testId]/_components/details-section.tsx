@@ -7,7 +7,7 @@ import { PersonaBadge } from "@/components/ui/persona-badge";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useTestRuns } from "@/hooks/use-testruns";
-import { Loader2, CalendarClock, Laptop, Tablet as TabletIcon, Smartphone } from "lucide-react";
+import { Loader2, CalendarClock, Laptop, Tablet as TabletIcon, Smartphone, FileImage, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { RowActionsDropdown } from "../../_components/row-actions-dropdown";
 import { useTests } from "@/hooks/use-tests";
@@ -271,6 +271,25 @@ export default function DetailsSection({ test }: { test: Test }) {
               {deviceType === "Mobile" && <Smartphone className="w-4 h-4" />}
               {deviceType}
             </Badge>
+          </div>
+        )}
+
+        {/* Attachments */}
+        {Array.isArray(test.files) && test.files.length > 0 && (
+          <div className="space-y-2 w-full md:w-1/3">
+            <h3 className="text-sm font-medium text-muted-foreground">Attachments</h3>
+            <ul className="space-y-1 max-h-24 overflow-auto">
+              {test.files.map((f, idx) => {
+                const isImg = f.contentType?.startsWith("image/");
+                const Icon = isImg ? FileImage : FileText;
+                return (
+                  <li key={idx} className="flex items-center gap-1 text-sm truncate">
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{f.fileName}</span>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         )}
       </section>
