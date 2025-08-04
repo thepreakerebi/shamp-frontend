@@ -6,7 +6,8 @@ import { useTests } from "@/hooks/use-tests";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2, Laptop, Tablet, Smartphone, X } from "lucide-react";
+// import { Loader2 } from "lucide-react";
+import { Laptop, Tablet, Smartphone, X } from "lucide-react";
 import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
 import { fileToBase64 } from "@/lib/file-utils";
 import ProjectCommand from "../../create/_components/project-command";
@@ -78,6 +79,13 @@ export default function EditTestPage() {
     return [];
   });
   const [saving, setSaving] = useState(false);
+
+  // Broadcast loading to topbar
+  React.useEffect(()=>{
+    if(typeof window!=='undefined'){
+      window.dispatchEvent(new CustomEvent('edit-test-loading',{detail:saving}));
+    }
+  },[saving]);
 
   // Unsaved changes dialog
   const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
@@ -213,7 +221,7 @@ export default function EditTestPage() {
   return (
     <main className="p-4 w-full max-w-[500px] mx-auto space-y-6">
       <h1 className="text-2xl font-semibold">Edit Test</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" id="edit-test-form" onKeyDown={(e)=>{if((e.key==='Enter'||e.key==='Return') && e.target instanceof HTMLElement && e.target.tagName!=='TEXTAREA'){e.preventDefault(); const form=document.getElementById('edit-test-form') as HTMLFormElement|null; form?.requestSubmit();}}}>
         <section>
           <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
           <Input id="name" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} aria-invalid={!!errors.name} />
@@ -284,10 +292,12 @@ export default function EditTestPage() {
               router.back();
             }
           }}>Cancel</Button>
+          {/*
           <Button type="submit" disabled={saving} className="flex items-center gap-2">
             {saving && <Loader2 className="animate-spin size-4" />}
             {saving?"Saving…":"Save changes"}
           </Button>
+          */}
         </div>
       </form>
       <UnsavedChangesDialog
