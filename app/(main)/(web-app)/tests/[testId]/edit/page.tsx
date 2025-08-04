@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 // import { Loader2 } from "lucide-react";
-import { Laptop, Tablet, Smartphone, X } from "lucide-react";
+import { Laptop, Tablet, Smartphone, X, FileText, FileImage } from "lucide-react";
 import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
 import { fileToBase64 } from "@/lib/file-utils";
 import ProjectCommand from "../../create/_components/project-command";
@@ -270,14 +270,17 @@ export default function EditTestPage() {
           <div>
             <label className="block text-sm font-medium mb-1">Current attachments</label>
             <ul className="mt-1 space-y-1 max-h-40 overflow-auto">
-              {existingFiles.map((f, idx)=> (
+              {existingFiles.map((f, idx)=> {
+                const isImage = f.contentType?.startsWith('image/');
+                const Icon = isImage ? FileImage : FileText;
+                return (
                 <li key={idx} className="flex items-center justify-between text-sm border rounded px-2 py-1">
-                  <span className="truncate mr-2">{f.fileName}</span>
+                  <span className="flex items-center gap-1 truncate mr-2"><Icon className="size-4 shrink-0" /> {f.fileName}</span>
                   <button type="button" onClick={()=>{
                     const copy=[...existingFiles]; copy.splice(idx,1); setExistingFiles(copy);
                   }} className="text-muted-foreground hover:text-foreground"><X className="size-4"/></button>
                 </li>
-              ))}
+              );})}
             </ul>
           </div>
         )}

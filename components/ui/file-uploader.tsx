@@ -1,6 +1,6 @@
 "use client";
 import React, { useCallback, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { X, FileText, FileImage } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface PendingFile {
@@ -77,14 +77,17 @@ export default function FileUploader({ files, setFiles, disabled }: FileUploader
       {errorMsg && (<p className="text-destructive text-xs mt-1">{errorMsg}</p>)}
       {files.length>0 && (
         <ul className="mt-2 space-y-1 max-h-40 overflow-auto">
-          {files.map((p,i)=>(
+          {files.map((p,i)=>{
+            const isImage = p.file.type.startsWith('image/');
+            const Icon = isImage ? FileImage : FileText;
+            return (
             <li key={i} className="flex items-center justify-between text-sm border rounded px-2 py-1">
-              <span className="truncate mr-2">{p.file.name}</span>
+              <span className="flex items-center gap-1 truncate mr-2"><Icon className="size-4 shrink-0" /> {p.file.name}</span>
               <button type="button" onClick={()=>{
                 const copy=[...files]; copy.splice(i,1); setFiles(copy);
               }} className="text-muted-foreground hover:text-foreground"><X className="size-4"/></button>
             </li>
-          ))}
+          )})}
         </ul>
       )}
     </div>
