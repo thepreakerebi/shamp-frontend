@@ -1,5 +1,7 @@
 "use client";
 import React, { useState } from "react";
+import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
+import { fileToBase64 } from "@/lib/file-utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -20,6 +22,7 @@ export default function CreateTestPage() {
   const router = useRouter();
 
   const [form, setForm] = useState({ name: "", description: "", projectId: "", personaId: "", device: "" });
+  const [files, setFiles] = useState<PendingFile[]>([]);
   const [errors, setErrors] = useState<{ name?: string; description?: string; projectId?: string; personaId?: string; device?: string }>({});
   const [loading, setLoading] = useState(false);
 
@@ -77,6 +80,15 @@ export default function CreateTestPage() {
         mobile: { w: 800, h: 1280 },
       };
       const vp = deviceSelectionEnabled ? viewportMap[form.device as keyof typeof viewportMap] : viewportMap["desktop"];
+      // Build file payloads
+      const filePayloads = await Promise.all(
+        files.map(async ({ file }) => ({
+          fileName: file.name,
+          contentType: file.type,
+          data: await fileToBase64(file),
+        }))
+      );
+
       const newTest = await createTest({
         name: form.name,
         description: form.description,
@@ -84,6 +96,7 @@ export default function CreateTestPage() {
         persona: form.personaId,
         browserViewportWidth: vp.w,
         browserViewportHeight: vp.h,
+        ...(filePayloads.length ? { files: filePayloads } : {}),
       });
       toast.success("Test created");
       if (newTest && newTest._id) {
@@ -151,6 +164,9 @@ export default function CreateTestPage() {
           {errors.device && <p className="text-destructive text-xs mt-1">{errors.device}</p>}
         </section>
         )}
+        {/* File uploader */}
+        <FileUploader files={files} setFiles={setFiles} disabled={loading} />
+
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
           <Button type="submit" variant="default" disabled={loading} className="flex items-center gap-2">
