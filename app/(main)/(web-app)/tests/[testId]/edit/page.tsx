@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 // import { Loader2 } from "lucide-react";
 import { Laptop, Tablet, Smartphone, X, FileText, FileImage } from "lucide-react";
+import TestFormSkeleton from "../_components/test-form-skeleton";
 import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
 import { fileToBase64 } from "@/lib/file-utils";
 import ProjectCommand from "../../create/_components/project-command";
@@ -215,7 +216,7 @@ export default function EditTestPage() {
   };
 
   if(!initialLoaded){
-    return <main className="p-6 text-center">Loading…</main>;
+    return <TestFormSkeleton/>;
   }
 
   return (
