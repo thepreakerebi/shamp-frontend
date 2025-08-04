@@ -226,7 +226,7 @@ export default function DetailsSection({ test }: { test: Test }) {
       <Separator />
 
       {/* Project & Personas */}
-      <section className="flex flex-col md:flex-row gap-6">
+      <section className="flex flex-col md:flex-row items-start gap-6">
         {/* Project */}
         <div className="space-y-2 w-full md:w-1/3">
           <h3 className="text-sm font-medium text-muted-foreground">Project</h3>
@@ -243,7 +243,7 @@ export default function DetailsSection({ test }: { test: Test }) {
         {/* Personas */}
         <div className="space-y-2 flex-1">
           <h3 className="text-sm font-medium text-muted-foreground">Personas</h3>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-1">
             {personaNames && personaNames.length > 0 ? (
               // Ensure unique keys even if names repeat
               Array.from(new Set(personaNames)).map((name, idx) => (
