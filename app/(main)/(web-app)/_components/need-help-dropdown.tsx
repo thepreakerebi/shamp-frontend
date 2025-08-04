@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/custom-dropdown-menu";
 
 export function NeedHelpDropdown() {
-  const email = "kerebipreye@gmail.com";
+  const email = "help@shamp.io";
 
   const copyEmail = () => {
     navigator.clipboard.writeText(email).then(() => {
