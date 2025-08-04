@@ -370,7 +370,9 @@ export function useTests() {
   };
 
   // Search tests
+  let currentSearchSeq = 0;
   const searchTests = async (query: string | TestSearchParams): Promise<TestSearch> => {
+    const mySeq = ++currentSearchSeq;
     const { setTests } = useTestsStore.getState();
     if (!currentWorkspaceId) {
       const queryStr = typeof query === 'string' ? query : '';
@@ -412,8 +414,10 @@ export function useTests() {
         ? (dataField as unknown[])
         : [];
       const arrayResults = arrayResultsUnknown as Test[];
-      // Update store so UI lists re-render without flicker
-      setTests(arrayResults);
+      // Only apply results if this is the latest in-flight search (prevents older unfiltered fetches from overwriting newer filtered ones)
+      if (mySeq === currentSearchSeq) {
+        setTests(arrayResults);
+      }
       const queryStr = typeof query === 'string' ? query : JSON.stringify(query);
       return { query: queryStr, results: arrayResults, loading: false, error: null };
     } catch (err) {
