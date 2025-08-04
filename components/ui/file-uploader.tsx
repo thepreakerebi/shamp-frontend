@@ -54,6 +54,7 @@ export default function FileUploader({ files, setFiles, disabled }: FileUploader
   return (
     <div>
       <label className="block text-sm font-medium mb-1">Attachments (optional)</label>
+      <p className="text-xs text-muted-foreground mb-2">Add files for personas to use during the test run (e.g., CSV, images).</p>
       <div
         className={cn("w-full border-dashed border-2 rounded-md p-4 text-center text-sm cursor-pointer hover:bg-muted transition-colors", disabled && "opacity-50 cursor-not-allowed")}
         onClick={()=>{ if(inputRef.current && !disabled) inputRef.current.click(); }}
