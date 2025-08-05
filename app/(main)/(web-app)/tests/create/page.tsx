@@ -2,12 +2,14 @@
 import React, { useState } from "react";
 import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
 import { fileToBase64 } from "@/lib/file-utils";
+import type { Test } from "@/hooks/use-tests";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 // import { Loader2 } from "lucide-react";
 import { Laptop, Tablet, Smartphone } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useTestsStore } from "@/lib/store/tests";
 import { useTests } from "@/hooks/use-tests";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -107,9 +109,13 @@ export default function CreateTestPage() {
       });
       toast.success("Test created");
       if (newTest && newTest._id) {
+        try { try {
+          const testTyped = newTest as unknown as Test;
+          useTestsStore.getState().addTestToList(testTyped);
+        } catch {} } catch {}
         router.push(`/tests/${newTest._id}`);
       } else {
-      router.push("/tests");
+        router.push("/tests");
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to create test");
