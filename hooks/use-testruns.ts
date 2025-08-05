@@ -333,6 +333,12 @@ export function useTestRuns() {
         }
       }
     });
+    // Full run progress updates (steps, screenshots) – ensures late joiners catch up
+    socket.on("testRun:updated", ({ testRun, workspace }: { testRun: TestRun; workspace?: string }) => {
+      if (workspace && workspace !== currentWorkspaceId) return;
+      addRunToStores(testRun);
+    });
+
     socket.on("testRun:finished", async ({ testRunId, workspace }: { testRunId: string; workspace?: string }) => {
       if (workspace && workspace !== currentWorkspaceId) return;
       const existing = getState().testRuns?.find(r => r._id === testRunId);
