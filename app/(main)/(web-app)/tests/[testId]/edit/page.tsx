@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 // import { Loader2 } from "lucide-react";
 import { Laptop, Tablet, Smartphone, X, FileText, FileImage } from "lucide-react";
 import TestFormSkeleton from "../_components/test-form-skeleton";
-import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
-import { fileToBase64 } from "@/lib/file-utils";
+// import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
+// import { fileToBase64 } from "@/lib/file-utils";
+// import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
+// import { fileToBase64 } from "@/lib/file-utils";
 import ProjectCommand from "../../create/_components/project-command";
 import PersonaCommand from "../../create/_components/persona-command";
 import { toast } from "sonner";
@@ -74,7 +76,7 @@ export default function EditTestPage() {
     };
   });
   const [errors, setErrors] = useState<{ name?: string; description?: string; projectId?: string; personaId?: string; device?: string }>({});
-  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  // const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [existingFiles, setExistingFiles] = useState<{ fileName: string; contentType: string }[]>(() => {
     if (existing && Array.isArray((existing as any).files)) return (existing as any).files as { fileName: string; contentType: string }[];
     return [];
@@ -190,6 +192,7 @@ export default function EditTestPage() {
       const vp = deviceSelectionEnabled ? viewportMap[form.device as keyof typeof viewportMap] : viewportMap["desktop"];
       // Build file payloads
       const existingMetaPayload = existingFiles.map(meta=>({ fileName: meta.fileName, contentType: meta.contentType }));
+      /* File upload disabled
       const newFilesPayload = await Promise.all(
         pendingFiles.map(async ({ file })=>({
           fileName: file.name,
@@ -197,7 +200,8 @@ export default function EditTestPage() {
           data: await fileToBase64(file),
         }))
       );
-      const allFiles = [...existingMetaPayload, ...newFilesPayload];
+      const allFiles = [...existingMetaPayload, ...newFilesPayload];*/
+      const allFiles = [...existingMetaPayload];
 
       await updateTest(testId, {
         name: form.name,
@@ -286,7 +290,7 @@ export default function EditTestPage() {
           </div>
         )}
         {/* Add new attachments */}
-        <FileUploader files={pendingFiles} setFiles={setPendingFiles} disabled={saving} />
+        {/* FileUploader disabled */}
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={() => {

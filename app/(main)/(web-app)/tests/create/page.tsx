@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
-import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
-import { fileToBase64 } from "@/lib/file-utils";
+// import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
+// import { fileToBase64 } from "@/lib/file-utils";
 import type { Test } from "@/hooks/use-tests";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,7 +24,7 @@ export default function CreateTestPage() {
   const router = useRouter();
 
   const [form, setForm] = useState({ name: "", description: "", projectId: "", personaId: "", device: "" });
-  const [files, setFiles] = useState<PendingFile[]>([]);
+  // const [files, setFiles] = useState<PendingFile[]>([]);
   const [errors, setErrors] = useState<{ name?: string; description?: string; projectId?: string; personaId?: string; device?: string }>({});
   const [loading, setLoading] = useState(false);
 
@@ -89,14 +89,15 @@ export default function CreateTestPage() {
         mobile: { w: 360, h: 800 },
       };
       const vp = deviceSelectionEnabled ? viewportMap[form.device as keyof typeof viewportMap] : viewportMap["desktop"];
-      // Build file payloads
+      /* File upload disabled
       const filePayloads = await Promise.all(
         files.map(async ({ file }) => ({
           fileName: file.name,
           contentType: file.type,
           data: await fileToBase64(file),
         }))
-      );
+      );*/
+      // const filePayloads: any[] = [];
 
       const newTest = await createTest({
         name: form.name,
@@ -105,7 +106,7 @@ export default function CreateTestPage() {
         persona: form.personaId,
         browserViewportWidth: vp.w,
         browserViewportHeight: vp.h,
-        ...(filePayloads.length ? { files: filePayloads } : {}),
+        /* files disabled */
       });
       toast.success("Test created");
       if (newTest && newTest._id) {
@@ -178,7 +179,7 @@ export default function CreateTestPage() {
         </section>
         )}
         {/* File uploader */}
-        <FileUploader files={files} setFiles={setFiles} disabled={loading} />
+        {/* FileUploader disabled */}
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
