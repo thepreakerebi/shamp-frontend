@@ -84,7 +84,7 @@ export default function CreateTestPage() {
       const viewportMap: Record<string, { w: number; h: number }> = {
         desktop: { w: 1280, h: 720 },
         tablet: { w: 820, h: 1180 },
-        mobile: { w: 800, h: 1280 },
+        mobile: { w: 360, h: 800 },
       };
       const vp = deviceSelectionEnabled ? viewportMap[form.device as keyof typeof viewportMap] : viewportMap["desktop"];
       // Build file payloads

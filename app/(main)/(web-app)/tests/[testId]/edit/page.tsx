@@ -60,7 +60,7 @@ export default function EditTestPage() {
       const vpMap: Record<string,string> = {
         "1280x720":"desktop",
         "820x1180":"tablet",
-        "800x1280":"mobile",
+        "360x800":"mobile",
       };
       const key = `${(existing as any).browserViewportWidth ?? ""}x${(existing as any).browserViewportHeight ?? ""}`;
       return vpMap[key] || "";
@@ -96,7 +96,7 @@ export default function EditTestPage() {
   const isDirty = useMemo(() => {
     if (saving || !initialLoaded) return false;
     const viewportMap: Record<string,string> = {
-      desktop:"1280x720", tablet:"820x1180", mobile:"800x1280"
+      desktop:"1280x720", tablet:"820x1180", mobile:"360x800"
     };
     const initialDeviceKey = ((): string => {
       if (!existing) return "";
@@ -157,7 +157,7 @@ export default function EditTestPage() {
           const vpMap: Record<string,string> = {
             "1280x720":"desktop",
             "820x1180":"tablet",
-            "800x1280":"mobile",
+            "360x800":"mobile",
           };
           const key = `${(t as any).browserViewportWidth ?? ""}x${(t as any).browserViewportHeight ?? ""}`;
           return vpMap[key] || "";
@@ -186,7 +186,7 @@ export default function EditTestPage() {
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setSaving(true);
     try{
-      const viewportMap: Record<string,{w:number;h:number}> = {desktop:{w:1280,h:720}, tablet:{w:820,h:1180}, mobile:{w:800,h:1280}};
+      const viewportMap: Record<string,{w:number;h:number}> = {desktop:{w:1280,h:720}, tablet:{w:820,h:1180}, mobile:{w:360,h:800}};
       const vp = deviceSelectionEnabled ? viewportMap[form.device as keyof typeof viewportMap] : viewportMap["desktop"];
       // Build file payloads
       const existingMetaPayload = existingFiles.map(meta=>({ fileName: meta.fileName, contentType: meta.contentType }));
