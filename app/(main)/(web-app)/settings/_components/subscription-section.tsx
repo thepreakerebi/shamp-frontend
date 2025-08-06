@@ -18,6 +18,7 @@ export function SubscriptionSection() {
   // ---------------------------------------------------------------------
   const currentProductId = (summary?.products?.[0] as { id?: string })?.id ?? "free";
   const planName = (summary?.products?.[0] as { name?: string })?.name || currentProductId;
+  const isFreePlan = (currentProductId ?? '').toLowerCase() === 'free';
 
   // Fetch product details only if user is admin
   const { user } = useAuth();
@@ -143,8 +144,8 @@ export function SubscriptionSection() {
         </section>
       ) : null}
 
-      {/* Manage subscription button (admins only) */}
-      {isAdmin && (
+      {/* Manage subscription button (admins only, not for free plan) */}
+      {isAdmin && !isFreePlan && (
       <Button
         variant="secondary"
         disabled={portalLoading}
