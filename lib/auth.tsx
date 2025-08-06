@@ -51,6 +51,7 @@ interface AuthContextType {
   acceptInvite: (data: { token: string; firstName: string; lastName: string; password: string; profilePicture?: string }) => Promise<void>;
   joinWorkspace: (token: string) => Promise<void>;
   seamlessJoinWorkspace: (inviteToken: string) => Promise<{ message: string; workspaceName?: string; inviterName?: string; } | void>;
+  deleteAccount: () => Promise<void>;
 }
 
 interface SignupData {
@@ -394,6 +395,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Permanently delete account
+  const deleteAccount = async () => {
+    if (!token) throw new Error('Not authenticated');
+    setLoading(true);
+    const res = await apiFetch('/users/delete-account', { method: 'DELETE', token, workspaceId: currentWorkspaceId });
+    if (!res.ok) {
+      setLoading(false);
+      throw new Error((await res.json()).error || 'Failed to delete account');
+    }
+    // Upon success, log the user out locally and redirect to landing page
+    logout();
+    setLoading(false);
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
+  };
+
   // Logout method
   const logout = () => {
     setUser(null);
@@ -494,7 +512,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       updateWorkspace, 
       acceptInvite,
       joinWorkspace,
-      seamlessJoinWorkspace
+      seamlessJoinWorkspace,
+      deleteAccount
     }}>
       {children}
     </AuthContext.Provider>

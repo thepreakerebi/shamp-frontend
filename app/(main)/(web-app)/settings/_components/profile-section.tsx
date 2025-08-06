@@ -3,14 +3,16 @@ import { useAuth } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import React, { useState, useEffect } from "react";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 export function ProfileSection() {
-  const { user, updateProfile, loading } = useAuth();
+  const { user, updateProfile, loading, deleteAccount, logout } = useAuth();
 
   const [form, setForm] = useState({ firstName: "", lastName: "" });
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -33,6 +35,23 @@ export function ProfileSection() {
       toast.error(err instanceof Error ? err.message : "Failed to update profile");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deleting) return;
+    if (typeof window !== 'undefined') {
+      const confirmed = window.confirm('This will permanently delete your account and all associated data. This action cannot be undone. Are you sure?');
+      if (!confirmed) return;
+    }
+    setDeleting(true);
+    try {
+      await deleteAccount();
+      // Ensure local logout state (safety, in case backend already removed session)
+      logout();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete account');
+      setDeleting(false);
     }
   };
 
@@ -67,6 +86,11 @@ export function ProfileSection() {
           {saving ? "Saving…" : "Save changes"}
         </Button>
       </form>
+      <Separator className="my-6" />
+      <Button variant="destructive" onClick={handleDelete} disabled={deleting} className="flex items-center gap-2">
+        {deleting && <Loader2 className="size-4 animate-spin" />}
+        Delete account
+      </Button>
     </section>
   );
 } 
