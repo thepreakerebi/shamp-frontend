@@ -397,9 +397,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Permanently delete account
   const deleteAccount = async () => {
-    if (!token) throw new Error('Not authenticated');
     setLoading(true);
-    const res = await apiFetch('/users/delete-account', { method: 'DELETE', token, workspaceId: currentWorkspaceId });
+    const res = await apiFetch('/users/actual-delete', { method: 'DELETE', workspaceId: currentWorkspaceId });
     if (!res.ok) {
       setLoading(false);
       throw new Error((await res.json()).error || 'Failed to delete account');

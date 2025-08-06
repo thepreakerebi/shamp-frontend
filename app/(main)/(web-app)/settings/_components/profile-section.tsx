@@ -4,6 +4,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import React, { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -40,10 +51,6 @@ export function ProfileSection() {
 
   const handleDelete = async () => {
     if (deleting) return;
-    if (typeof window !== 'undefined') {
-      const confirmed = window.confirm('This will permanently delete your account and all associated data. This action cannot be undone. Are you sure?');
-      if (!confirmed) return;
-    }
     setDeleting(true);
     try {
       await deleteAccount();
@@ -87,10 +94,28 @@ export function ProfileSection() {
         </Button>
       </form>
       <Separator className="my-6" />
-      <Button variant="destructive" onClick={handleDelete} disabled={deleting} className="flex items-center gap-2">
-        {deleting && <Loader2 className="size-4 animate-spin" />}
-        Delete account
-      </Button>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="destructive" disabled={deleting}>Delete account</Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete account</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete your account and all associated data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button variant="destructive" onClick={handleDelete} disabled={deleting} className="flex items-center gap-2">
+                {deleting && <Loader2 className="size-4 animate-spin" />}
+                Yes, delete my account
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 } 
