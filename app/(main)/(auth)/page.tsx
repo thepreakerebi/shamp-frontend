@@ -114,10 +114,10 @@ export default function LoginPage() {
               Log in to your account to continue.
             </p>
           </section>
-          <p className="text-sm w-full text-center">
+          {/* <p className="text-sm w-full text-center">
             Don&apos;t have an account?{' '}
             <Link href="/create-account" className="text-secondary font-medium hover:underline">Create one</Link>
-          </p>
+          </p> */}
         </header>
         <nav aria-label="Login options" className="mb-4">
           <CreateAccountWithGoogleButton mode="login" />
