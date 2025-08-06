@@ -1,5 +1,6 @@
 'use client';
 import { useEffect } from 'react';
+import { useBilling } from '@/hooks/use-billing';
 import { toast } from 'sonner';
 import { TotalProjectsCard } from "./_components/total-projects-card";
 import { TotalTestsCard } from "./_components/total-tests-card";
@@ -11,6 +12,8 @@ import { OnboardingChecklist } from "./_components/onboarding-checklist";
 import { WorkspaceGreetingHeader } from "./_components/workspace-greeting-header";
 
 export default function HomePage() {
+  const { summary, loading } = useBilling();
+
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('showLoggedInToast') === '1') {
       toast.success('You are logged in');
@@ -21,6 +24,20 @@ export default function HomePage() {
       localStorage.removeItem('showPlanToast');
     }
   }, []);
+
+  // Detect plan change and set toast flag
+  useEffect(() => {
+    if (loading || !summary) return;
+    const currentProductId = Array.isArray(summary.products) && summary.products.length > 0 ? (summary.products[0] as { id?: string }).id ?? 'free' : 'free';
+    if (typeof window !== 'undefined') {
+      const prevPlanId = localStorage.getItem('planId');
+      if (prevPlanId && prevPlanId !== currentProductId) {
+        localStorage.setItem('showPlanToast', '1');
+      }
+      // Always store latest plan id
+      localStorage.setItem('planId', currentProductId);
+    }
+  }, [loading, summary]);
 
   return (
     <main className="flex flex-col bg-background p-4 gap-4 h-screen w-full">

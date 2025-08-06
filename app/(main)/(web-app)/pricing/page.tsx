@@ -30,6 +30,7 @@ const annualPlans: Plan[] = [
   { id: "free", name: "Free", price: "$0", secondary: "$0 / mo", description: monthlyPlans[0].description, features: monthlyPlans[0].features },
   { id: "hobby_annual", name: "Hobby", price: "$203.90", secondary: "$16.99 / mo (billed yearly)", description: monthlyPlans[1].description, features: monthlyPlans[1].features },
   { id: "pro_annual", name: "Pro", price: "$509.90", secondary: "$42.49 / mo (billed yearly)", popular: true, description: monthlyPlans[2].description, features: monthlyPlans[2].features },
+  // Limited-time promotional plan for beta users
   { id: "ultra_annual", name: "Ultra", price: "$1,019.90", secondary: "$84.99 / mo (billed yearly)", description: monthlyPlans[3].description, features: monthlyPlans[3].features },
 ];
 
@@ -80,12 +81,10 @@ export default function PricingPage() {
     if (loadingPlanId) return; // prevent double clicks
     setLoadingPlanId(clickedPlanId);
     try {
-      const { checkout_url } = await attachProductCheckout({ productId: productIdToAttach });
+      const forceFlag = clickedPlanId === 'beta';
+      const { checkout_url } = await attachProductCheckout({ productId: productIdToAttach, forceCheckout: forceFlag });
       if (checkout_url) {
         toast.success('Redirecting to secure checkout…');
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('showPlanToast', '1');
-        }
         window.location.href = checkout_url;
         return;
       }
