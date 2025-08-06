@@ -230,7 +230,7 @@ export default function PricingPage() {
                 {loadingPlanId === "beta" ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  "Get beta access ($50 / yr Pro)"
+                  "Get 1 year Pro access for $50"
                 )}
               </Button>
             )}
