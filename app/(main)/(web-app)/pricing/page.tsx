@@ -224,7 +224,7 @@ export default function PricingPage() {
             variant="secondary"
             onClick={() => {
               if (typeof window !== "undefined") {
-                window.open("https://cal.com/shamp/custom-plan", "_blank", "noopener,noreferrer");
+                window.open("https://cal.com/thepreakerebi/custom-plan", "_blank", "noopener,noreferrer");
               }
             }}
           >

@@ -20,7 +20,7 @@ export function NeedHelpDropdown() {
   };
 
   const openBooking = () => {
-    window.open("https://cal.com/shamp/need-help", "_blank", "noopener,noreferrer");
+    window.open("https://cal.com/thepreakerebi/help", "_blank", "noopener,noreferrer");
   };
 
   const reportBug = () => {
