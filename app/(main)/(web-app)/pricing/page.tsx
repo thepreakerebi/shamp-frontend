@@ -21,9 +21,9 @@ interface Plan {
 
 const monthlyPlans: Plan[] = [
   { id: "free", name: "Free", price: "$0", secondary: "per month", description: "Explore how Shamp helps with basic testing", features: ["100 credits / mo", "2 tests", "1 project", "2 personas", "Issues board", "AI insights"], },
-  { id: "hobby", name: "Hobby", price: "$19.99", secondary: "per month", description: "Expanded limits for hobby projects", features: ["500 credits / mo", "10 tests", "5 projects", "15 personas", "Chat personas", "Issues board", "AI insights"], },
-  { id: "pro", name: "Pro", price: "$49.99", secondary: "per month", popular: true, description: "Advanced features & higher limits", features: ["1250 credits / mo", "35 tests", "15 projects", "30 personas", "Scheduled & recurring runs", "Device types", "Chat personas", "AI insights"], },
-  { id: "ultra", name: "Ultra", price: "$99.99", secondary: "per month", description: "Unlimited scale and full capabilities", features: ["2500 credits / mo", "Unlimited tests", "Unlimited projects", "Unlimited personas", "Batch personas & tests", "Scheduled & recurring runs", "Device types", "Chat personas", "AI insights"], },
+  { id: "hobby", name: "Hobby", price: "$19.99", secondary: "per month", description: "Expanded limits for hobby projects", features: ["500 credits / mo", "10 tests", "5 projects", "15 personas", "Chat personas", "Advanced model", "Issues board", "Parallel runs", "AI insights"], },
+  { id: "pro", name: "Pro", price: "$49.99", secondary: "per month", popular: true, description: "Advanced features & higher limits", features: ["1250 credits / mo", "35 tests", "15 projects", "30 personas", "Scheduled & recurring runs", "Device types", "Chat personas", "Advanced model", "Parallel runs", "AI insights"], },
+  { id: "ultra", name: "Ultra", price: "$99.99", secondary: "per month", description: "Unlimited scale and full capabilities", features: ["2500 credits / mo", "Unlimited tests", "Unlimited projects", "Unlimited personas", "Batch personas & tests", "Scheduled & recurring runs", "Device types", "Chat personas", "Advanced model", "Parallel runs", "AI insights"], },
 ];
 
 const annualPlans: Plan[] = [
@@ -224,7 +224,7 @@ export default function PricingPage() {
             variant="secondary"
             onClick={() => {
               if (typeof window !== "undefined") {
-                window.open("https://cal.com/shamp/custom-plan", "_blank", "noopener,noreferrer");
+                window.open("https://cal.com/thepreakerebi/custom-plan", "_blank", "noopener,noreferrer");
               }
             }}
           >

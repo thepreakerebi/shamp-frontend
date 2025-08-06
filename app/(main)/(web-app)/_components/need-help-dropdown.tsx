@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/custom-dropdown-menu";
 
 export function NeedHelpDropdown() {
-  const email = "kerebipreye@gmail.com";
+  const email = "help@shamp.io";
 
   const copyEmail = () => {
     navigator.clipboard.writeText(email).then(() => {
@@ -20,7 +20,7 @@ export function NeedHelpDropdown() {
   };
 
   const openBooking = () => {
-    window.open("https://cal.com/shamp/need-help", "_blank", "noopener,noreferrer");
+    window.open("https://cal.com/thepreakerebi/help", "_blank", "noopener,noreferrer");
   };
 
   const reportBug = () => {

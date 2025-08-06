@@ -41,7 +41,7 @@ export default function TestRunCanvasPage() {
     // Grid layout: 5 columns per row
     const COLS = 5;
     const COL_SPACING = 320; // px horizontally
-    const ROW_SPACING = 360; // px vertically between step rows
+    const ROW_SPACING = 600; // px vertically between step rows
 
     const built: Node[] = steps.map((s, idx) => {
       const col = idx % COLS;

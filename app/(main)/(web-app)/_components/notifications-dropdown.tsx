@@ -139,6 +139,15 @@ function NotificationRow({ notification }: NotificationRowProps) {
         path = "/tests?tab=schedules";
         break;
       }
+      case "projectTestsCompleted": {
+        const pid = (notification.data as any).projectId as string | undefined;
+        if (pid) path = `/home/${pid}?tab=tests`;
+        break;
+      }
+      case "workspaceTestsCompleted": {
+        path = "/tests";
+        break;
+      }
       default:
         break;
     }
@@ -192,7 +201,7 @@ function NotificationAvatar({ notification }: { notification: NotificationRowPro
   return (
     <Avatar className="size-8 bg-muted">
       <AvatarFallback>
-        {type === "batchTestCompleted" ? "B" : "T"}
+        {type === "batchTestCompleted" ? "B" : type === "projectTestsCompleted" ? "P" : type === "workspaceTestsCompleted" ? "W" : "T"}
       </AvatarFallback>
     </Avatar>
   );
@@ -226,7 +235,24 @@ function renderNotificationText(notification: NotificationRowProps["notification
         </span>
       );
     }
+    case "projectTestsCompleted": {
+      const { projectName, testsCount } = data;
+      return (
+        <span>
+          Project <strong>{projectName}</strong> test suite completed ({testsCount} {testsCount === 1 ? "test" : "tests"}).
+        </span>
+      );
+    }
+
+    case "workspaceTestsCompleted": {
+      const { workspaceName, testsCount } = data;
+      return (
+        <span>
+          Workspace <strong>{workspaceName}</strong> test suite completed ({testsCount} {testsCount === 1 ? "test" : "tests"}).
+        </span>
+      );
+    }
     default:
       return <span>Unknown notification</span>;
   }
-} 
+}

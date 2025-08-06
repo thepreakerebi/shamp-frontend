@@ -91,21 +91,27 @@ export const useTestRunsStore = create<TestRunsState>((set) => ({
   setCountsLoading: (countsLoading) => set({ countsLoading }),
   setCountsError: (countsError) => set({ countsError }),
   updateTestRunInList: (run) =>
-    set((state) => ({
-      testRuns: state.testRuns
-        ? state.testRuns.map((r) => {
-            if (r._id !== run._id) return r;
-            const prev = r as import("@/hooks/use-testruns").TestRunStatus;
-            const next = run as import("@/hooks/use-testruns").TestRunStatus;
-            return {
-              ...prev,
-              ...next,
-              analysis: next.analysis ?? prev.analysis,
-              browserUseOutput: next.browserUseOutput ?? prev.browserUseOutput,
-            };
-          })
-        : [run],
-    })),
+    set((state) => {
+      const idx = state.testRuns ? state.testRuns.findIndex(r => r._id === run._id) : -1;
+      if (idx === -1) {
+        return { testRuns: state.testRuns ? [run, ...state.testRuns] : [run] };
+      }
+      const prev = state.testRuns![idx] as import("@/hooks/use-testruns").TestRunStatus;
+      const next = run as import("@/hooks/use-testruns").TestRunStatus;
+      // If nothing relevant changed, bail out to avoid unnecessary set
+      if (prev.status === next.status && prev.browserUseStatus === next.browserUseStatus && prev.analysis === next.analysis && prev.browserUseOutput === next.browserUseOutput) {
+        return state;
+      }
+      const merged = {
+        ...prev,
+        ...next,
+        analysis: next.analysis ?? prev.analysis,
+        browserUseOutput: next.browserUseOutput ?? prev.browserUseOutput,
+      } as import("@/hooks/use-testruns").TestRunStatus;
+      const newArr = [...state.testRuns!];
+      newArr[idx] = merged;
+      return { testRuns: newArr };
+    }),
   removeTestRunFromList: (id) =>
     set((state) => ({
       testRuns: state.testRuns ? state.testRuns.filter((r) => r._id !== id) : null,

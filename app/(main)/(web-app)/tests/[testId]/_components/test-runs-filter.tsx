@@ -6,15 +6,17 @@ import { Filter } from "lucide-react";
 
 interface Props {
   personaOptions: string[];
+  testNameOptions?: string[];
   filters: {
     result: string;
     run: string;
     persona: string;
+    testName: string;
   };
   onChange: (f: Props["filters"]) => void;
 }
 
-export default function TestRunsFilter({ personaOptions, filters, onChange }: Props) {
+export default function TestRunsFilter({ personaOptions, testNameOptions, filters, onChange }: Props) {
   const handle = (field: keyof Props["filters"], value: string) => {
     onChange({ ...filters, [field]: value });
   };
@@ -53,6 +55,21 @@ export default function TestRunsFilter({ personaOptions, filters, onChange }: Pr
               </SelectContent>
             </Select>
           </div>
+          {/* Test Name */}
+          {testNameOptions && testNameOptions.length > 0 && (
+            <div>
+              <p className="text-sm font-medium mb-1">Test</p>
+              <Select value={filters.testName} onValueChange={v => handle("testName", v)}>
+                <SelectTrigger className="w-full h-8"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">All tests</SelectItem>
+                  {testNameOptions.map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           {/* Persona */}
           <div>
             <p className="text-sm font-medium mb-1">Persona</p>
@@ -65,6 +82,17 @@ export default function TestRunsFilter({ personaOptions, filters, onChange }: Pr
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          {/* Reset button */}
+          <div className="flex justify-end pt-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={filters.result==='any' && filters.run==='any' && filters.persona==='any' && filters.testName==='any'}
+              onClick={()=> onChange({ result:'any', run:'any', persona:'any', testName:'any' })}
+            >
+              Reset
+            </Button>
           </div>
         </div>
       </PopoverContent>

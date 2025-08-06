@@ -1,6 +1,7 @@
 "use client";
 import { NodeProps } from "reactflow";
 import Image from "next/image";
+import WaitingPlaceholder from "./waiting-placeholder";
 
 interface StepData {
   screenshot?: string | null;
@@ -11,13 +12,7 @@ interface StepData {
 
 export default function StepNode({ data }: NodeProps<StepData>) {
   if (data.placeholder) {
-    return (
-      <section className="flex flex-col max-w-[280px]">
-        <section className="flex items-center justify-center bg-card rounded-lg p-4 shadow border text-muted-foreground text-sm">
-          Waiting for steps…
-        </section>
-      </section>
-    );
+    return <WaitingPlaceholder />;
   }
 
   return (

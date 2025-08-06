@@ -8,6 +8,7 @@ import { useTestsStore } from "@/lib/store/tests";
 import { TestRunCard } from "./test-run-card";
 import { TestRunsCardSkeleton } from "./test-runs-card-skeleton";
 import TestRunsFilter from "./test-runs-filter";
+import { Badge } from "@/components/ui/badge";
 
 export default function TestRunsSection({ test }: { test: Test }) {
   const { getTestRunsForTest } = useTests();
@@ -15,7 +16,16 @@ export default function TestRunsSection({ test }: { test: Test }) {
   const testsStore = useTestsStore();
   const [runs, setRuns] = useState<TestRunSummary[] | null>(null);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({ result: 'any', run: 'any', persona: 'any' });
+  const [filters, setFilters] = useState({ result: 'any', run: 'any', persona: 'any', testName: 'any' });
+
+  const activeBadges = () => {
+    const arr: { label: string; key: string }[] = [];
+    if (filters.result !== 'any') arr.push({ label: `Result: ${filters.result}`, key: 'result' });
+    if (filters.run !== 'any') arr.push({ label: `Run: ${filters.run}`, key: 'run' });
+    if (filters.persona !== 'any') arr.push({ label: `Persona: ${filters.persona}`, key: 'persona' });
+    if (filters.testName !== 'any') arr.push({ label: `Test: ${filters.testName}`, key: 'testName' });
+    return arr;
+  };
 
   // Fetch runs once per test id change; we intentionally omit store/actions from deps to
   // avoid infinite loops triggered by state updates (socket events). eslint rule disabled.
@@ -71,17 +81,27 @@ export default function TestRunsSection({ test }: { test: Test }) {
     if (filters.run !== 'any' && r.browserUseStatus !== filters.run) return false;
     const pName = (r as { personaName?: string }).personaName;
     if (filters.persona !== 'any' && pName !== filters.persona) return false;
+    if (filters.testName !== 'any' && (r as { testName?: string }).testName !== filters.testName) return false;
     return true;
   });
 
   const personaOptions = Array.from(new Set((displayRuns ?? []).map(r=>(r as { personaName?: string }).personaName).filter(Boolean))) as string[];
 
+
   return (
     <section className="p-4 space-y-4">
       <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">
-        <h2 className="text-xl font-semibold">Test runs · {(displayRuns ?? []).length}</h2>
+        <h2 className="text-xl font-semibold">Test runs · {filtered.length}</h2>
         <TestRunsFilter personaOptions={personaOptions} filters={filters} onChange={setFilters} />
       </section>
+      {activeBadges().length > 0 && (
+        <section className="flex flex-wrap gap-2 py-1">
+          <p className="text-muted-foreground text-sm">Filters:</p>
+          {activeBadges().map(b => (
+            <Badge key={b.key} variant="outline" className="text-xs">{b.label}</Badge>
+          ))}
+        </section>
+      )}
       {loading && !runs && <TestRunsCardSkeleton />}
       {!loading && (filtered.length === 0) && (
         <p className="text-muted-foreground text-sm">No runs yet.</p>

@@ -34,6 +34,8 @@ export function Topbar() {
   const [createPersonaLoading, setCreatePersonaLoading] = useState(false);
   const [editPersonaLoading, setEditPersonaLoading] = useState(false);
   const [createBatchLoading, setCreateBatchLoading] = useState(false);
+  const [createTestLoading, setCreateTestLoading] = useState(false);
+  const [editTestLoading, setEditTestLoading] = useState(false);
 
   // Billing info to determine feature availability
   const { summary, loading: billingLoading, allowed } = useBilling();
@@ -154,6 +156,15 @@ export function Topbar() {
     }
   };
   const handleBatchTests = () => router.push('/tests/create-batch');
+
+  const handleSubmitCreateTest = () => {
+    const form = document.getElementById('create-test-form') as HTMLFormElement | null;
+    form?.requestSubmit();
+  };
+  const handleSubmitEditTest = () => {
+    const form = document.getElementById('edit-test-form') as HTMLFormElement | null;
+    form?.requestSubmit();
+  };
   const handleStartTest = () => {
     if (allowed({ featureId: 'credits', requiredBalance: 1 })) {
       setModalOpen(true);
@@ -198,6 +209,26 @@ export function Topbar() {
     return () => window.removeEventListener('create-persona-loading', listener);
   }, []);
 
+  // Listen for create test loading
+  useEffect(() => {
+    const listener = (e: Event) => {
+      const custom = e as CustomEvent<boolean>;
+      setCreateTestLoading(custom.detail);
+    };
+    window.addEventListener('create-test-loading', listener);
+    return () => window.removeEventListener('create-test-loading', listener);
+  }, []);
+
+  // Listen for edit test loading
+  useEffect(() => {
+    const listener = (e: Event) => {
+      const custom = e as CustomEvent<boolean>;
+      setEditTestLoading(custom.detail);
+    };
+    window.addEventListener('edit-test-loading', listener);
+    return () => window.removeEventListener('edit-test-loading', listener);
+  }, []);
+
   // Listen for edit persona loading
   useEffect(() => {
     const listener = (e: Event) => {
@@ -224,6 +255,20 @@ export function Topbar() {
       setCreateLoading(false);
     }
   }, [pathname, createLoading]);
+
+  // Reset create test loading when navigating away
+  useEffect(() => {
+    if (pathname !== '/tests/create' && createTestLoading) {
+      setCreateTestLoading(false);
+    }
+  }, [pathname, createTestLoading]);
+
+  // Reset edit test loading when navigating away
+  useEffect(() => {
+    if (!/^\/tests\/[^/]+\/edit$/.test(pathname) && editTestLoading) {
+      setEditTestLoading(false);
+    }
+  }, [pathname, editTestLoading]);
 
   // Reset persona loading when navigating away
   useEffect(() => {
@@ -286,6 +331,18 @@ export function Topbar() {
         {pathname === '/test-runs' && (
           <Button variant="secondary" onClick={handleStartTest}>
             Run test
+          </Button>
+        )}
+        {pathname === '/tests/create' && (
+          <Button variant="default" onClick={handleSubmitCreateTest} disabled={createTestLoading} className="flex items-center gap-2">
+            {createTestLoading && <Loader2 className="animate-spin size-4" />}
+            {createTestLoading ? 'Creating…' : 'Create test'}
+          </Button>
+        )}
+        {/^\/tests\/[^/]+\/edit$/.test(pathname) && (
+          <Button variant="default" onClick={handleSubmitEditTest} disabled={editTestLoading} className="flex items-center gap-2">
+            {editTestLoading && <Loader2 className="animate-spin size-4" />}
+            {editTestLoading ? 'Saving…' : 'Save changes'}
           </Button>
         )}
         {pathname === '/home/create' && (

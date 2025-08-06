@@ -109,7 +109,13 @@ export function SecuritySection() {
       <h2 className="text-xl font-semibold">Security</h2>
       {derivedHasPw === null && <p className="text-sm text-muted-foreground">Loading…</p>}
       {derivedHasPw !== null && (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <>
+          <p className="text-sm text-muted-foreground">
+            {derivedHasPw
+              ? "You already have a password set. Fill in your current password below to change it."
+              : "You haven't set a password yet. Enter one below so you can sign in with email/password."}
+          </p>
+          <form onSubmit={handleSubmit} className="space-y-4">
           {derivedHasPw && (
             <div className="space-y-2">
               <label htmlFor="current" className="text-sm font-medium">Current password</label>
@@ -184,6 +190,7 @@ export function SecuritySection() {
             {saving ? "Saving…" : derivedHasPw ? "Change password" : "Set password"}
           </Button>
         </form>
+        </>
       )}
     </section>
   );

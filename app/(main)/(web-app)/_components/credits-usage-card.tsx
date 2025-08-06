@@ -4,6 +4,7 @@
 import { useBilling } from "@/hooks/use-billing";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 
 export function CreditsUsageCard() {
   const { summary, loading: billingLoading } = useBilling();
@@ -83,20 +84,22 @@ export function CreditsUsageCard() {
 
   return (
     <section className="px-3 mt-4 mb-3">
-      <section className="flex flex-col gap-2 p-3 rounded-lg bg-muted/50">
-        <span className="font-medium text-sm">Credits usage</span>
-        <section className="flex flex-col gap-1">
-          <span className="text-sm font-medium">
-            {used} / {included}
-          </span>
-          <Progress value={percentage} />
-          {nextResetDateStr && (
-            <span className="text-[10px] text-muted-foreground">
-              Next reset on: {nextResetDateStr}
+      <Link href="/pricing" className="block group">
+        <section className="flex flex-col gap-2 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+          <span className="font-medium text-sm">Credits usage</span>
+          <section className="flex flex-col gap-1">
+            <span className="text-sm font-medium">
+              {used} / {included}
             </span>
-          )}
+            <Progress value={percentage} />
+            {nextResetDateStr && (
+              <span className="text-[10px] text-muted-foreground">
+                Next reset on: {nextResetDateStr}
+              </span>
+            )}
+          </section>
         </section>
-      </section>
+      </Link>
     </section>
   );
 } 

@@ -28,10 +28,17 @@ export interface Test {
   browserViewportWidth?: number;
   browserViewportHeight?: number;
   maxAgentSteps?: number;
+  files?: { fileName: string; contentType: string }[];
   // Add other fields as needed
 }
 
 export type TestRunSummary = TestRun;
+
+export interface TestFilePayload {
+  fileName: string;
+  contentType: string;
+  data: string; // base64-encoded file contents
+}
 
 export interface TestPayload {
   name: string;
@@ -41,6 +48,7 @@ export interface TestPayload {
   browserViewportWidth?: number;
   browserViewportHeight?: number;
   maxAgentSteps?: number;
+  files?: TestFilePayload[];
 }
 
 export interface TestAnalysis {
@@ -370,12 +378,25 @@ export function useTests() {
   };
 
   // Search tests
+  let currentSearchSeq = 0;
   const searchTests = async (query: string | TestSearchParams): Promise<TestSearch> => {
+    const mySeq = ++currentSearchSeq;
+    const { setTests } = useTestsStore.getState();
     if (!currentWorkspaceId) {
       const queryStr = typeof query === 'string' ? query : '';
       return { query: queryStr, results: [], loading: false, error: "Not authenticated or no workspace context" };
     }
     
+    // Early exit: if query is an object with no meaningful filters, just refresh full list
+    if (typeof query !== 'string') {
+      const obj = query as TestSearchParams;
+      const hasFilters = Object.values(obj).some(v => v !== undefined && v !== null && v !== '');
+      if (!hasFilters) {
+        await fetchTests();
+        return { query: '', results: store.tests ?? [], loading: false, error: null } as TestSearch;
+      }
+    }
+
     try {
       let path: string;
       if (typeof query === 'string') {
@@ -393,9 +414,20 @@ export function useTests() {
       
       const res = await apiFetch(path, { workspaceId: currentWorkspaceId });
       if (!res.ok) throw new Error("Failed to search tests");
-      const results = await res.json();
+      const raw: unknown = await res.json();
+      const dataField = (raw as { data?: unknown }).data;
+      const arrayResultsUnknown = Array.isArray(raw)
+        ? (raw as unknown[])
+        : Array.isArray(dataField)
+        ? (dataField as unknown[])
+        : [];
+      const arrayResults = arrayResultsUnknown as Test[];
+      // Only apply results if this is the latest in-flight search (prevents older unfiltered fetches from overwriting newer filtered ones)
+      if (mySeq === currentSearchSeq) {
+        setTests(arrayResults);
+      }
       const queryStr = typeof query === 'string' ? query : JSON.stringify(query);
-      return { query: queryStr, results: Array.isArray(results) ? results : [], loading: false, error: null };
+      return { query: queryStr, results: arrayResults, loading: false, error: null };
     } catch (err) {
       const queryStr = typeof query === 'string' ? query : JSON.stringify(query);
       return { 

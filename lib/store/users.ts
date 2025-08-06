@@ -13,6 +13,8 @@ interface UsersState {
   users: AppUser[] | null;
   loading: boolean;
   error: string | null;
+  workspaceTestsRunStatus: 'idle' | 'running' | 'paused' | 'done';
+  setWorkspaceStatus: (s: 'idle' | 'running' | 'paused' | 'done') => void;
   setUsers: (u: AppUser[] | null) => void;
   addUser: (u: AppUser) => void;
   removeUser: (id: string) => void;
@@ -25,10 +27,12 @@ export const useUsersStore = create<UsersState>((set) => ({
   users: null,
   loading: false,
   error: null,
+  workspaceTestsRunStatus: 'idle',
+  setWorkspaceStatus: (s) => set({ workspaceTestsRunStatus: s }),
   setUsers: (users) => set({ users }),
   addUser: (u) => set((s) => ({ users: s.users ? [u, ...s.users] : [u] })),
   removeUser: (id) => set((s) => ({ users: s.users?.filter(u => u._id !== id) || null })),
   setLoading: (v) => set({ loading: v }),
   setError: (e) => set({ error: e }),
-  reset: () => set({ users: null, loading: true, error: null }),
+  reset: () => set({ users: null, loading: true, error: null, workspaceTestsRunStatus: 'idle' }),
 })); 

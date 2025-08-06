@@ -7,6 +7,8 @@ import React from "react";
 import { ProjectListSkeleton } from "./project-list-skeleton";
 import { ProjectCardDropdown } from "./project-card-dropdown";
 import { MoveProjectToTrashModal } from "../../_components/move-project-to-trash-modal";
+import { useProjectsStore } from "@/lib/store/projects";
+import { DeleteProjectModal } from "../../trash/_components/delete-project-modal";
 import { toast } from "sonner";
 import { ProjectListEmpty } from "./project-list-empty";
 
@@ -18,10 +20,12 @@ interface ProjectCardProps {
   showDropdown: boolean;
   onEdit: (project: Project) => void;
   onTrash: (project: Project) => void;
+  onDelete: (project: Project) => void;
+  showDelete: boolean;
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = React.memo(
-  ({ project, canEdit, canTrash, showDropdown, onEdit, onTrash }) => {
+  ({ project, canEdit, canTrash, showDropdown, onEdit, onTrash, onDelete, showDelete }) => {
     const router = useRouter();
 
     // Fallback logic for image: previewImageUrl -> favicon -> placeholder
@@ -105,8 +109,10 @@ const ProjectCard: React.FC<ProjectCardProps> = React.memo(
                   onOpen={() => router.push(`/home/${project._id}`)}
                   onEdit={() => onEdit(project)}
                   onTrash={() => onTrash(project)}
+                  onDelete={() => onDelete(project)}
                   showEdit={canEdit}
                   showTrash={canTrash}
+                  showDelete={showDelete}
                 />
               </nav>
             )}
@@ -123,24 +129,35 @@ const ProjectCard: React.FC<ProjectCardProps> = React.memo(
     prev.project.testRunsCount === next.project.testRunsCount &&
     prev.canEdit === next.canEdit &&
     prev.canTrash === next.canTrash &&
-    prev.showDropdown === next.showDropdown
+    prev.showDropdown === next.showDropdown &&
+    prev.showDelete === next.showDelete
 );
 
 ProjectCard.displayName = "ProjectCard";
 // -------------------- End ProjectCard component --------------------
 
 function ProjectsListInner() {
-  const { projects, trashedProjects, projectsLoading, projectsError, moveProjectToTrash } = useProjects();
+  const { projects, trashedProjects, projectsLoading, projectsError, moveProjectToTrash, deleteProject } = useProjects();
   const { user } = useAuth();
   const router = useRouter();
   const [trashModalOpen, setTrashModalOpen] = React.useState(false);
   const [trashingProject, setTrashingProject] = React.useState<Project | null>(null);
   const [trashLoading, setTrashLoading] = React.useState(false);
 
+  const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
+  const [deleteLoading, setDeleteLoading] = React.useState(false);
+  const [projectToDelete, setProjectToDelete] = React.useState<Project | null>(null);
+
   const uniqueProjects = React.useMemo(() => {
-    if (!projects) return [];
+    if (!projects) return [] as Project[];
     const trashedIds = new Set(trashedProjects?.map(p => p._id) || []);
-    return projects.filter(p => !trashedIds.has(p._id));
+    const map = new Map<string, Project>();
+    projects.forEach(p => {
+      if (!trashedIds.has(p._id) && !map.has(p._id)) {
+        map.set(p._id, p);
+      }
+    });
+    return Array.from(map.values());
   }, [projects, trashedProjects]);
 
   // Function to check if user can trash a project
@@ -201,6 +218,23 @@ function ProjectsListInner() {
     }
   };
 
+  const handleConfirmDelete = async (deleteTests: boolean) => {
+    if (!projectToDelete) return;
+    setDeleteLoading(true);
+    try {
+      // Immediate optimistic removal to avoid flicker while waiting for API + socket events
+      useProjectsStore.getState().removeProjectFromList(projectToDelete._id);
+      await deleteProject(projectToDelete._id, deleteTests);
+      toast.success("Project permanently deleted");
+      setDeleteModalOpen(false);
+      setProjectToDelete(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete project");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   return (
     <>
     <section
@@ -221,6 +255,11 @@ function ProjectsListInner() {
               setTrashingProject(p);
               setTrashModalOpen(true);
             }}
+            onDelete={(p) => {
+              setProjectToDelete(p);
+              setDeleteModalOpen(true);
+            }}
+            showDelete={canTrashProject(project)}
           />
       ))}
     </section>
@@ -232,6 +271,13 @@ function ProjectsListInner() {
         loading={trashLoading}
       />
 
+      <DeleteProjectModal
+        open={deleteModalOpen}
+        setOpen={setDeleteModalOpen}
+        projectName={projectToDelete?.name ?? null}
+        onConfirm={handleConfirmDelete}
+        loading={deleteLoading}
+      />
 
     </>
   );

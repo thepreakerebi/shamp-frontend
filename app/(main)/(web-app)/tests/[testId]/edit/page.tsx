@@ -6,7 +6,11 @@ import { useTests } from "@/hooks/use-tests";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2, Laptop, Tablet, Smartphone } from "lucide-react";
+// import { Loader2 } from "lucide-react";
+import { Laptop, Tablet, Smartphone, X, FileText, FileImage } from "lucide-react";
+import TestFormSkeleton from "../_components/test-form-skeleton";
+import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
+import { fileToBase64 } from "@/lib/file-utils";
 import ProjectCommand from "../../create/_components/project-command";
 import PersonaCommand from "../../create/_components/persona-command";
 import { toast } from "sonner";
@@ -70,7 +74,19 @@ export default function EditTestPage() {
     };
   });
   const [errors, setErrors] = useState<{ name?: string; description?: string; projectId?: string; personaId?: string; device?: string }>({});
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const [existingFiles, setExistingFiles] = useState<{ fileName: string; contentType: string }[]>(() => {
+    if (existing && Array.isArray((existing as any).files)) return (existing as any).files as { fileName: string; contentType: string }[];
+    return [];
+  });
   const [saving, setSaving] = useState(false);
+
+  // Broadcast loading to topbar
+  React.useEffect(()=>{
+    if(typeof window!=='undefined'){
+      window.dispatchEvent(new CustomEvent('edit-test-loading',{detail:saving}));
+    }
+  },[saving]);
 
   // Unsaved changes dialog
   const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
@@ -153,6 +169,7 @@ export default function EditTestPage() {
           personaId: firstPersonaId,
           device: deviceInitial,
         });
+        setExistingFiles(Array.isArray((t as any).files) ? (t as any).files as any[] : []);
         setInitialLoaded(true);
       })();
     }
@@ -171,7 +188,26 @@ export default function EditTestPage() {
     try{
       const viewportMap: Record<string,{w:number;h:number}> = {desktop:{w:1280,h:720}, tablet:{w:820,h:1180}, mobile:{w:800,h:1280}};
       const vp = deviceSelectionEnabled ? viewportMap[form.device as keyof typeof viewportMap] : viewportMap["desktop"];
-      await updateTest(testId, { name: form.name, description: form.description, project: form.projectId, persona: form.personaId, browserViewportWidth: vp.w, browserViewportHeight: vp.h });
+      // Build file payloads
+      const existingMetaPayload = existingFiles.map(meta=>({ fileName: meta.fileName, contentType: meta.contentType }));
+      const newFilesPayload = await Promise.all(
+        pendingFiles.map(async ({ file })=>({
+          fileName: file.name,
+          contentType: file.type,
+          data: await fileToBase64(file),
+        }))
+      );
+      const allFiles = [...existingMetaPayload, ...newFilesPayload];
+
+      await updateTest(testId, {
+        name: form.name,
+        description: form.description,
+        project: form.projectId,
+        persona: form.personaId,
+        browserViewportWidth: vp.w,
+        browserViewportHeight: vp.h,
+        files: allFiles as any,
+      });
       toast.success("Test updated");
       router.push(`/tests/${testId}`);
     }catch(err){
@@ -180,13 +216,13 @@ export default function EditTestPage() {
   };
 
   if(!initialLoaded){
-    return <main className="p-6 text-center">Loading…</main>;
+    return <TestFormSkeleton/>;
   }
 
   return (
     <main className="p-4 w-full max-w-[500px] mx-auto space-y-6">
       <h1 className="text-2xl font-semibold">Edit Test</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" id="edit-test-form" onKeyDown={(e)=>{if((e.key==='Enter'||e.key==='Return') && e.target instanceof HTMLElement && e.target.tagName!=='TEXTAREA'){e.preventDefault(); const form=document.getElementById('edit-test-form') as HTMLFormElement|null; form?.requestSubmit();}}}>
         <section>
           <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
           <Input id="name" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} aria-invalid={!!errors.name} />
@@ -230,6 +266,28 @@ export default function EditTestPage() {
           {errors.device && <p className="text-destructive text-xs mt-1">{errors.device}</p>}
         </section>
         )}
+        {/* Existing attachments */}
+        {existingFiles.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium mb-1">Current attachments</label>
+            <ul className="mt-1 space-y-1 max-h-40 overflow-auto">
+              {existingFiles.map((f, idx)=> {
+                const isImage = f.contentType?.startsWith('image/');
+                const Icon = isImage ? FileImage : FileText;
+                return (
+                <li key={idx} className="flex items-center justify-between text-sm border rounded px-2 py-1">
+                  <span className="flex items-center gap-1 truncate mr-2"><Icon className="size-4 shrink-0" /> {f.fileName}</span>
+                  <button type="button" onClick={()=>{
+                    const copy=[...existingFiles]; copy.splice(idx,1); setExistingFiles(copy);
+                  }} className="text-muted-foreground hover:text-foreground"><X className="size-4"/></button>
+                </li>
+              );})}
+            </ul>
+          </div>
+        )}
+        {/* Add new attachments */}
+        <FileUploader files={pendingFiles} setFiles={setPendingFiles} disabled={saving} />
+
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={() => {
             if (isDirty) {
@@ -238,10 +296,12 @@ export default function EditTestPage() {
               router.back();
             }
           }}>Cancel</Button>
+          {/*
           <Button type="submit" disabled={saving} className="flex items-center gap-2">
             {saving && <Loader2 className="animate-spin size-4" />}
             {saving?"Saving…":"Save changes"}
           </Button>
+          */}
         </div>
       </form>
       <UnsavedChangesDialog

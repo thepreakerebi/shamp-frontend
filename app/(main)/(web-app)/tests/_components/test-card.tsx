@@ -66,21 +66,49 @@ export function TestCard({ test, projectId }: { test: Test; projectId?: string }
     ? storeCount
     : (loadingRuns ? 0 : ('totalRuns' in test ? (test as unknown as { totalRuns?: number }).totalRuns ?? successfulRuns + failedRuns : successfulRuns + failedRuns));
 
+  // Helper to extract test id from run.test
+  const getRunTestId = (val: unknown): string | undefined => {
+    if (typeof val === 'string') return val;
+    if (val && typeof val === 'object' && '_id' in val && typeof (val as { _id?: unknown })._id === 'string') {
+      return (val as { _id: string })._id;
+    }
+    return undefined;
+  };
+
   const isRunning = React.useMemo(() => {
     return (
-      testRunsStore?.some(
-        r => r.test === test._id && r.browserUseStatus === "running"
-      ) ?? false
+      testRunsStore?.some(r => {
+        // match by id regardless of test field shape
+        const match = getRunTestId(r.test) === test._id;
+        return match && (["running","pending"].includes(r.browserUseStatus ?? "") || ["running","pending"].includes(r.status));
+      }) ?? false
+    );
+  }, [testRunsStore, test._id]);
+
+  const isPaused = React.useMemo(() => {
+    return (
+      testRunsStore?.some(r => {
+        const match = getRunTestId(r.test) === test._id;
+        return match && r.browserUseStatus === "paused";
+      }) ?? false
     );
   }, [testRunsStore, test._id]);
 
   const runningBadge = (
+    
+    
     <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-primary/10 text-primary-foreground dark:text-primary flex items-center gap-1">
       <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
       </svg>
       running
+    </Badge>
+  );
+
+  const pausedBadge = (
+    <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-amber-500/10 text-amber-700 dark:text-amber-400">
+      paused
     </Badge>
   );
 
@@ -170,7 +198,7 @@ export function TestCard({ test, projectId }: { test: Test; projectId?: string }
             {totalRuns} runs
           </Badge>
         )}
-        {isRunning && runningBadge}
+        {isRunning ? runningBadge : isPaused ? pausedBadge : null}
       </footer>
     </section>
   );

@@ -5,6 +5,7 @@ import type { TestRunSummary } from "@/hooks/use-tests";
 import { useTestRuns } from "@/hooks/use-testruns";
 import { TestRunCard } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-run-card";
 import { TestRunsCardSkeleton } from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-card-skeleton";
+import { Badge } from "@/components/ui/badge";
 import TestRunsFilter from "@/app/(main)/(web-app)/tests/[testId]/_components/test-runs-filter";
 import { TestRunsListEmpty } from "./_components/test-runs-list-empty";
 
@@ -36,7 +37,16 @@ export default function TestRunsListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any" });
+  const [filters, setFilters] = useState({ result: "any", run: "any", persona: "any", testName: "any" });
+
+  const activeBadges = () => {
+    const badges: { label: string; key: string }[] = [];
+    if (filters.result !== "any") badges.push({ label: `Result: ${filters.result}`, key: "result" });
+    if (filters.run !== "any") badges.push({ label: `Run: ${filters.run}`, key: "run" });
+    if (filters.persona !== "any") badges.push({ label: `Persona: ${filters.persona}`, key: "persona" });
+    if (filters.testName !== "any") badges.push({ label: `Test: ${filters.testName}`, key: "testName" });
+    return badges;
+  };
 
   if ((!initialDone && loading) || (loading && (runs === null || runs.length === 0))) {
     return <TestRunsCardSkeleton />;
@@ -51,6 +61,7 @@ export default function TestRunsListPage() {
     if (filters.run !== "any" && r.browserUseStatus !== filters.run) return false;
     const pName = (r as { personaName?: string }).personaName;
     if (filters.persona !== "any" && pName !== filters.persona) return false;
+    if (filters.testName !== "any" && (r as { testName?: string }).testName !== filters.testName) return false;
     return true;
   });
 
@@ -58,11 +69,25 @@ export default function TestRunsListPage() {
     new Set((runs ?? []).map((r) => (r as { personaName?: string }).personaName).filter(Boolean))
   ) as string[];
 
+  const testNameOptions = Array.from(
+    new Set((runs ?? []).map((r) => (r as { testName?: string }).testName).filter(Boolean))
+  ) as string[];
+
   return (
     <section className="p-4 space-y-4">
-      <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-4 py-2">
-        <h1 className="text-2xl font-semibold">Test runs · {(runs ?? []).length}</h1>
-        <TestRunsFilter personaOptions={personaOptions} filters={filters} onChange={setFilters} />
+      <section className="sticky top-[60px] z-10 bg-background flex flex-col gap-4 py-2">
+        <section className="flex justify-between w-full">
+          <h1 className="text-2xl font-semibold">Test runs · {filtered.length}</h1>
+          <TestRunsFilter personaOptions={personaOptions} testNameOptions={testNameOptions} filters={filters} onChange={setFilters} />
+        </section>
+        {activeBadges().length > 0 && (
+          <section className="flex flex-wrap gap-2 w-full">
+            <p className="text-muted-foreground text-sm">Filters:</p>
+            {activeBadges().map(b => (
+              <Badge key={b.key} variant="outline" className="text-xs">{b.label}</Badge>
+            ))}
+          </section>
+        )}
       </section>
 
       {filtered.length === 0 ? (

@@ -4,6 +4,7 @@ import { useProjectsStore } from "@/lib/store/projects";
 import { useAuth } from "@/lib/auth";
 import { ProjectCardDropdown } from "../../_components/project-card-dropdown";
 import { MoveProjectToTrashModal } from "../../../_components/move-project-to-trash-modal";
+import { DeleteProjectModal } from "../../../trash/_components/delete-project-modal";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -19,11 +20,13 @@ export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContent
   const [trashOpen, setTrashOpen] = useState(false);
   const [trashLoading,setTrashLoading]=useState(false);
   const [redirecting,setRedirecting]=useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [visibleCredentials, setVisibleCredentials] = useState<Record<string, boolean>>({});
   const project = useProjectsStore((s) => s.projects?.find((p) => p._id === projectId) || null);
   const { user } = useAuth();
   const router = useRouter();
-  const { moveProjectToTrash } = useProjects();
+  const { moveProjectToTrash, deleteProject } = useProjects();
 
   // Function to check if user can trash this project
   const canTrashProject = () => {
@@ -79,6 +82,21 @@ export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContent
     }
     return null;
   }
+
+  const handleConfirmDelete = async (deleteTests: boolean) => {
+    if (!project) return;
+    setDeleteLoading(true);
+    try {
+      useProjectsStore.getState().removeProjectFromList(project._id);
+      await deleteProject(project._id, deleteTests);
+      toast.success("Project permanently deleted");
+      router.push('/home');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete project');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   const handleMoveToTrash = async () => {
     if (!project) return;
@@ -145,8 +163,10 @@ export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContent
                   showOpen={false} 
                   onEdit={() => router.push(`/home/${project._id}/edit`)} 
                   onTrash={() => setTrashOpen(true)}
+                  onDelete={() => setDeleteOpen(true)}
                   showEdit={canEditProject()}
                   showTrash={canTrashProject()}
+                  showDelete={canTrashProject()}
                 />
               )}
             </section>
@@ -227,6 +247,13 @@ export function ProjectDetailsTabContent({ projectId }: ProjectDetailsTabContent
           )}
         </section>
       </section>
+      <DeleteProjectModal
+        open={deleteOpen}
+        setOpen={setDeleteOpen}
+        projectName={project?.name ?? null}
+        onConfirm={handleConfirmDelete}
+        loading={deleteLoading}
+      />
     </section>
   );
 } 

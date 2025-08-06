@@ -214,9 +214,12 @@ export function TrashedRunsList() {
               </figure>
               <section className="flex-1 min-w-0">
                 <h3 className="font-semibold leading-tight truncate" title={getPersonaName(rp) ?? run._id}>{getPersonaName(rp) ?? run._id}</h3>
+                {rp.testName && (
+                  <p className="text-sm text-muted-foreground truncate" title={rp.testName}>{rp.testName}</p>
+                )}
                 <div className="flex items-center gap-2 mt-1">
                   {statusBadge(run.status)}
-                  {run.browserUseStatus && <Badge variant="outline" className="text-xs whitespace-nowrap">{run.browserUseStatus}</Badge>}
+                  
                 </div>
                 
               </section>

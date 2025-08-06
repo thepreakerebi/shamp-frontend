@@ -1,9 +1,11 @@
 "use client";
 import React, { useState } from "react";
+import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
+import { fileToBase64 } from "@/lib/file-utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+// import { Loader2 } from "lucide-react";
 import { Laptop, Tablet, Smartphone } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useTests } from "@/hooks/use-tests";
@@ -20,8 +22,16 @@ export default function CreateTestPage() {
   const router = useRouter();
 
   const [form, setForm] = useState({ name: "", description: "", projectId: "", personaId: "", device: "" });
+  const [files, setFiles] = useState<PendingFile[]>([]);
   const [errors, setErrors] = useState<{ name?: string; description?: string; projectId?: string; personaId?: string; device?: string }>({});
   const [loading, setLoading] = useState(false);
+
+  // Broadcast loading to topbar
+  React.useEffect(()=>{
+    if(typeof window!=='undefined'){
+      window.dispatchEvent(new CustomEvent('create-test-loading',{detail:loading}));
+    }
+  },[loading]);
 
   const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
@@ -77,6 +87,15 @@ export default function CreateTestPage() {
         mobile: { w: 800, h: 1280 },
       };
       const vp = deviceSelectionEnabled ? viewportMap[form.device as keyof typeof viewportMap] : viewportMap["desktop"];
+      // Build file payloads
+      const filePayloads = await Promise.all(
+        files.map(async ({ file }) => ({
+          fileName: file.name,
+          contentType: file.type,
+          data: await fileToBase64(file),
+        }))
+      );
+
       const newTest = await createTest({
         name: form.name,
         description: form.description,
@@ -84,6 +103,7 @@ export default function CreateTestPage() {
         persona: form.personaId,
         browserViewportWidth: vp.w,
         browserViewportHeight: vp.h,
+        ...(filePayloads.length ? { files: filePayloads } : {}),
       });
       toast.success("Test created");
       if (newTest && newTest._id) {
@@ -101,7 +121,7 @@ export default function CreateTestPage() {
   return (
     <main className="p-4 w-full max-w-[500px] mx-auto space-y-6">
       <h1 className="text-2xl font-semibold">Create Test</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" id="create-test-form" onKeyDown={(e)=>{if((e.key==='Enter'||e.key==='Return') && e.target instanceof HTMLElement && e.target.tagName!=='TEXTAREA'){e.preventDefault();const form=document.getElementById('create-test-form') as HTMLFormElement|null;form?.requestSubmit();}}}>
         <section>
           <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
           <Input id="name" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} aria-invalid={!!errors.name} />
@@ -151,12 +171,17 @@ export default function CreateTestPage() {
           {errors.device && <p className="text-destructive text-xs mt-1">{errors.device}</p>}
         </section>
         )}
+        {/* File uploader */}
+        <FileUploader files={files} setFiles={setFiles} disabled={loading} />
+
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
+          {/*
           <Button type="submit" variant="default" disabled={loading} className="flex items-center gap-2">
             {loading && <Loader2 className="animate-spin size-4" />}
-            {loading?"Creating…":"Create test"}
+            {loading ? "Creating…" : "Create test"}
           </Button>
+*/}
         </div>
       </form>
       <UnsavedChangesDialog

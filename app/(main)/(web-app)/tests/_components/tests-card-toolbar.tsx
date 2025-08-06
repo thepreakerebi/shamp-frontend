@@ -1,29 +1,155 @@
 "use client";
+import React from "react";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Filter, X } from "lucide-react";
+import { Filter, X, Loader2, Pause, Play, Square } from "lucide-react";
 import { useProjects, type Project } from "@/hooks/use-projects";
+import { toast } from "sonner";
 import { usePersonas, type Persona as PersonaType } from "@/hooks/use-personas";
 import { useAuth } from "@/lib/auth";
+import { useBilling } from "@/hooks/use-billing";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { useUsers } from "@/hooks/use-users";
+import { Badge } from "@/components/ui/badge";
+import { useTestRuns } from "@/hooks/use-testruns";
+
+import SelectWorkspaceTestsDialog from "@/app/(main)/(web-app)/home/[projectId]/_components/select-workspace-tests-dialog";
 import { useTests } from "@/hooks/use-tests";
 
-export function TestsCardToolbar() {
+interface TestsCardToolbarProps {
+  projectId?: string; // when inside ProjectTestsTabContent
+}
+
+import SelectTestsDialog from "@/app/(main)/(web-app)/home/[projectId]/_components/select-tests-dialog";
+
+export function TestsCardToolbar({ projectId }: TestsCardToolbarProps) {
   const [query, setQuery] = useState("");
+  // Project suite controls
+  const { runProjectTests, pauseProjectTests, resumeProjectTests, stopProjectTests, getProjectTestruns } = useProjects();
+  const { projects } = useProjects();
+  // Workspace suite controls
+  const { runWorkspaceTests, pauseWorkspaceTests, resumeWorkspaceTests, stopWorkspaceTests } = useUsers();
+  const { refetch: refetchRuns } = useTestRuns();
+  const { summary } = useBilling();
+  const isFreePlan = !summary?.products || (
+    Array.isArray(summary.products) &&
+    ((summary.products[0] as unknown as { id?: string })?.id === 'free')
+  );
+  const storeProject = projects?.find(p=>p._id===projectId);
+  const [selectOpen,setSelectOpen] = useState(false);
+
+  // const { testRuns } = useTestRuns();
+  const [optimisticStatus,setOptimisticStatus] = useState<Project["testsRunStatus"] | undefined>();
+    const { workspaceTestsRunStatus, setWorkspaceTestsRunStatus } = useUsers();
+  // Derive effective status
+  const effectiveStatus: Project["testsRunStatus"] = projectId
+    ? (optimisticStatus ?? storeProject?.testsRunStatus ?? 'idle')
+    : (optimisticStatus ?? workspaceTestsRunStatus ?? 'idle');
+  const [actionLoading,setActionLoading]=useState(false);
+  // sync with store
+  useEffect(() => {
+    if (storeProject) {
+      setOptimisticStatus(storeProject.testsRunStatus);
+    }
+  }, [storeProject]);
   const { searchTests } = useTests();
 
+  // Handlers for project suite controls
+  const handleRun = async () => {
+    if (actionLoading) return;
+    setActionLoading(true);
+    try {
+      if (projectId) {
+        await runProjectTests(projectId);
+        try { await getProjectTestruns(projectId, true); } catch {}
+        toast.success("Project tests started");
+      } else {
+        await runWorkspaceTests();
+        await refetchRuns();
+        setWorkspaceTestsRunStatus('running');
+        toast.success("Workspace tests started");
+      }
+      setOptimisticStatus('running');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to start tests');
+    } finally { setActionLoading(false); }
+  };
+  const handlePause = async () => {
+    if (actionLoading) return;
+    setActionLoading(true);
+    try {
+      if (projectId) {
+        await pauseProjectTests(projectId);
+      } else {
+        await pauseWorkspaceTests();
+      await refetchRuns();
+      setWorkspaceTestsRunStatus('paused');
+      }
+      toast.success('Tests paused');
+      setOptimisticStatus('paused');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed');
+    } finally { setActionLoading(false); } };
+  const handleResume = async () => {
+    if (actionLoading) return;
+    setActionLoading(true);
+    try {
+      if (projectId) {
+        await resumeProjectTests(projectId);
+      } else {
+        await resumeWorkspaceTests();
+      await refetchRuns();
+      setWorkspaceTestsRunStatus('running');
+      }
+      toast.success('Tests resumed');
+      setOptimisticStatus('running');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed');
+    } finally { setActionLoading(false); } };
+  const handleStop = async () => {
+    if (actionLoading) return;
+    setActionLoading(true);
+    try {
+      if (projectId) {
+        await stopProjectTests(projectId);
+      } else {
+        await stopWorkspaceTests();
+      await refetchRuns();
+      setWorkspaceTestsRunStatus('done');
+      }
+      toast.success('Tests stopped');
+      setOptimisticStatus('done');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed');
+    } finally { setActionLoading(false); } };
+
+
   // Filter state
-  const { projects } = useProjects();
   const { personas } = usePersonas();
   const { user } = useAuth();
   const [projSel, setProjSel] = useState<string[]>([]);
   const [persSel, setPersSel] = useState<string[]>([]);
   const [runStatus, setRunStatus] = useState<string>("any");
   const [role, setRole] = useState<string>("any");
+
+  const activeBadges = () => {
+    const arr: { key: string; label: string }[] = [];
+    if (projSel.length && projects && projects.length) {
+      const names = projects.filter(p=>projSel.includes(p._id)).map(p=>p.name);
+      arr.push({ key: 'projects', label: `Projects: ${names.join(', ')}` });
+    }
+    if (persSel.length && personas && personas.length) {
+      const names = personas.filter(p=>persSel.includes(p._id)).map(p=>p.name);
+      arr.push({ key: 'personas', label: `Personas: ${names.join(', ')}` });
+    }
+    if (runStatus !== 'any') arr.push({ key: 'run', label: `Run: ${runStatus}` });
+    if (role !== 'any') arr.push({ key: 'role', label: `Role: ${role}` });
+    return arr;
+  };
 
   const toggleId = (arr: string[], id: string, setter: (v: string[]) => void) => {
     if (arr.includes(id)) setter(arr.filter(i => i !== id));
@@ -58,7 +184,8 @@ export function TestsCardToolbar() {
   },[query, projSel, persSel, runStatus, role]);
 
   return (
-    <section className="sticky top-[60px] z-10 bg-background flex items-center justify-between gap-2 py-4">
+    <section className="sticky top-[60px] z-10 bg-background flex flex-col gap-4 py-4">
+      <section className="flex items-center gap-4 w-full">
       <div className="relative max-w-xs">
         <Input
           placeholder="Search tests…"
@@ -83,7 +210,7 @@ export function TestsCardToolbar() {
         </PopoverTrigger>
         <PopoverContent align="end">
           <div className="space-y-4">
-            {projects && projects.length>0 && (
+            {!projectId && projects && projects.length>0 && (
               <div>
                 <p className="text-sm font-medium mb-1">Projects</p>
                 <ScrollArea className="h-24 border rounded p-2">
@@ -141,6 +268,85 @@ export function TestsCardToolbar() {
           </div>
         </PopoverContent>
       </Popover>
+      {projectId ? (
+        /* -------- Project controls -------- */
+        <section className="flex items-center gap-2 ml-auto">
+          {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (
+            <Button size="sm" variant="outline" onClick={()=>setSelectOpen(true)} className="gap-1">Select tests</Button>
+          )}
+          <SelectTestsDialog projectId={projectId} open={selectOpen} setOpen={setSelectOpen} onStarted={()=>setOptimisticStatus('running')} />
+          {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (
+            <Button size="sm" variant="secondary" disabled={actionLoading} onClick={handleRun} className="gap-1">
+              {actionLoading && <Loader2 className="w-4 h-4 animate-spin"/>} Run tests
+            </Button>
+          )}
+          {effectiveStatus==='running' && (
+            <>
+              <Button size="sm" variant="outline" disabled={actionLoading} onClick={handlePause} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Pause className="w-4 h-4"/>} Pause
+              </Button>
+              <Button size="sm" variant="destructive" disabled={actionLoading} onClick={handleStop} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Square className="w-4 h-4"/>} Stop
+              </Button>
+            </>
+          )}
+          {effectiveStatus==='paused' && (
+            <>
+              <Button size="sm" variant="outline" disabled={actionLoading} onClick={handleResume} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Play className="w-4 h-4"/>} Resume
+              </Button>
+              <Button size="sm" variant="destructive" disabled={actionLoading} onClick={handleStop} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Square className="w-4 h-4"/>} Stop
+              </Button>
+            </>
+          )}
+        </section>
+      ) : (
+        /* placeholder */
+        /* -------- Workspace controls -------- */
+        <section className="flex items-center gap-2 ml-auto">
+          {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (
+            <Button size="sm" variant="outline" onClick={()=>setSelectOpen(true)} className="gap-1">Select tests</Button>
+          )}
+          <SelectWorkspaceTestsDialog open={selectOpen} setOpen={setSelectOpen} onStarted={()=>setOptimisticStatus('running')} />
+          {!isFreePlan && (effectiveStatus==='idle' || effectiveStatus==='done') && (
+            <Button size="sm" variant="secondary" disabled={actionLoading} onClick={handleRun} className="gap-1">
+              {actionLoading && <Loader2 className="w-4 h-4 animate-spin"/>} Run tests
+            </Button>
+          )}
+          {effectiveStatus==='running' && (
+            <>
+              <Button size="sm" variant="outline" disabled={actionLoading} onClick={handlePause} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Pause className="w-4 h-4"/>} Pause
+              </Button>
+              <Button size="sm" variant="destructive" disabled={actionLoading} onClick={handleStop} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Square className="w-4 h-4"/>} Stop
+              </Button>
+            </>
+          )}
+          {effectiveStatus==='paused' && (
+            <>
+              <Button size="sm" variant="outline" disabled={actionLoading} onClick={handleResume} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Play className="w-4 h-4"/>} Resume
+              </Button>
+              <Button size="sm" variant="destructive" disabled={actionLoading} onClick={handleStop} className="gap-1">
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Square className="w-4 h-4"/>} Stop
+              </Button>
+            </>
+          )}
+        </section>
+      )}
+
+      
+      </section>
+    {activeBadges().length > 0 && (
+      <section className="flex flex-wrap gap-2 w-full mt-2">
+        <p className="text-muted-foreground text-sm">Filters:</p>
+        {activeBadges().map(b => (
+          <Badge key={b.key} variant="outline" className="text-xs">{b.label}</Badge>
+        ))}
+      </section>
+    )}
     </section>
   );
 } 
