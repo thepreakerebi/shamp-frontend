@@ -3,6 +3,18 @@ import { useAuth } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import React, { useState, useEffect } from "react";
+// import { Separator } from "@/components/ui/separator";
+// import {
+//   AlertDialog,
+//   AlertDialogTrigger,
+//   AlertDialogContent,
+//   AlertDialogHeader,
+//   AlertDialogTitle,
+//   AlertDialogDescription,
+//   AlertDialogFooter,
+//   AlertDialogCancel,
+//   AlertDialogAction,
+// } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -11,6 +23,7 @@ export function ProfileSection() {
 
   const [form, setForm] = useState({ firstName: "", lastName: "" });
   const [saving, setSaving] = useState(false);
+  // const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -35,6 +48,19 @@ export function ProfileSection() {
       setSaving(false);
     }
   };
+
+  // const handleDelete = async () => {
+  //   if (deleting) return;
+  //   setDeleting(true);
+  //   try {
+  //     await deleteAccount();
+  //     // Ensure local logout state (safety, in case backend already removed session)
+  //     logout();
+  //   } catch (err) {
+  //     toast.error(err instanceof Error ? err.message : 'Failed to delete account');
+  //     setDeleting(false);
+  //   }
+  // };
 
   return (
     <section className="p-4 space-y-6 max-w-md">
@@ -67,6 +93,29 @@ export function ProfileSection() {
           {saving ? "Saving…" : "Save changes"}
         </Button>
       </form>
+      {/* <Separator className="my-6" />
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="destructive" disabled={deleting}>Delete account</Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent className="rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete account</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete your account and all associated data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button variant="destructive" onClick={handleDelete} disabled={deleting} className="flex items-center gap-2">
+                {deleting && <Loader2 className="size-4 animate-spin" />}
+                Yes, delete my account
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog> */}
     </section>
   );
 } 
