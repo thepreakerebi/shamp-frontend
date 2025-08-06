@@ -17,7 +17,7 @@ export function CreditsUsageCard() {
       : "Free";
 
   // Show only for paid plans (hobby, pro, ultra, etc.)
-  const paidPlans = ["hobby", "pro", "ultra", "hobby - annual", "pro - annual", "ultra - annual"];
+  const paidPlans = ["hobby", "pro", "ultra", "beta", "hobby - annual", "pro - annual", "ultra - annual"];
 
   if (billingLoading) {
     return (

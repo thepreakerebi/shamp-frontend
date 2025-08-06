@@ -220,16 +220,31 @@ export default function PricingPage() {
           </section>
 
           {/* Action */}
-          <Button
-            variant="secondary"
-            onClick={() => {
-              if (typeof window !== "undefined") {
-                window.open("https://cal.com/thepreakerebi/custom-plan", "_blank", "noopener,noreferrer");
-              }
-            }}
-          >
-            Contact us
-          </Button>
+          <section className="flex items-center gap-3">
+            {activeProductId !== "beta" && (scheduledProduct?.id !== "beta") && (
+              <Button
+                variant="outline"
+                disabled={loadingPlanId !== null}
+                onClick={() => handleCheckout("beta")}
+              >
+                {loadingPlanId === "beta" ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Get beta access ($50 / yr Pro)"
+                )}
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  window.open("https://cal.com/thepreakerebi/custom-plan", "_blank", "noopener,noreferrer");
+                }
+              }}
+            >
+              Contact us
+            </Button>
+          </section>
         </section>
       </section>
     </section>
