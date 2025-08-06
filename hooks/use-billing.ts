@@ -59,9 +59,9 @@ export function useBilling() {
   );
 
   const attachProductCheckout = useCallback(
-    async ({ productId }: { productId: string }): Promise<{ checkout_url?: string }> => {
+    async ({ productId, forceCheckout = false }: { productId: string; forceCheckout?: boolean }): Promise<{ checkout_url?: string }> => {
       if (!currentWorkspaceId) throw new Error("No workspace context");
-      const res = await apiFetch('/billing/attach-product', { workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
+      const res = await apiFetch('/billing/attach-product', { workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId, forceCheckout }) });
       if (!res.ok) {
         const text = await res.text();
         throw new Error(text || "Failed to create checkout session");
