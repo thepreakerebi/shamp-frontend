@@ -1,15 +1,13 @@
 "use client";
 import React, { useState } from "react";
-// import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
-// import { fileToBase64 } from "@/lib/file-utils";
-import type { Test } from "@/hooks/use-tests";
+import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
+import { fileToBase64 } from "@/lib/file-utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 // import { Loader2 } from "lucide-react";
 import { Laptop, Tablet, Smartphone } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useTestsStore } from "@/lib/store/tests";
 import { useTests } from "@/hooks/use-tests";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -24,7 +22,7 @@ export default function CreateTestPage() {
   const router = useRouter();
 
   const [form, setForm] = useState({ name: "", description: "", projectId: "", personaId: "", device: "" });
-  // const [files, setFiles] = useState<PendingFile[]>([]);
+  const [files, setFiles] = useState<PendingFile[]>([]);
   const [errors, setErrors] = useState<{ name?: string; description?: string; projectId?: string; personaId?: string; device?: string }>({});
   const [loading, setLoading] = useState(false);
 
@@ -86,18 +84,17 @@ export default function CreateTestPage() {
       const viewportMap: Record<string, { w: number; h: number }> = {
         desktop: { w: 1280, h: 720 },
         tablet: { w: 820, h: 1180 },
-        mobile: { w: 360, h: 800 },
+        mobile: { w: 800, h: 1280 },
       };
       const vp = deviceSelectionEnabled ? viewportMap[form.device as keyof typeof viewportMap] : viewportMap["desktop"];
-      /* File upload disabled
+      // Build file payloads
       const filePayloads = await Promise.all(
         files.map(async ({ file }) => ({
           fileName: file.name,
           contentType: file.type,
           data: await fileToBase64(file),
         }))
-      );*/
-      // const filePayloads: any[] = [];
+      );
 
       const newTest = await createTest({
         name: form.name,
@@ -106,17 +103,13 @@ export default function CreateTestPage() {
         persona: form.personaId,
         browserViewportWidth: vp.w,
         browserViewportHeight: vp.h,
-        /* files disabled */
+        ...(filePayloads.length ? { files: filePayloads } : {}),
       });
       toast.success("Test created");
       if (newTest && newTest._id) {
-        try { try {
-          const testTyped = newTest as unknown as Test;
-          useTestsStore.getState().addTestToList(testTyped);
-        } catch {} } catch {}
         router.push(`/tests/${newTest._id}`);
       } else {
-        router.push("/tests");
+      router.push("/tests");
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to create test");
@@ -179,7 +172,7 @@ export default function CreateTestPage() {
         </section>
         )}
         {/* File uploader */}
-        {/* FileUploader disabled */}
+        <FileUploader files={files} setFiles={setFiles} disabled={loading} />
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>

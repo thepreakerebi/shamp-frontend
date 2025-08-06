@@ -9,10 +9,8 @@ import { Button } from "@/components/ui/button";
 // import { Loader2 } from "lucide-react";
 import { Laptop, Tablet, Smartphone, X, FileText, FileImage } from "lucide-react";
 import TestFormSkeleton from "../_components/test-form-skeleton";
-// import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
-// import { fileToBase64 } from "@/lib/file-utils";
-// import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
-// import { fileToBase64 } from "@/lib/file-utils";
+import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
+import { fileToBase64 } from "@/lib/file-utils";
 import ProjectCommand from "../../create/_components/project-command";
 import PersonaCommand from "../../create/_components/persona-command";
 import { toast } from "sonner";
@@ -62,7 +60,7 @@ export default function EditTestPage() {
       const vpMap: Record<string,string> = {
         "1280x720":"desktop",
         "820x1180":"tablet",
-        "360x800":"mobile",
+        "800x1280":"mobile",
       };
       const key = `${(existing as any).browserViewportWidth ?? ""}x${(existing as any).browserViewportHeight ?? ""}`;
       return vpMap[key] || "";
@@ -76,7 +74,7 @@ export default function EditTestPage() {
     };
   });
   const [errors, setErrors] = useState<{ name?: string; description?: string; projectId?: string; personaId?: string; device?: string }>({});
-  // const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [existingFiles, setExistingFiles] = useState<{ fileName: string; contentType: string }[]>(() => {
     if (existing && Array.isArray((existing as any).files)) return (existing as any).files as { fileName: string; contentType: string }[];
     return [];
@@ -98,7 +96,7 @@ export default function EditTestPage() {
   const isDirty = useMemo(() => {
     if (saving || !initialLoaded) return false;
     const viewportMap: Record<string,string> = {
-      desktop:"1280x720", tablet:"820x1180", mobile:"360x800"
+      desktop:"1280x720", tablet:"820x1180", mobile:"800x1280"
     };
     const initialDeviceKey = ((): string => {
       if (!existing) return "";
@@ -159,7 +157,7 @@ export default function EditTestPage() {
           const vpMap: Record<string,string> = {
             "1280x720":"desktop",
             "820x1180":"tablet",
-            "360x800":"mobile",
+            "800x1280":"mobile",
           };
           const key = `${(t as any).browserViewportWidth ?? ""}x${(t as any).browserViewportHeight ?? ""}`;
           return vpMap[key] || "";
@@ -188,11 +186,10 @@ export default function EditTestPage() {
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setSaving(true);
     try{
-      const viewportMap: Record<string,{w:number;h:number}> = {desktop:{w:1280,h:720}, tablet:{w:820,h:1180}, mobile:{w:360,h:800}};
+      const viewportMap: Record<string,{w:number;h:number}> = {desktop:{w:1280,h:720}, tablet:{w:820,h:1180}, mobile:{w:800,h:1280}};
       const vp = deviceSelectionEnabled ? viewportMap[form.device as keyof typeof viewportMap] : viewportMap["desktop"];
       // Build file payloads
       const existingMetaPayload = existingFiles.map(meta=>({ fileName: meta.fileName, contentType: meta.contentType }));
-      /* File upload disabled
       const newFilesPayload = await Promise.all(
         pendingFiles.map(async ({ file })=>({
           fileName: file.name,
@@ -200,8 +197,7 @@ export default function EditTestPage() {
           data: await fileToBase64(file),
         }))
       );
-      const allFiles = [...existingMetaPayload, ...newFilesPayload];*/
-      const allFiles = [...existingMetaPayload];
+      const allFiles = [...existingMetaPayload, ...newFilesPayload];
 
       await updateTest(testId, {
         name: form.name,
@@ -290,7 +286,7 @@ export default function EditTestPage() {
           </div>
         )}
         {/* Add new attachments */}
-        {/* FileUploader disabled */}
+        <FileUploader files={pendingFiles} setFiles={setPendingFiles} disabled={saving} />
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={() => {
