@@ -3,27 +3,26 @@ import { useAuth } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import React, { useState, useEffect } from "react";
-// import { Separator } from "@/components/ui/separator";
-// import {
-//   AlertDialog,
-//   AlertDialogTrigger,
-//   AlertDialogContent,
-//   AlertDialogHeader,
-//   AlertDialogTitle,
-//   AlertDialogDescription,
-//   AlertDialogFooter,
-//   AlertDialogCancel,
-//   AlertDialogAction,
-// } from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 
 export function ProfileSection() {
-  const { user, updateProfile, loading } = useAuth();
+  const { user, updateProfile, loading, deleteAccount, logout } = useAuth();
 
   const [form, setForm] = useState({ firstName: "", lastName: "" });
   const [saving, setSaving] = useState(false);
-  // const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -49,18 +48,18 @@ export function ProfileSection() {
     }
   };
 
-  // const handleDelete = async () => {
-  //   if (deleting) return;
-  //   setDeleting(true);
-  //   try {
-  //     await deleteAccount();
-  //     // Ensure local logout state (safety, in case backend already removed session)
-  //     logout();
-  //   } catch (err) {
-  //     toast.error(err instanceof Error ? err.message : 'Failed to delete account');
-  //     setDeleting(false);
-  //   }
-  // };
+  const handleDelete = async () => {
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      await deleteAccount();
+      // Ensure local logout state (safety, in case backend already removed session)
+      logout();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete account');
+      setDeleting(false);
+    }
+  };
 
   return (
     <section className="p-4 space-y-6 max-w-md">
@@ -93,29 +92,52 @@ export function ProfileSection() {
           {saving ? "Saving…" : "Save changes"}
         </Button>
       </form>
-      {/* <Separator className="my-6" />
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button variant="destructive" disabled={deleting}>Delete account</Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent className="rounded-3xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete account</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete your account and all associated data. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button variant="destructive" onClick={handleDelete} disabled={deleting} className="flex items-center gap-2">
+      <Separator className="my-6" />
+
+      {/* Danger zone */}
+      <section className="border rounded-3xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <section className="space-y-1">
+          <h3 className="text-lg font-semibold text-destructive">Danger zone</h3>
+          <p className="text-sm text-muted-foreground">
+            Be careful. Account deletion cannot be undone.
+          </p>
+        </section>
+
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              disabled={deleting}
+              className="shrink-0"
+            >
+              <Trash2 className="size-4" />
+              Delete account
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="rounded-3xl">
+            <DialogHeader>
+              <DialogTitle>Delete account</DialogTitle>
+              <DialogDescription>
+                This will permanently delete your account and all associated data. This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline" disabled={deleting}>Cancel</Button>
+              </DialogClose>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex items-center gap-2"
+              >
                 {deleting && <Loader2 className="size-4 animate-spin" />}
                 Yes, delete my account
               </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog> */}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </section>
     </section>
   );
 } 
