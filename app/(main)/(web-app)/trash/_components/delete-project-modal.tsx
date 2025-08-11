@@ -11,19 +11,35 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2 } from "lucide-react";
 
 interface DeleteProjectModalProps {
   open: boolean;
   setOpen: (open: boolean) => void;
   projectName: string | null;
-  onConfirm: (deleteTests: boolean) => void;
+  onConfirm: (deleteTests: boolean) => void | Promise<void>;
   loading?: boolean;
 }
 
 export function DeleteProjectModal({ open, setOpen, projectName, onConfirm, loading }: DeleteProjectModalProps) {
   const [deleteTests, setDeleteTests] = React.useState(true);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const handleConfirm = React.useCallback(() => {
+    setIsDeleting(true);
+    try {
+      Promise.resolve(onConfirm(deleteTests)).finally(() => setIsDeleting(false));
+    } catch {
+      setIsDeleting(false);
+    }
+  }, [deleteTests, onConfirm]);
+  const handleOpenChange = React.useCallback((nextOpen: boolean) => {
+    if (loading || isDeleting) return; // block closing while deleting
+    setOpen(nextOpen);
+  }, [loading, isDeleting, setOpen]);
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="rounded-3xl" data-stop-row>
         <DialogHeader>
           <DialogTitle>Delete Project</DialogTitle>
@@ -37,10 +53,11 @@ export function DeleteProjectModal({ open, setOpen, projectName, onConfirm, load
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline" disabled={loading}>Cancel</Button>
+            <Button type="button" variant="outline" disabled={loading || isDeleting}>Cancel</Button>
           </DialogClose>
-          <Button variant="destructive" onClick={()=>onConfirm(deleteTests)} disabled={loading}>
-            {loading ? "Deleting..." : "Delete"}
+          <Button variant="destructive" onClick={handleConfirm} disabled={loading || isDeleting} className="flex items-center gap-2">
+            {(loading || isDeleting) && <Loader2 className="size-4 animate-spin" />}
+            {loading || isDeleting ? "Deleting..." : "Delete"}
           </Button>
         </DialogFooter>
       </DialogContent>

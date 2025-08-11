@@ -7,7 +7,6 @@ import React from "react";
 import { ProjectListSkeleton } from "./project-list-skeleton";
 import { ProjectCardDropdown } from "./project-card-dropdown";
 import { MoveProjectToTrashModal } from "../../_components/move-project-to-trash-modal";
-import { useProjectsStore } from "@/lib/store/projects";
 import { DeleteProjectModal } from "../../trash/_components/delete-project-modal";
 import { toast } from "sonner";
 import { ProjectListEmpty } from "./project-list-empty";
@@ -175,7 +174,7 @@ function ProjectsListInner() {
     
     // Default to false if no role or unrecognized role
     return false;
-  }, [user?._id, user?.currentWorkspaceRole]);
+  }, [user]);
 
   // Function to check if user can edit a project (same logic as trash)
   const canEditProject = React.useCallback((project: Project) => {
@@ -192,7 +191,7 @@ function ProjectsListInner() {
     
     // Default to false if no role or unrecognized role
     return false;
-  }, [user?._id, user?.currentWorkspaceRole]);
+  }, [user]);
 
   // Function to check if dropdown should be shown (user has any actionable options)
   const shouldShowDropdown = React.useCallback((project: Project) => {
@@ -222,8 +221,6 @@ function ProjectsListInner() {
     if (!projectToDelete) return;
     setDeleteLoading(true);
     try {
-      // Immediate optimistic removal to avoid flicker while waiting for API + socket events
-      useProjectsStore.getState().removeProjectFromList(projectToDelete._id);
       await deleteProject(projectToDelete._id, deleteTests);
       toast.success("Project permanently deleted");
       setDeleteModalOpen(false);
@@ -241,9 +238,9 @@ function ProjectsListInner() {
         className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-4 w-full"
       aria-label="Projects list"
     >
-      {uniqueProjects.map((project: Project) => (
+      {uniqueProjects.filter(p=>!!p && !!p._id).map((project: Project, idx: number) => (
           <ProjectCard
-            key={project._id}
+            key={project._id || `project-${idx}`}
             project={project}
             canEdit={canEditProject(project)}
             canTrash={canTrashProject(project)}
