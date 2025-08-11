@@ -162,6 +162,10 @@ export function useProjects() {
         const { projects } = useProjectsStore.getState();
         const newCount = Array.isArray(projects) ? projects.length : 0;
         store.setCount(newCount);
+        try {
+          const evt = new CustomEvent('project-deleted-final', { detail: { id: data._id } });
+          window.dispatchEvent(evt);
+        } catch {}
       }
     });
     socket.on("project:trashed", (data: Project & { workspace?: string }) => {
