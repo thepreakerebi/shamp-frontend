@@ -100,7 +100,7 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
     );
 
     return (
-      <div className={[className, "rte-surface"].filter(Boolean).join(" ") }>
+      <div className={[className, "rte-surface max-w-[650px] w-full mx-auto"].filter(Boolean).join(" ") }>
         <BlockNoteView
           editor={editor}
           theme="light"
