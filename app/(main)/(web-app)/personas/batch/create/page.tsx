@@ -22,6 +22,7 @@ export default function CreateBatchPersonaPage() {
     targetAudience: "",
     additionalContext: "",
   });
+  // Keep a simple array of strings for UX, but convert to map on submit to satisfy backend schema
   const [diversity, setDiversity] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -105,7 +106,13 @@ export default function CreateBatchPersonaPage() {
         name: form.name,
         description: form.description,
         targetAudience: form.targetAudience || undefined,
-        diversity: diversity.filter((d) => d.trim()).length ? diversity.filter((d) => d.trim()).join(',') : undefined,
+        diversity: (() => {
+          const keys = diversity.map((d) => d.trim()).filter(Boolean);
+          if (!keys.length) return undefined;
+          const map: Record<string, boolean> = {};
+          keys.forEach((k) => { map[k] = true; });
+          return map;
+        })(),
         additionalContext: form.additionalContext || undefined,
       });
       toast.success("New batch personas created!");
