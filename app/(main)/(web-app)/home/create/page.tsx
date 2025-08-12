@@ -37,6 +37,12 @@ export default function CreateProjectPage() {
     // No cleanup needed
   }, [loading]);
 
+  // Broadcast dirty state for topbar Cancel button
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('create-project-dirty', { detail: isDirty }));
+  }, [isDirty]);
+
   // Simple client-side URL validation
   function validateUrl(url: string): boolean {
     try {
@@ -280,11 +286,7 @@ export default function CreateProjectPage() {
             ))}
           </fieldset> */}
 
-          {/* Action buttons */}
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
-          </div>
-          {/* Note: Submission is triggered from Topbar button */}
+          {/* Note: Cancel and Submission are handled in Topbar */}
         </form>
       <UnsavedChangesDialog
         open={confirmLeaveOpen}

@@ -40,6 +40,8 @@ export function Topbar() {
   const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
   const [createTestDirty, setCreateTestDirty] = useState(false);
   const [editTestDirty, setEditTestDirty] = useState(false);
+  const [createProjectDirty, setCreateProjectDirty] = useState(false);
+  const [editProjectDirty, setEditProjectDirty] = useState(false);
 
   // Billing info to determine feature availability
   const { summary, loading: billingLoading, allowed } = useBilling();
@@ -196,6 +198,13 @@ export function Topbar() {
     const form = document.getElementById('create-project-form') as HTMLFormElement | null;
     form?.requestSubmit();
   };
+  const handleCancelCreateProject = () => {
+    if (createProjectDirty) {
+      setConfirmLeaveOpen(true);
+    } else {
+      router.back();
+    }
+  };
 
   // Listen for loading state broadcast from create-project page
   useEffect(() => {
@@ -205,6 +214,26 @@ export function Topbar() {
     };
     window.addEventListener('create-project-loading', listener);
     return () => window.removeEventListener('create-project-loading', listener);
+  }, []);
+
+  // Listen for create project dirty
+  useEffect(() => {
+    const listener = (e: Event) => {
+      const custom = e as CustomEvent<boolean>;
+      setCreateProjectDirty(Boolean(custom.detail));
+    };
+    window.addEventListener('create-project-dirty', listener);
+    return () => window.removeEventListener('create-project-dirty', listener);
+  }, []);
+
+  // Listen for edit project dirty
+  useEffect(() => {
+    const listener = (e: Event) => {
+      const custom = e as CustomEvent<boolean>;
+      setEditProjectDirty(Boolean(custom.detail));
+    };
+    window.addEventListener('edit-project-dirty', listener);
+    return () => window.removeEventListener('edit-project-dirty', listener);
   }, []);
 
   // Listen for edit project loading
@@ -389,19 +418,31 @@ export function Topbar() {
           </section>
         )}
         {pathname === '/home/create' && (
-          <Button variant="default" onClick={handleSubmitProject} disabled={createLoading} className="flex items-center gap-2">
-            {createLoading && <Loader2 className="animate-spin size-4" />}
-            {createLoading ? 'Creating…' : 'Create project'}
-          </Button>
+          <section className="flex flex-row items-center gap-2">
+            <Button type="button" variant="outline" onClick={handleCancelCreateProject} className="flex items-center gap-2">Cancel</Button>
+            <Button variant="default" onClick={handleSubmitProject} disabled={createLoading} className="flex items-center gap-2">
+              {createLoading && <Loader2 className="animate-spin size-4" />}
+              {createLoading ? 'Creating…' : 'Create project'}
+            </Button>
+          </section>
         )}
         {/^\/home\/[^/]+\/edit$/.test(pathname) && (
-          <Button variant="default" onClick={() => {
-            const form = document.getElementById('edit-project-form') as HTMLFormElement | null;
-            form?.requestSubmit();
-          }} disabled={editLoading} className="flex items-center gap-2">
-            {editLoading && <Loader2 className="animate-spin size-4" />}
-            {editLoading ? 'Saving…' : 'Save changes'}
-          </Button>
+          <section className="flex flex-row items-center gap-2">
+            <Button type="button" variant="outline" onClick={() => {
+              if (editProjectDirty) {
+                setConfirmLeaveOpen(true);
+              } else {
+                router.back();
+              }
+            }} className="flex items-center gap-2">Cancel</Button>
+            <Button variant="default" onClick={() => {
+              const form = document.getElementById('edit-project-form') as HTMLFormElement | null;
+              form?.requestSubmit();
+            }} disabled={editLoading} className="flex items-center gap-2">
+              {editLoading && <Loader2 className="animate-spin size-4" />}
+              {editLoading ? 'Saving…' : 'Save changes'}
+            </Button>
+          </section>
         )}
         {pathname === '/personas/create' && (
           <Button variant="default" onClick={() => {
