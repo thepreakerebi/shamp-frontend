@@ -289,6 +289,13 @@ export function Topbar() {
     }
   }, [pathname, editTestLoading]);
 
+  // Listen for edit test dirty state (optional for future Cancel in topbar on edit page)
+  useEffect(() => {
+    const listener = () => {};
+    window.addEventListener('edit-test-dirty', listener);
+    return () => window.removeEventListener('edit-test-dirty', listener);
+  }, []);
+
   // Reset persona loading when navigating away
   useEffect(() => {
     if (pathname !== '/personas/create' && createPersonaLoading) {

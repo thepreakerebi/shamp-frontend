@@ -4,8 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTests } from "@/hooks/use-tests";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 // import { Loader2 } from "lucide-react";
 import { Laptop, Tablet, Smartphone, X, FileText, FileImage } from "lucide-react";
 import TestFormSkeleton from "../_components/test-form-skeleton";
@@ -17,6 +16,7 @@ import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useBilling } from "@/hooks/use-billing";
 import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
+import RichTextEditor, { RichTextEditorHandle } from "../../_components/rich-text-editor";
 
 export default function EditTestPage() {
   const { testId } = useParams<{ testId: string }>();
@@ -33,14 +33,14 @@ export default function EditTestPage() {
   const existing = tests?.find(t => t._id === testId);
 
   // Helpers to extract id whether value is string or populated object
-  const getId = (value: unknown): string => {
+  const getId = React.useCallback((value: unknown): string => {
     if (!value) return "";
     if (typeof value === "string") return value;
     if (typeof value === "object" && value && (value as { _id?: string })._id) {
       return (value as { _id: string })._id;
     }
     return "";
-  };
+  }, []);
 
   const hasViewport = existing && (existing as any).browserViewportWidth !== undefined && (existing as any).browserViewportHeight !== undefined;
   const [initialLoaded, setInitialLoaded] = useState(!!existing && hasViewport);
@@ -80,6 +80,11 @@ export default function EditTestPage() {
     return [];
   });
   const [saving, setSaving] = useState(false);
+  const [stickyTopPx, setStickyTopPx] = useState<number>(100);
+
+  // Editor ref and initial blocks (hooks at component top-level)
+  const editorRef = React.useRef<RichTextEditorHandle | null>(null);
+  const existingBlocks = React.useMemo(() => (existing as unknown as { descriptionBlocks?: unknown[] })?.descriptionBlocks, [existing]);
 
   // Broadcast loading to topbar
   React.useEffect(()=>{
@@ -87,6 +92,18 @@ export default function EditTestPage() {
       window.dispatchEvent(new CustomEvent('edit-test-loading',{detail:saving}));
     }
   },[saving]);
+
+  // Compute sticky top based on topbar height + 60px (match create page)
+  React.useEffect(()=>{
+    const compute = ()=>{
+      const el = document.querySelector('[data-topbar]') as HTMLElement | null;
+      const h = el ? el.getBoundingClientRect().height : 64;
+      setStickyTopPx(Math.max(0, Math.round(h + 60)));
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return ()=> window.removeEventListener('resize', compute);
+  },[]);
 
   // Unsaved changes dialog
   const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
@@ -125,6 +142,13 @@ export default function EditTestPage() {
       form.device !== initial.device
     );
   }, [form, existing, getId, initialLoaded, saving]);
+
+  // Broadcast dirty state for topbar Cancel button
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('edit-test-dirty', { detail: isDirty }));
+    }
+  }, [isDirty]);
 
   // Intercept breadcrumb link clicks
   useEffect(() => {
@@ -178,8 +202,10 @@ export default function EditTestPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs: typeof errors = {};
+    const descriptionFromEditor = editorRef.current?.getPlainText() ?? form.description;
+    const hasGoal = editorRef.current?.getHasValidGoal() ?? false;
     if (!form.name) errs.name = "Name is required";
-    if (!form.description) errs.description = "Description is required";
+    if (!descriptionFromEditor || !hasGoal) errs.description = !hasGoal ? "Please provide a real Goal before submitting" : "Description is required";
     if (!form.projectId) errs.projectId = "Project is required";
     if (!form.personaId) errs.personaId = "Persona is required";
     if (deviceSelectionEnabled && !form.device) errs.device = "Device type is required";
@@ -199,9 +225,11 @@ export default function EditTestPage() {
       );
       const allFiles = [...existingMetaPayload, ...newFilesPayload];
 
+      const blocks = editorRef.current?.getBlocks();
       await updateTest(testId, {
         name: form.name,
-        description: form.description,
+        description: descriptionFromEditor,
+        ...(blocks ? { descriptionBlocks: blocks as unknown } : {}),
         project: form.projectId,
         persona: form.personaId,
         browserViewportWidth: vp.w,
@@ -220,89 +248,87 @@ export default function EditTestPage() {
   }
 
   return (
-    <main className="p-4 w-full max-w-[500px] mx-auto space-y-6">
-      <h1 className="text-2xl font-semibold">Edit Test</h1>
-      <form onSubmit={handleSubmit} className="space-y-4" id="edit-test-form" onKeyDown={(e)=>{if((e.key==='Enter'||e.key==='Return') && e.target instanceof HTMLElement && e.target.tagName!=='TEXTAREA'){e.preventDefault(); const form=document.getElementById('edit-test-form') as HTMLFormElement|null; form?.requestSubmit();}}}>
-        <section>
-          <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
-          <Input id="name" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} aria-invalid={!!errors.name} />
-          {errors.name && <p className="text-destructive text-xs mt-1">{errors.name}</p>}
-        </section>
-        <section>
-          <label htmlFor="description" className="block text-sm font-medium mb-1">Description</label>
-          <Textarea id="description" value={form.description} onChange={e=>setForm({...form, description:e.target.value})} aria-invalid={!!errors.description}/>
-          {errors.description && <p className="text-destructive text-xs mt-1">{errors.description}</p>}
-        </section>
-        <section>
-          <label className="block text-sm font-medium mb-1">Project</label>
-          <ProjectCommand value={form.projectId} onChange={(id: string)=>{ setForm({...form, projectId:id}); setErrors({...errors, projectId: undefined}); }} />
-          {errors.projectId && <p className="text-destructive text-xs mt-1">{errors.projectId}</p>}
-        </section>
-        <section>
-          <label className="block text-sm font-medium mb-1">Persona</label>
-          <PersonaCommand value={form.personaId} onChange={(id: string)=>{ setForm({...form, personaId:id}); setErrors({...errors, personaId: undefined}); }} />
-          {errors.personaId && <p className="text-destructive text-xs mt-1">{errors.personaId}</p>}
-        </section>
-        {deviceSelectionEnabled && (
-        <section>
-          <label className="block text-sm font-medium mb-1">Device type</label>
-          <RadioGroup value={form.device} onValueChange={(v)=>{setForm({...form, device:v}); setErrors({...errors, device:undefined});}} className="grid grid-cols-3 gap-2 md:max-w-xs">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <RadioGroupItem value="desktop" id="device-desktop" />
-              <Laptop className="size-5" />
-              <span className="text-xs">Desktop</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <RadioGroupItem value="tablet" id="device-tablet" />
-              <Tablet className="size-5" />
-              <span className="text-xs">Tablet</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <RadioGroupItem value="mobile" id="device-mobile" />
-              <Smartphone className="size-5" />
-              <span className="text-xs">Mobile</span>
-            </label>
-          </RadioGroup>
-          {errors.device && <p className="text-destructive text-xs mt-1">{errors.device}</p>}
-        </section>
-        )}
-        {/* Existing attachments */}
-        {existingFiles.length > 0 && (
-          <div>
-            <label className="block text-sm font-medium mb-1">Current attachments</label>
-            <ul className="mt-1 space-y-1 max-h-40 overflow-auto">
-              {existingFiles.map((f, idx)=> {
-                const isImage = f.contentType?.startsWith('image/');
-                const Icon = isImage ? FileImage : FileText;
-                return (
-                <li key={idx} className="flex items-center justify-between text-sm border rounded px-2 py-1">
-                  <span className="flex items-center gap-1 truncate mr-2"><Icon className="size-4 shrink-0" /> {f.fileName}</span>
-                  <button type="button" onClick={()=>{
-                    const copy=[...existingFiles]; copy.splice(idx,1); setExistingFiles(copy);
-                  }} className="text-muted-foreground hover:text-foreground"><X className="size-4"/></button>
-                </li>
-              );})}
-            </ul>
-          </div>
-        )}
-        {/* Add new attachments */}
-        <FileUploader files={pendingFiles} setFiles={setPendingFiles} disabled={saving} />
+    <main className="p-4 w-full mx-auto space-y-6">
+      <form onSubmit={handleSubmit} id="edit-test-form" onKeyDown={(e)=>{if((e.key==='Enter'||e.key==='Return') && e.target instanceof HTMLElement && e.target.tagName!=='TEXTAREA'){e.preventDefault(); const form=document.getElementById('edit-test-form') as HTMLFormElement|null; form?.requestSubmit();}}}>
+        <section className="grid grid-cols-1 md:grid-cols-[400px_1fr] gap-8 items-start">
+          {/* Left: inputs (sticky) */}
+          <section className="space-y-4 md:max-w-[400px] w-full md:sticky self-start" style={{ top: stickyTopPx }}>
+            <h1 className="text-2xl font-semibold">Edit Test</h1>
+            <section>
+              <label htmlFor="name" className="block text-sm font-medium">Name</label>
+              <Input id="name" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} aria-invalid={!!errors.name} />
+              {errors.name && <p className="text-destructive text-xs mt-1">{errors.name}</p>}
+            </section>
+            <section>
+              <label className="block text-sm font-medium mb-1">Persona</label>
+              <PersonaCommand value={form.personaId} onChange={(id: string)=>{ setForm({...form, personaId:id}); setErrors({...errors, personaId: undefined}); }} />
+              {errors.personaId && <p className="text-destructive text-xs mt-1">{errors.personaId}</p>}
+            </section>
+            <section>
+              <label className="block text-sm font-medium mb-1">Project</label>
+              <ProjectCommand value={form.projectId} onChange={(id: string)=>{ setForm({...form, projectId:id}); setErrors({...errors, projectId: undefined}); }} />
+              {errors.projectId && <p className="text-destructive text-xs mt-1">{errors.projectId}</p>}
+            </section>
+            {deviceSelectionEnabled && (
+              <section>
+                <label className="block text-sm font-medium mb-1">Device type</label>
+                <RadioGroup value={form.device} onValueChange={(v)=>{setForm({...form, device:v}); setErrors({...errors, device:undefined});}} className="grid grid-cols-3 gap-2 md:max-w-xs">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <RadioGroupItem value="desktop" id="device-desktop" />
+                    <Laptop className="size-5" />
+                    <span className="text-xs">Desktop</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <RadioGroupItem value="tablet" id="device-tablet" />
+                    <Tablet className="size-5" />
+                    <span className="text-xs">Tablet</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <RadioGroupItem value="mobile" id="device-mobile" />
+                    <Smartphone className="size-5" />
+                    <span className="text-xs">Mobile</span>
+                  </label>
+                </RadioGroup>
+                {errors.device && <p className="text-destructive text-xs mt-1">{errors.device}</p>}
+              </section>
+            )}
+            {/* Existing attachments */}
+            {existingFiles.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium mb-1">Current attachments</label>
+                <ul className="mt-1 space-y-1 max-h-40 overflow-auto">
+                  {existingFiles.map((f, idx)=> {
+                    const isImage = f.contentType?.startsWith('image/');
+                    const Icon = isImage ? FileImage : FileText;
+                    return (
+                    <li key={idx} className="flex items-center justify-between text-sm border rounded px-2 py-1">
+                      <span className="flex items-center gap-1 truncate mr-2"><Icon className="size-4 shrink-0" /> {f.fileName}</span>
+                      <button type="button" onClick={()=>{
+                        const copy=[...existingFiles]; copy.splice(idx,1); setExistingFiles(copy);
+                      }} className="text-muted-foreground hover:text-foreground"><X className="size-4"/></button>
+                    </li>
+                  );})}
+                </ul>
+              </div>
+            )}
+            {/* Add new attachments */}
+            <FileUploader files={pendingFiles} setFiles={setPendingFiles} disabled={saving} />
+          </section>
 
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={() => {
-            if (isDirty) {
-              setConfirmLeaveOpen(true);
-            } else {
-              router.back();
-            }
-          }}>Cancel</Button>
-          {/*
-          <Button type="submit" disabled={saving} className="flex items-center gap-2">
-            {saving && <Loader2 className="animate-spin size-4" />}
-            {saving?"Saving…":"Save changes"}
-          </Button>
-          */}
-        </div>
+          {/* Right: Rich text editor */}
+          <section className="space-y-2 min-w-0 w-full">
+            <h1 className="text-2xl font-semibold invisible select-none pointer-events-none">Edit Test</h1>
+            <label className="block text-sm font-medium">Description</label>
+            <p className="text-xs text-muted-foreground mb-1">Describe the exact goal and steps. Replace the placeholder text inside each block, and add or remove blocks using the + button or typing &#34;/&#34; for commands.</p>
+            <RichTextEditor
+              ref={editorRef}
+              initialBlocks={Array.isArray(existingBlocks) && existingBlocks.length ? existingBlocks : undefined}
+              className="rounded-lg overflow-hidden"
+              invalid={!!errors.description}
+            />
+            {errors.description && <p className="text-destructive text-xs mt-1">{errors.description}</p>}
+          </section>
+        </section>
       </form>
       <UnsavedChangesDialog
         open={confirmLeaveOpen}
