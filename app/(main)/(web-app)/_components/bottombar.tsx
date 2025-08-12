@@ -55,9 +55,10 @@ export function Bottombar() {
       className="fixed bottom-0 right-0 z-20 w-full bg-background"
       style={{ left, width }}
     >
-      <div className="flex items-center justify-end gap-2 p-4">
+      <section className="mx-auto w-full max-w-[500px] px-4">
+        <section className="flex items-center justify-end gap-2 py-3">
         {isCreateProject && (
-          <>
+          <section className="flex items-center justify-end gap-3">
             <Button
               type="button"
               variant="outline"
@@ -80,10 +81,10 @@ export function Bottombar() {
               {createProjectLoading && <Loader2 className="animate-spin size-4" />}
               {createProjectLoading ? "Creating…" : "Create project"}
             </Button>
-          </>
+          </section>
         )}
         {isEditProject && (
-          <>
+          <section className="flex items-center justify-end gap-2">
             <Button
               type="button"
               variant="outline"
@@ -106,9 +107,10 @@ export function Bottombar() {
               {editProjectLoading && <Loader2 className="animate-spin size-4" />}
               {editProjectLoading ? "Saving…" : "Save changes"}
             </Button>
-          </>
+          </section>
         )}
-      </div>
+        </section>
+      </section>
       <UnsavedChangesDialog
         open={confirmLeaveOpen}
         onOpenChange={setConfirmLeaveOpen}
