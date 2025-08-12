@@ -82,6 +82,78 @@ export default function CreateTestPage() {
 
   const deviceSelectionEnabled = planName === 'pro' || planName === 'pro - annual' || planName === 'ultra' || planName === 'ultra - annual';
 
+  // Remove untouched template blocks before saving
+  const cleanDescriptionBlocks = React.useCallback((blocks: unknown): unknown[] => {
+    if (!Array.isArray(blocks)) return [];
+    const placeholderTexts = new Set<string>([
+      'One concise sentence describing exactly what should be achieved.',
+      'Open the page and…',
+      'Click … and fill …',
+      'Submit and verify …',
+      'What confirms the task is done (e.g., dashboard visible)',
+      'Stop immediately once success is confirmed',
+      'If blocked after at most 2 retries, stop and summarize why',
+      'Optional negative paths worth checking (if any)'
+    ]);
+    const headingNames = new Set<string>(['Goal','Steps','Success criteria','Stop conditions','Edge cases']);
+
+    const readInline = (content: unknown): string => {
+      if (!Array.isArray(content)) return '';
+      return content
+        .map((n: unknown) => {
+          if (!n) return '';
+          if (typeof n === 'string') return n;
+          if (typeof n === 'object' && 'text' in (n as { text?: unknown })) return String((n as { text?: unknown }).text ?? '');
+          if (typeof n === 'object' && 'content' in (n as { content?: unknown })) return readInline((n as { content?: unknown }).content);
+          return '';
+        })
+        .join('');
+    };
+
+    type BNBlock = { type?: string; props?: Record<string, unknown>; content?: unknown };
+
+    // First pass: drop empty or placeholder non-heading blocks
+    const prelim: BNBlock[] = [];
+    for (const raw of blocks as BNBlock[]) {
+      const t = raw?.type ?? '';
+      if (t.includes('heading')) {
+        prelim.push(raw);
+        continue;
+      }
+      const text = readInline(raw?.content).trim();
+      if (!text) continue;
+      if (placeholderTexts.has(text)) continue;
+      prelim.push(raw);
+    }
+
+    // Second pass: keep a heading only if followed by at least one kept non-heading before the next heading
+    const kept: BNBlock[] = [];
+    for (let i = 0; i < prelim.length; i++) {
+      const b = prelim[i];
+      const isHeading = (b?.type ?? '').includes('heading');
+      if (!isHeading) { kept.push(b); continue; }
+      const headingText = readInline(b?.content).trim();
+      // look ahead
+      let hasContent = false;
+      for (let j = i + 1; j < prelim.length; j++) {
+        const next = prelim[j];
+        const nextIsHeading = (next?.type ?? '').includes('heading');
+        if (nextIsHeading) break;
+        hasContent = true; break;
+      }
+      if (hasContent) {
+        // keep heading, but if it is a known template heading and all its immediate child content are placeholders, still keep because some users may add content later in the section
+        kept.push(b);
+      } else if (!headingNames.has(headingText)) {
+        // custom heading with no content yet → drop
+      } else {
+        // template heading with no user content → drop
+      }
+    }
+
+    return kept as unknown[];
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs: typeof errors = {};
@@ -113,7 +185,8 @@ export default function CreateTestPage() {
         }))
       );
 
-      const blocks = editorRef.current?.getBlocks();
+      const rawBlocks = editorRef.current?.getBlocks();
+      const blocks = cleanDescriptionBlocks(rawBlocks as unknown);
       const newTest = await createTest({
         name: form.name,
         description: descriptionFromEditor,
