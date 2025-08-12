@@ -2,7 +2,7 @@
 import React, { forwardRef, useImperativeHandle, useRef } from "react";
 import "@blocknote/core/fonts/inter.css";
 import { useCreateBlockNote } from "@blocknote/react";
-import type { PartialBlock } from "@blocknote/core";
+import { BlockNoteSchema, defaultBlockSpecs, defaultInlineContentSpecs, type PartialBlock } from "@blocknote/core";
 import { BlockNoteView } from "@blocknote/shadcn";
 import "@blocknote/shadcn/style.css";
 import "./rich-text-editor.css";
@@ -84,7 +84,22 @@ const DEFAULT_TEMPLATE = [
 
 const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
   ({ className, onPlainTextChange }, ref) => {
-    const editor = useCreateBlockNote({ initialContent: DEFAULT_TEMPLATE });
+    // Restrict blocks: no Code Block, Media, or Advanced
+    const textOnlySchema = BlockNoteSchema.create({
+      blockSpecs: {
+        paragraph: defaultBlockSpecs.paragraph,
+        heading: defaultBlockSpecs.heading,
+        bulletListItem: defaultBlockSpecs.bulletListItem,
+        numberedListItem: defaultBlockSpecs.numberedListItem,
+        // keep checklists out for now to simplify the schema
+      },
+      inlineContentSpecs: defaultInlineContentSpecs,
+    });
+
+    // Initialize editor with restricted schema
+    // Cast initialContent loosely to satisfy generics across schema variants
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const editor = useCreateBlockNote({ initialContent: DEFAULT_TEMPLATE as any, schema: textOnlySchema });
     const lastPlainTextRef = useRef<string>("");
 
     useImperativeHandle(
