@@ -6,6 +6,7 @@ import { BlockNoteSchema, defaultBlockSpecs, defaultInlineContentSpecs, type Par
 import { BlockNoteView } from "@blocknote/shadcn";
 import "@blocknote/shadcn/style.css";
 import "./rich-text-editor.css";
+import { NameBlock, PersonaBlock, ProjectBlock, DeviceBlock, AttachmentsBlock } from "./custom-blocks";
 
 export type RichTextEditorHandle = {
   getPlainText: () => string;
@@ -62,6 +63,12 @@ function blocksToPlainText(blocks: BlockNode[]): string {
 }
 
 const DEFAULT_TEMPLATE = [
+  // Ensure a valid initial position, then our guided blocks
+  { type: "paragraph", content: [{ type: "text", text: "" }] },
+  { type: "nameBlock" },
+  { type: "personaBlock" },
+  { type: "projectBlock" },
+  { type: "deviceBlock" },
   { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Goal" }] },
   {
     type: "paragraph",
@@ -80,6 +87,7 @@ const DEFAULT_TEMPLATE = [
   { type: "bulletListItem", content: [{ type: "text", text: "If blocked after at most 2 retries, stop and summarize why" }] },
   { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Edge cases" }] },
   { type: "bulletListItem", content: [{ type: "text", text: "Optional negative paths worth checking (if any)" }] },
+  { type: "attachmentsBlock" },
 ] as unknown as PartialBlock[];
 
 const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
@@ -90,6 +98,11 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
         heading: defaultBlockSpecs.heading,
         bulletListItem: defaultBlockSpecs.bulletListItem,
         numberedListItem: defaultBlockSpecs.numberedListItem,
+        nameBlock: NameBlock,
+        personaBlock: PersonaBlock,
+        projectBlock: ProjectBlock,
+        deviceBlock: DeviceBlock,
+        attachmentsBlock: AttachmentsBlock,
       },
       inlineContentSpecs: defaultInlineContentSpecs,
     });
