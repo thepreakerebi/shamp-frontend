@@ -39,9 +39,15 @@ export const useBatchTestsStore = create<BatchTestsState>((set, get) => ({
         if (!prev) return next;
         const merged: BatchTest = { ...prev, ...next }; // start with existing, then apply newer fields
 
-        // Prefer richer "test" object if incoming only has id string
-        if (typeof next.test === "string" && typeof prev.test === "object") {
-          merged.test = prev.test;
+        // Prefer richer "test" object if incoming only has id string, OR
+        // prefer existing when incoming test object is missing descriptionBlocks
+        if (
+          (typeof next.test === "string" && typeof prev.test === "object") ||
+          (typeof next.test === "object" && next.test && typeof prev.test === "object" && prev.test &&
+            (prev.test as { descriptionBlocks?: unknown }).descriptionBlocks &&
+            !(next.test as { descriptionBlocks?: unknown }).descriptionBlocks)
+        ) {
+          merged.test = prev.test as unknown as BatchTest["test"];
         }
 
         // Prefer richer "project" object if incoming only has id string

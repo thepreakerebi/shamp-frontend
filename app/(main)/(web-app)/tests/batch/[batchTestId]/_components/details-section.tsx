@@ -103,7 +103,7 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
 
   const testObj = typeof liveBatch.test === "object" && liveBatch.test ? (liveBatch.test as { name?: string; description?: string }) : null;
   const testName = testObj?.name;
-  const testDescription = testObj?.description;
+  // const testDescription = testObj?.description; // moved rendering below footer
 
   const projectName = typeof liveBatch.project === "object" && liveBatch.project ? (liveBatch.project as { name?: string }).name : undefined;
   const batchPersonaObj = typeof liveBatch.batchPersona === "object" && liveBatch.batchPersona ? (liveBatch.batchPersona as { _id: string; name?: string }) : null;
@@ -134,6 +134,116 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
   // actions for dropdown
   const { moveBatchTestToTrash, deleteBatchTest } = useBatchTests();
 
+  // Render BlockNote descriptionBlocks similarly to single test details
+  const renderDescriptionBlocks = (blocks: unknown): React.ReactNode => {
+    if (!Array.isArray(blocks)) return null;
+
+    const elements: React.ReactNode[] = [];
+    let i = 0;
+
+    const readInline = (content: unknown): string => {
+      if (!Array.isArray(content)) return "";
+      return content
+        .map((n: unknown) => {
+          if (!n) return "";
+          if (typeof n === "string") return n;
+          if (typeof n === "object" && n && "text" in (n as { text?: unknown })) return String((n as { text?: unknown }).text || "");
+          if (typeof n === "object" && n && "content" in (n as { content?: unknown })) return readInline((n as { content?: unknown }).content);
+          return "";
+        })
+        .join("");
+    };
+
+    while (i < blocks.length) {
+      const b = blocks[i] as { type?: string; props?: Record<string, unknown>; content?: unknown };
+      const type = b?.type;
+
+      if (type === "bulletListItem" || type === "numberedListItem") {
+        const isOrdered = type === "numberedListItem";
+        const items: string[] = [];
+        let j = i;
+        while (j < blocks.length && (blocks[j] as { type?: string })?.type === type) {
+          const t = readInline((blocks[j] as { content?: unknown }).content);
+          if (t) items.push(t);
+          j++;
+        }
+        i = j;
+        if (items.length) {
+          elements.push(
+            isOrdered ? (
+              <ol key={`ol-${i}`} className="list-decimal pl-6 space-y-1">
+                {items.map((txt, idx) => (
+                  <li key={`oli-${idx}`}>{txt}</li>
+                ))}
+              </ol>
+            ) : (
+              <ul key={`ul-${i}`} className="list-disc pl-6 space-y-1">
+                {items.map((txt, idx) => (
+                  <li key={`uli-${idx}`}>{txt}</li>
+                ))}
+              </ul>
+            )
+          );
+        }
+        continue;
+      }
+
+      if (type === "heading") {
+        const lvlVal = (b?.props as { level?: number | { toString?: () => string } } | undefined)?.level;
+        const lvl = typeof lvlVal === 'number' ? lvlVal : Number(String(lvlVal ?? 3));
+        const text = readInline(b?.content);
+        if (text) {
+          if (lvl <= 3) {
+            elements.push(
+              <h3 key={`h3-${i}`} className="text-base font-semibold mt-4">
+                {text}
+              </h3>
+            );
+          } else if (lvl === 4) {
+            elements.push(
+              <h4 key={`h4-${i}`} className="text-sm font-semibold mt-4">
+                {text}
+              </h4>
+            );
+          } else {
+            elements.push(
+              <h5 key={`h5-${i}`} className="text-sm font-medium mt-4">
+                {text}
+              </h5>
+            );
+          }
+        }
+        i++;
+        continue;
+      }
+
+      if (type === "paragraph") {
+        const text = readInline(b?.content);
+        if (text) {
+          elements.push(
+            <p key={`p-${i}`} className="text-sm text-foreground/90">
+              {text}
+            </p>
+          );
+        }
+        i++;
+        continue;
+      }
+
+      const fallback = readInline(b?.content);
+      if (fallback) {
+        elements.push(
+          <p key={`pf-${i}`} className="text-sm text-foreground/90">
+            {fallback}
+          </p>
+        );
+      }
+      i++;
+    }
+
+    return <section className="space-y-2">{elements}</section>;
+  };
+
   return (
     <article className="p-4 space-y-6" aria-labelledby="batch-details-heading">
       <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -142,11 +252,7 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
             <span>{testName ?? "Batch Test"}</span>
             <Badge variant="default" className="uppercase">batch</Badge>
           </h2>
-          {testDescription && (
-            <p className="text-sm text-muted-foreground max-w-prose line-clamp-2">
-              {testDescription}
-            </p>
-          )}
+          {/* Description moved below footer like single test details */}
         </section>
         <section className="flex items-center gap-4 shrink-0">
           <BatchTestCardActionsDropdown
@@ -241,6 +347,16 @@ export default function DetailsSection({ batch }: { batch: BatchTest }) {
         )}
         {/* Overall runs badge hidden for now */}
       </footer>
+
+      <Separator />
+
+      {/* Structured Description from the base test */}
+      {testObj && Array.isArray((testObj as unknown as { descriptionBlocks?: unknown }).descriptionBlocks) && (
+        <section className="space-y-2" aria-labelledby="batch-test-description-structured">
+          <h3 id="batch-test-description-structured" className="sr-only">Base test description</h3>
+          {renderDescriptionBlocks((testObj as unknown as { descriptionBlocks?: unknown }).descriptionBlocks)}
+        </section>
+      )}
     </article>
   );
 } 
