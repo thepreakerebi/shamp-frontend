@@ -135,14 +135,15 @@ export default function CreateTestPage() {
   };
 
   return (
-    <main className="p-4 w-full max-w-[1100px] mx-auto space-y-6">
+    <main className="p-4 w-full mx-auto space-y-6">
       <form onSubmit={handleSubmit} id="create-test-form" onKeyDown={(e)=>{if((e.key==='Enter'||e.key==='Return') && e.target instanceof HTMLElement && e.target.tagName!=='TEXTAREA'){e.preventDefault();const form=document.getElementById('create-test-form') as HTMLFormElement|null;form?.requestSubmit();}}}>
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <section className="grid grid-cols-1 md:grid-cols-[400px_1fr] gap-8 items-start">
           {/* Left: other inputs */}
-          <section className="space-y-4 md:sticky self-start" style={{ top: stickyTopPx }}>
+          <section className="space-y-4 md:max-w-[400px] w-full md:sticky self-start" style={{ top: stickyTopPx }}>
             <h1 className="text-2xl font-semibold">Create Test</h1>
             <section>
-              <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
+              <label htmlFor="name" className="block text-sm font-medium">Name</label>
+              <p className="text-xs text-muted-foreground mb-1">The name you want to call this test (e.g., account creation flow).</p>
               <Input id="name" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} aria-invalid={!!errors.name} />
               {errors.name && <p className="text-destructive text-xs mt-1">{errors.name}</p>}
             </section>
@@ -195,9 +196,10 @@ export default function CreateTestPage() {
           </section>
 
             {/* Right: Rich text editor */}
-          <section className="space-y-2">
+          <section className="space-y-2 min-w-0 w-full">
             <h1 className="text-2xl font-semibold invisible select-none pointer-events-none">Create Test</h1>
             <label className="block text-sm font-medium">Description</label>
+            <p className="text-xs text-muted-foreground mb-1">Describe the exact goal and steps. Replace the placeholder text inside each block, and add or remove blocks using the + button or typing &#34;/&#34; for commands.</p>
             <RichTextEditor
               ref={editorRef}
               onPlainTextChange={(text)=>{
