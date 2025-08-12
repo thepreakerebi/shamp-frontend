@@ -88,6 +88,14 @@ export default function EditTestPage() {
     const fromExisting = (existing as unknown as { descriptionBlocks?: unknown[] })?.descriptionBlocks;
     return Array.isArray(fromExisting) && fromExisting.length ? fromExisting : undefined;
   });
+  const editorKey = React.useMemo(() => {
+    try {
+      const sig = Array.isArray(initialBlocksState) ? JSON.stringify(initialBlocksState).length : 0;
+      return `rte-${testId}-${sig}`;
+    } catch {
+      return `rte-${testId}-0`;
+    }
+  }, [initialBlocksState, testId]);
 
   // Broadcast loading to topbar
   React.useEffect(()=>{
@@ -168,9 +176,18 @@ export default function EditTestPage() {
     return () => document.removeEventListener('click', handler, true);
   }, [isDirty]);
 
-  // Fetch if missing or incomplete data (e.g., viewport sizes absent)
+  // Sync initialBlocksState from store if it becomes available after mount
   useEffect(() => {
-    const needsFetch = !existing || !hasViewport;
+    const fromExisting = (existing as unknown as { descriptionBlocks?: unknown[] })?.descriptionBlocks;
+    if (!initialBlocksState && Array.isArray(fromExisting) && fromExisting.length) {
+      setInitialBlocksState(fromExisting);
+    }
+  }, [existing, initialBlocksState]);
+
+  // Fetch if missing or incomplete data (e.g., viewport sizes or description blocks absent)
+  useEffect(() => {
+    const hasBlocks = Array.isArray((existing as any)?.descriptionBlocks) && (existing as any).descriptionBlocks.length > 0;
+    const needsFetch = !existing || !hasViewport || !hasBlocks;
     if (needsFetch && testId) {
       (async () => {
         const t = await getTestById(testId);
@@ -326,6 +343,7 @@ export default function EditTestPage() {
             <label className="block text-sm font-medium">Description</label>
             <p className="text-xs text-muted-foreground mb-1">Describe the exact goal and steps. Replace the placeholder text inside each block, and add or remove blocks using the + button or typing &#34;/&#34; for commands.</p>
             <RichTextEditor
+              key={editorKey}
               ref={editorRef}
               initialBlocks={initialBlocksState}
               onPlainTextChange={(text)=>{
