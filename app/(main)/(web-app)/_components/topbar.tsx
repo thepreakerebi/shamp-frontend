@@ -41,6 +41,10 @@ export function Topbar() {
   const [createTestLoading, setCreateTestLoading] = useState(false);
   const [editTestLoading, setEditTestLoading] = useState(false);
   const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
+  const [createBatchTestLoading, setCreateBatchTestLoading] = useState(false);
+  const [editBatchTestLoading, setEditBatchTestLoading] = useState(false);
+  const [createBatchTestDirty, setCreateBatchTestDirty] = useState(false);
+  const [editBatchTestDirty, setEditBatchTestDirty] = useState(false);
   const [createTestDirty, setCreateTestDirty] = useState(false);
   const [editTestDirty, setEditTestDirty] = useState(false);
   const [createProjectDirty, setCreateProjectDirty] = useState(false);
@@ -359,6 +363,46 @@ export function Topbar() {
     }
   }, [pathname, editTestLoading]);
 
+  // Listen for create-batch test loading
+  useEffect(() => {
+    const listener = (e: Event) => {
+      const custom = e as CustomEvent<boolean>;
+      setCreateBatchTestLoading(custom.detail);
+    };
+    window.addEventListener('create-batch-test-loading', listener);
+    return () => window.removeEventListener('create-batch-test-loading', listener);
+  }, []);
+
+  // Listen for edit-batch test loading
+  useEffect(() => {
+    const listener = (e: Event) => {
+      const custom = e as CustomEvent<boolean>;
+      setEditBatchTestLoading(custom.detail);
+    };
+    window.addEventListener('edit-batch-test-loading', listener);
+    return () => window.removeEventListener('edit-batch-test-loading', listener);
+  }, []);
+
+  // Listen for create-batch test dirty
+  useEffect(() => {
+    const listener = (e: Event) => {
+      const custom = e as CustomEvent<boolean>;
+      setCreateBatchTestDirty(Boolean(custom.detail));
+    };
+    window.addEventListener('create-batch-test-dirty', listener);
+    return () => window.removeEventListener('create-batch-test-dirty', listener);
+  }, []);
+
+  // Listen for edit-batch test dirty
+  useEffect(() => {
+    const listener = (e: Event) => {
+      const custom = e as CustomEvent<boolean>;
+      setEditBatchTestDirty(Boolean(custom.detail));
+    };
+    window.addEventListener('edit-batch-test-dirty', listener);
+    return () => window.removeEventListener('edit-batch-test-dirty', listener);
+  }, []);
+
   // Listen for edit test dirty state
   useEffect(() => {
     const listener = (e: Event) => {
@@ -415,6 +459,24 @@ export function Topbar() {
             />
           )
         )}
+        {pathname === '/tests/create-batch' && (
+          <section className="flex flex-row items-center gap-2">
+            <Button type="button" variant="outline" onClick={() => {
+              if (createBatchTestDirty) {
+                setConfirmLeaveOpen(true);
+              } else {
+                router.back();
+              }
+            }} className="flex items-center gap-2">Cancel</Button>
+            <Button variant="default" onClick={() => {
+              const form = document.getElementById('create-batch-test-form') as HTMLFormElement | null;
+              form?.requestSubmit();
+            }} disabled={createBatchTestLoading} className="flex items-center gap-2">
+              {createBatchTestLoading && <Loader2 className="animate-spin size-4" />}
+              {createBatchTestLoading ? 'Creating…' : 'Create batch test'}
+            </Button>
+          </section>
+        )}
         {pathname === '/tests' && (
           isFreeOrHobby ? (
             <Button variant="outline" className="gap-2" onClick={handleSingleTest}>
@@ -426,6 +488,24 @@ export function Topbar() {
               onBatchTests={handleBatchTests}
             />
           )
+        )}
+        {pathname === '/tests/edit-batch' && (
+          <section className="flex flex-row items-center gap-2">
+            <Button type="button" variant="outline" onClick={() => {
+              if (editBatchTestDirty) {
+                setConfirmLeaveOpen(true);
+              } else {
+                router.back();
+              }
+            }} className="flex items-center gap-2">Cancel</Button>
+            <Button variant="default" onClick={() => {
+              const form = document.getElementById('edit-batch-test-form') as HTMLFormElement | null;
+              form?.requestSubmit();
+            }} disabled={editBatchTestLoading} className="flex items-center gap-2">
+              {editBatchTestLoading && <Loader2 className="animate-spin size-4" />}
+              {editBatchTestLoading ? 'Saving…' : 'Save changes'}
+            </Button>
+          </section>
         )}
         {pathname === '/test-runs' && (
           <Button variant="secondary" onClick={handleStartTest}>

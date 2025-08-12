@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+// import { Button } from "@/components/ui/button";
+// import { Loader2 } from "lucide-react";
 import { useBatchTests } from "@/hooks/use-batch-tests";
 import { useProjects } from "@/hooks/use-projects";
 import { useBatchPersonas } from "@/hooks/use-batch-personas";
@@ -34,6 +34,18 @@ export default function CreateBatchTestPage() {
     return form.projectId || form.batchPersonaId || form.testId;
   }, [form, loading]);
 
+  // Broadcast dirty and loading states for Topbar buttons
+  useEffect(()=>{
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('create-batch-test-dirty', { detail: isDirty }));
+    }
+  }, [isDirty]);
+  useEffect(()=>{
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('create-batch-test-loading', { detail: loading }));
+    }
+  }, [loading]);
+
   useEffect(()=>{
     const handler = (e: MouseEvent)=>{
       const anchor = (e.target as HTMLElement).closest('a[data-slot="breadcrumb-link"]') as HTMLAnchorElement|null;
@@ -48,9 +60,7 @@ export default function CreateBatchTestPage() {
     return ()=> document.removeEventListener('click', handler, true);
   }, [isDirty]);
 
-  const handleCancelNavigation = () => {
-    if (isDirty) setConfirmLeaveOpen(true); else router.back();
-  };
+  // Cancel handled from Topbar via create-batch-test-dirty broadcast
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +92,7 @@ export default function CreateBatchTestPage() {
       <p className="text-sm text-muted-foreground">
         Create a batch test to run a test on a batch of personas at once.
       </p>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} id="create-batch-test-form" className="space-y-4">
         <section>
           <label className="block text-sm font-medium mb-1">Project</label>
           <ProjectCommand value={form.projectId} onChange={(id: string)=>{ setForm({...form, projectId:id}); setErrors({...errors, projectId:undefined}); }} />
@@ -98,13 +108,7 @@ export default function CreateBatchTestPage() {
           <TestCommand value={form.testId} onChange={(id: string)=>{ setForm({...form, testId:id}); setErrors({...errors, testId:undefined}); }} />
           {errors.testId && <p className="text-destructive text-xs mt-1">{errors.testId}</p>}
         </section>
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
-          <Button type="submit" variant="default" disabled={loading} className="flex items-center gap-2">
-            {loading && <Loader2 className="animate-spin size-4" />}
-            {loading ? "Creating…" : "Create batch test"}
-          </Button>
-        </div>
+        {/* Note: Submission handled via Topbar button */}
       </form>
       <UnsavedChangesDialog
         open={confirmLeaveOpen}

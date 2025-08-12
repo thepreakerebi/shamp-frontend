@@ -5,8 +5,8 @@ import { useBatchTests } from "@/hooks/use-batch-tests";
 import { useProjects } from "@/hooks/use-projects";
 import { useBatchPersonas } from "@/hooks/use-batch-personas";
 import BatchPersonaCommand from "../create-batch/_components/batch-persona-command";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+// import { Button } from "@/components/ui/button";
+// import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -23,8 +23,21 @@ export default function EditBatchTestPage() {
   const [batchId, setBatchId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState<{ batchPersonaId?: string }>({});
+  // Broadcast loading/saving and dirty state for Topbar in edit-batch
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('edit-batch-test-loading', { detail: saving }));
+    }
+  }, [saving]);
+
   const [form, setForm] = useState({ projectId: "", batchPersonaId: "", testName: "" });
+  const isDirty = !!form.batchPersonaId; // minimal: changeable field only
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('edit-batch-test-dirty', { detail: isDirty }));
+    }
+  }, [isDirty]);
+  const [errors, setErrors] = useState<{ batchPersonaId?: string }>({});
 
   useEffect(() => {
     setMounted(true);
@@ -52,7 +65,7 @@ export default function EditBatchTestPage() {
         setLoading(false);
       }
     })();
-  }, [batchId]);
+  }, [batchId, getBatchTestById, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +109,7 @@ export default function EditBatchTestPage() {
     <main className="p-4 w-full max-w-[500px] mx-auto space-y-6">
       <h1 className="text-2xl font-semibold">Edit Batch Test</h1>
       <p className="text-sm text-muted-foreground">Edit a batch test by selecting a different batch personas.</p>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} id="edit-batch-test-form" className="space-y-4">
         <section>
           <label className="block text-sm font-medium mb-1">Project</label>
           {/* Project is read-only in edit mode */}
@@ -121,13 +134,7 @@ export default function EditBatchTestPage() {
           <label className="block text-sm font-medium mb-1">Base Test</label>
           <p className="text-sm text-muted-foreground">{form.testName}</p>
         </section>
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={()=>router.back()}>Cancel</Button>
-          <Button type="submit" variant="default" disabled={saving} className="flex items-center gap-2">
-            {saving && <Loader2 className="animate-spin size-4" />}
-            {saving ? "Saving…" : "Save changes"}
-          </Button>
-        </div>
+        {/* Note: Save handled via Topbar button */}
       </form>
     </main>
   );
