@@ -28,7 +28,7 @@ export default function EditTestPage() {
   const planName = summary?.products && Array.isArray(summary.products) && summary.products.length > 0
     ? ((summary.products[0] as { name?: string; id?: string }).name || (summary.products[0] as { id?: string }).id || "").toLowerCase()
     : "free";
-  const deviceSelectionEnabled = planName === "pro" || planName === "pro - annual" || planName === "ultra" || planName === "ultra - annual";
+  const deviceSelectionEnabled = planName === "pro" || planName === "pro - annual" || planName === "ultra" || planName === "ultra - annual" || planName === "beta";
 
   const existing = tests?.find(t => t._id === testId);
 

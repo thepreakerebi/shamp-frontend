@@ -85,7 +85,7 @@ export default function CreateTestPage() {
     ? ((summary.products[0] as { name?: string; id?: string }).name || (summary.products[0] as { id?: string }).id || '').toLowerCase()
     : 'free';
 
-  const deviceSelectionEnabled = planName === 'pro' || planName === 'pro - annual' || planName === 'ultra' || planName === 'ultra - annual';
+  const deviceSelectionEnabled = planName === 'pro' || planName === 'pro - annual' || planName === 'ultra' || planName === 'ultra - annual' || planName === 'beta';
 
   // Remove untouched template blocks before saving
   const cleanDescriptionBlocks = React.useCallback((blocks: unknown): unknown[] => {
