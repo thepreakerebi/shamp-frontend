@@ -204,7 +204,8 @@ export default function CreateTestPage() {
                 setForm((prev)=> ({...prev, description: text}));
                 if (text) setErrors((e)=> ({...e, description: undefined}));
               }}
-              className="border rounded-lg overflow-hidden"
+              className="rounded-lg overflow-hidden"
+              invalid={!!errors.description}
             />
             {errors.description && <p className="text-destructive text-xs mt-1">{errors.description}</p>}
           </section>

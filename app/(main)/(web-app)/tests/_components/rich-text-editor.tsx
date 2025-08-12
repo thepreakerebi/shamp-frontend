@@ -10,11 +10,13 @@ import "./rich-text-editor.css";
 export type RichTextEditorHandle = {
   getPlainText: () => string;
   getBlocks: () => BlockNode[];
+  getHasValidGoal: () => boolean;
 };
 
 interface RichTextEditorProps {
   className?: string;
   onPlainTextChange?: (text: string) => void;
+  invalid?: boolean;
 }
 
 // Very lightweight plain-text extraction from BlockNote document blocks
@@ -24,6 +26,24 @@ type BlockNode = {
   content?: InlineNode[];
   children?: BlockNode[];
 };
+
+const DEFAULT_GOAL_HINT = "One concise sentence describing exactly what should be achieved.";
+const DEFAULT_TEMPLATE_LINES = new Set<string>([
+  DEFAULT_GOAL_HINT,
+  "Open the page and…",
+  "Click … and fill …",
+  "Submit and verify …",
+  "What confirms the task is done (e.g., dashboard visible)",
+  "Stop immediately once success is confirmed",
+  "If blocked after at most 2 retries, stop and summarize why",
+  "Optional negative paths worth checking (if any)",
+  // Headings: excluded from serialization
+  "Goal",
+  "Steps",
+  "Success criteria",
+  "Stop conditions",
+  "Edge cases",
+]);
 
 function blocksToPlainText(blocks: BlockNode[]): string {
   const lines: string[] = [];
@@ -46,12 +66,16 @@ function blocksToPlainText(blocks: BlockNode[]): string {
       if (!b) continue;
       const type = b.type as string | undefined;
       const text = Array.isArray(b.content) ? extractInlineText(b.content as InlineNode[]) : "";
-      if (type === "bulletListItem" || type === "numberedListItem" || type === "checkboxItem") {
-        lines.push(`- ${text}`.trim());
-      } else if (type?.includes("heading")) {
-        lines.push(text.trim());
+      if (type?.includes("heading")) {
+        // skip headings
+      } else if (type === "bulletListItem" || type === "numberedListItem" || type === "checkboxItem") {
+        if (text && !DEFAULT_TEMPLATE_LINES.has(text.trim())) {
+          lines.push(`- ${text}`.trim());
+        }
       } else if (text) {
-        lines.push(text.trim());
+        if (!DEFAULT_TEMPLATE_LINES.has(text.trim())) {
+          lines.push(text.trim());
+        }
       }
       if (Array.isArray(b.children) && b.children.length) walk(b.children as BlockNode[]);
     }
@@ -66,7 +90,7 @@ const DEFAULT_TEMPLATE = [
   {
     type: "paragraph",
     content: [
-      { type: "text", text: "One concise sentence describing exactly what should be achieved." },
+      { type: "text", text: DEFAULT_GOAL_HINT },
     ],
   },
   { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Steps" }] },
@@ -107,12 +131,35 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
       () => ({
         getPlainText: () => blocksToPlainText(editor.document as BlockNode[]),
         getBlocks: () => editor.document as BlockNode[],
+        getHasValidGoal: () => {
+          const blocks = editor.document as BlockNode[];
+          const isHeading = (b: BlockNode) => (b.type ?? "").includes("heading");
+          const getText = (b: BlockNode) => (Array.isArray(b.content) ? (b.content as InlineNode[]).map((n)=> typeof n === 'string' ? n : (n.text ?? '')).join("").trim() : '');
+          let goalIdx = -1;
+          for (let i=0;i<blocks.length;i++){
+            const b = blocks[i];
+            if (isHeading(b) && getText(b).toLowerCase() === 'goal') { goalIdx = i; break; }
+          }
+          if (goalIdx === -1) return false;
+          for (let i=goalIdx+1;i<blocks.length;i++){
+            const b = blocks[i];
+            if (isHeading(b)) break;
+            const t = getText(b);
+            if (t && t !== DEFAULT_GOAL_HINT) return true;
+          }
+          return false;
+        },
       }),
       [editor]
     );
 
+    const wrapperClass = [
+      className,
+      "rte-surface border border-border rounded-lg overflow-hidden pt-3",
+    ].filter(Boolean).join(" ");
+
     return (
-      <div className={[className, "rte-surface"].filter(Boolean).join(" ") }>
+      <section className={wrapperClass}>
         <BlockNoteView
           editor={editor}
           theme="light"
@@ -129,7 +176,7 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
           }}
           // Steer visual styles through scoped CSS class
         />
-      </div>
+      </section>
     );
   }
 );
