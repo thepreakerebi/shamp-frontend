@@ -21,6 +21,7 @@ export default function EditSchedulePage() {
   const { updateRecurringSchedule, fetchSchedules } = useTestSchedules();
 
   const [loading, setLoading] = React.useState(true);
+  const [initialLoaded, setInitialLoaded] = React.useState(false);
   const [runDate, setRunDate] = React.useState<Date | undefined>(undefined);
   const [runHour, setRunHour] = React.useState<string>("");
   const [runMinute, setRunMinute] = React.useState<string>("");
@@ -78,19 +79,18 @@ export default function EditSchedulePage() {
       } catch {
         toast.error("Failed to load schedule");
         router.back();
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); setInitialLoaded(true); }
     })();
   }, [scheduleId, fetchSchedules, router]);
 
-  // Broadcast dirty state for Bottombar
+  // Broadcast dirty state for Bottombar only after initial load
   React.useEffect(() => {
+    if (!initialLoaded) return;
     const dirty = !!runDate || runHour !== "" || runMinute !== "";
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("edit-schedule-run-dirty", { detail: dirty }));
     }
-  }, [runDate, runHour, runMinute]);
+  }, [runDate, runHour, runMinute, initialLoaded]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,7 +140,13 @@ export default function EditSchedulePage() {
   return (
     <main className="p-4 w-full max-w-[500px] mx-auto space-y-6 pb-20">
       <h1 className="text-2xl font-semibold">Edit Recurring Schedule</h1>
-      <form id="edit-schedule-run-form" onSubmit={submit} className="space-y-6">
+      <form id="edit-schedule-run-form" onSubmit={submit} className="space-y-6" onKeyDown={(e)=>{
+        if ((e.key === 'Enter' || e.key === 'Return') && e.target instanceof HTMLElement && e.target.tagName !== 'TEXTAREA'){
+          e.preventDefault();
+          const form = document.getElementById('edit-schedule-run-form') as HTMLFormElement | null;
+          form?.requestSubmit();
+        }
+      }}>
         {/* Date */}
         <section className="space-y-2">
           <label className="text-sm font-medium">Run date</label>

@@ -34,6 +34,7 @@ export default function ScheduleRunPage() {
   const addScheduleToList = useTestSchedulesStore(state=>state.addScheduleToList);
 
   const [loading, setLoading] = useState(true);
+  const [initialLoaded, setInitialLoaded] = useState(false);
   const [personaOptions, setPersonaOptions] = useState<Persona[]>([]);
   const [selectedPersona, setSelectedPersona] = useState<string>("");
   const [openSelect, setOpenSelect] = useState(false);
@@ -68,12 +69,13 @@ export default function ScheduleRunPage() {
     return ()=> document.removeEventListener('click', handler, true);
   }, [isDirty]);
 
-  // Broadcast dirty state for Bottombar
+  // Broadcast dirty state for Bottombar only after initial load completes
   useEffect(()=>{
+    if(!initialLoaded) return;
     if(typeof window!=="undefined"){
       window.dispatchEvent(new CustomEvent('schedule-run-dirty', { detail: isDirty }));
     }
-  },[isDirty]);
+  },[isDirty, initialLoaded]);
 
   useEffect(() => {
     (async () => {
@@ -100,9 +102,7 @@ export default function ScheduleRunPage() {
       } catch {
         toast.error("Failed to load test");
         router.back();
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); setInitialLoaded(true); }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testId]);
