@@ -24,6 +24,15 @@
 
 .rte-surface :where(.bn-surface, .bn-container, .bn-editor, .bn-editor *),
 .rte-surface :where(.bn-toolbar, .bn-menu, .bn-popover) {
-  border-color: hsl(var(--border)) !important;
+  border-color: transparent !important;
+  outline: none !important;
+}
+
+/* Remove container borders/outline */
+.rte-surface .bn-container,
+.rte-surface .bn-surface,
+.rte-surface .bn-editor {
+  border: none !important;
+  box-shadow: none !important;
 }
 

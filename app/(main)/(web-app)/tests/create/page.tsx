@@ -15,7 +15,7 @@ import ProjectCommand from "./_components/project-command";
 import PersonaCommand from "./_components/persona-command";
 import { useBilling } from "@/hooks/use-billing";
 import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
-import RichTextEditor, { RichTextEditorHandle } from "../_components/rich-text-editor";
+import DescriptionOverlay from "../_components/description-overlay";
 
 export default function CreateTestPage() {
   const { createTest } = useTests();
@@ -23,7 +23,7 @@ export default function CreateTestPage() {
   const router = useRouter();
 
   const [form, setForm] = useState({ name: "", description: "", projectId: "", personaId: "", device: "" });
-  const editorRef = React.useRef<RichTextEditorHandle | null>(null);
+  const [overlayOpen, setOverlayOpen] = useState(false);
   const [files, setFiles] = useState<PendingFile[]>([]);
   const [errors, setErrors] = useState<{ name?: string; description?: string; projectId?: string; personaId?: string; device?: string }>({});
   const [loading, setLoading] = useState(false);
@@ -72,7 +72,7 @@ export default function CreateTestPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs: typeof errors = {};
-    const descriptionFromEditor = editorRef.current?.getPlainText() ?? form.description;
+    const descriptionFromEditor = form.description;
     if (!form.name) errs.name = "Name is required";
     if (!descriptionFromEditor) errs.description = "Description is required";
     if (!form.projectId) errs.projectId = "Project is required";
@@ -122,80 +122,87 @@ export default function CreateTestPage() {
   };
 
   return (
-    <main className="p-4 w-full max-w-[1100px] mx-auto space-y-6">
+    <main className="p-4 w-full max-w-[450px] mx-auto space-y-6">
       <h1 className="text-2xl font-semibold">Create Test</h1>
       <form onSubmit={handleSubmit} id="create-test-form" onKeyDown={(e)=>{if((e.key==='Enter'||e.key==='Return') && e.target instanceof HTMLElement && e.target.tagName!=='TEXTAREA'){e.preventDefault();const form=document.getElementById('create-test-form') as HTMLFormElement|null;form?.requestSubmit();}}}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left: Rich text editor */}
+        <section className="space-y-4">
+          <section>
+            <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
+            <Input id="name" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} aria-invalid={!!errors.name} />
+            {errors.name && <p className="text-destructive text-xs mt-1">{errors.name}</p>}
+          </section>
+
           <section className="space-y-2">
             <label className="block text-sm font-medium">Description</label>
-            <RichTextEditor
-              ref={editorRef}
-              onPlainTextChange={(text)=>{
-                setForm((prev)=> ({...prev, description: text}));
-                if (text) setErrors((e)=> ({...e, description: undefined}));
-              }}
-              className="border rounded-lg overflow-hidden"
-            />
+            <Button type="button" variant="outline" className="w-full justify-start h-auto py-3 px-3 text-left" onClick={()=>setOverlayOpen(true)}>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">Open editor</span>
+                <span className="text-xs text-muted-foreground line-clamp-2 mt-1">{form.description ? form.description.split("\n")[0] : "Click to enter a clear Goal (one sentence)"}</span>
+              </div>
+            </Button>
             {errors.description && <p className="text-destructive text-xs mt-1">{errors.description}</p>}
           </section>
 
-          {/* Right: other inputs */}
-          <section className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
-              <Input id="name" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} aria-invalid={!!errors.name} />
-              {errors.name && <p className="text-destructive text-xs mt-1">{errors.name}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Persona</label>
-              <PersonaCommand value={form.personaId} onChange={(id) => {
-                setForm({ ...form, personaId: id });
-                setErrors({ ...errors, personaId: undefined });
-              }} />
-              {errors.personaId && <p className="text-destructive text-xs mt-1">{errors.personaId}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Project</label>
-              <ProjectCommand value={form.projectId} onChange={(id) => {
-                setForm({ ...form, projectId: id });
-                setErrors({ ...errors, projectId: undefined });
-              }} />
-              {errors.projectId && <p className="text-destructive text-xs mt-1">{errors.projectId}</p>}
-            </div>
-            {deviceSelectionEnabled && (
-              <div>
-                <label className="block text-sm font-medium mb-1">Device type</label>
-                <RadioGroup value={form.device} onValueChange={(v)=>{setForm({...form, device:v}); setErrors({...errors, device:undefined});}} className="grid grid-cols-3 gap-2 md:max-w-xs">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <RadioGroupItem value="desktop" id="device-desktop" />
-                    <Laptop className="size-5" />
-                    <span className="text-xs">Desktop</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <RadioGroupItem value="tablet" id="device-tablet" />
-                    <Tablet className="size-5" />
-                    <span className="text-xs">Tablet</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <RadioGroupItem value="mobile" id="device-mobile" />
-                    <Smartphone className="size-5" />
-                    <span className="text-xs">Mobile</span>
-                  </label>
-                </RadioGroup>
-                {errors.device && <p className="text-destructive text-xs mt-1">{errors.device}</p>}
-              </div>
-            )}
-            <div>
-              <FileUploader files={files} setFiles={setFiles} disabled={loading} />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
-              {/* Topbar has the Create button */}
-            </div>
+          <section>
+            <label className="block text-sm font-medium mb-1">Persona</label>
+            <PersonaCommand value={form.personaId} onChange={(id) => {
+              setForm({ ...form, personaId: id });
+              setErrors({ ...errors, personaId: undefined });
+            }} />
+            {errors.personaId && <p className="text-destructive text-xs mt-1">{errors.personaId}</p>}
           </section>
-        </div>
+
+          <section>
+            <label className="block text-sm font-medium mb-1">Project</label>
+            <ProjectCommand value={form.projectId} onChange={(id) => {
+              setForm({ ...form, projectId: id });
+              setErrors({ ...errors, projectId: undefined });
+            }} />
+            {errors.projectId && <p className="text-destructive text-xs mt-1">{errors.projectId}</p>}
+          </section>
+
+          {deviceSelectionEnabled && (
+            <section>
+              <label className="block text-sm font-medium mb-1">Device type</label>
+              <RadioGroup value={form.device} onValueChange={(v)=>{setForm({...form, device:v}); setErrors({...errors, device:undefined});}} className="grid grid-cols-3 gap-2 max-w-xs">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <RadioGroupItem value="desktop" id="device-desktop" />
+                  <Laptop className="size-5" />
+                  <span className="text-xs">Desktop</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <RadioGroupItem value="tablet" id="device-tablet" />
+                  <Tablet className="size-5" />
+                  <span className="text-xs">Tablet</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <RadioGroupItem value="mobile" id="device-mobile" />
+                  <Smartphone className="size-5" />
+                  <span className="text-xs">Mobile</span>
+                </label>
+              </RadioGroup>
+              {errors.device && <p className="text-destructive text-xs mt-1">{errors.device}</p>}
+            </section>
+          )}
+
+          <section>
+            <FileUploader files={files} setFiles={setFiles} disabled={loading} />
+          </section>
+
+          <section className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
+            {/* Topbar has the Create button */}
+          </section>
+        </section>
       </form>
+      <DescriptionOverlay
+        open={overlayOpen}
+        onClose={()=>setOverlayOpen(false)}
+        onPlainTextChange={(text)=>{
+          setForm((prev)=> ({...prev, description: text}));
+          if (text) setErrors((e)=> ({...e, description: undefined}));
+        }}
+      />
       <UnsavedChangesDialog
         open={confirmLeaveOpen}
         onOpenChange={setConfirmLeaveOpen}

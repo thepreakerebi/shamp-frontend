@@ -115,7 +115,7 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
               } catch {}
             }
           }}
-          // Steer visual styles through scoped CSS class
+          // Steer visual styles through scoped CSS class; let content size naturally
         />
       </div>
     );
