@@ -12,6 +12,7 @@ export interface Test {
   _id: string;
   name: string;
   description?: string;
+  descriptionBlocks?: unknown;
   project: string;
   workspace: string; // Which workspace this test belongs to
   persona?: string;
@@ -43,6 +44,7 @@ export interface TestFilePayload {
 export interface TestPayload {
   name: string;
   description?: string;
+  descriptionBlocks?: unknown;
   project: string;
   persona?: string;
   browserViewportWidth?: number;

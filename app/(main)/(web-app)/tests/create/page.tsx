@@ -86,8 +86,9 @@ export default function CreateTestPage() {
     e.preventDefault();
     const errs: typeof errors = {};
     const descriptionFromEditor = editorRef.current?.getPlainText() ?? form.description;
+    const hasGoal = editorRef.current?.getHasValidGoal() ?? false;
     if (!form.name) errs.name = "Name is required";
-    if (!descriptionFromEditor) errs.description = "Description is required";
+    if (!descriptionFromEditor || !hasGoal) errs.description = !hasGoal ? "Please provide a real Goal before submitting" : "Description is required";
     if (!form.projectId) errs.projectId = "Project is required";
     if (!form.personaId) errs.personaId = "Persona is required";
     if (deviceSelectionEnabled && !form.device) errs.device = "Device type is required";
@@ -112,9 +113,11 @@ export default function CreateTestPage() {
         }))
       );
 
+      const blocks = editorRef.current?.getBlocks();
       const newTest = await createTest({
         name: form.name,
         description: descriptionFromEditor,
+        ...(blocks ? { descriptionBlocks: blocks } : {}),
         project: form.projectId,
         persona: form.personaId,
         browserViewportWidth: vp.w,
