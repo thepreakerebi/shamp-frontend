@@ -156,7 +156,7 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
 
     const wrapperClass = [
       className,
-      "rte-surface border border-border rounded-lg overflow-hidden pt-3",
+      "rte-surface border border-border rounded-lg overflow-hidden pt-3 min-h-[480px]",
     ].filter(Boolean).join(" ");
 
     return (

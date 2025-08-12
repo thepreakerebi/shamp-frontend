@@ -84,7 +84,10 @@ export default function EditTestPage() {
 
   // Editor ref and initial blocks (hooks at component top-level)
   const editorRef = React.useRef<RichTextEditorHandle | null>(null);
-  const existingBlocks = React.useMemo(() => (existing as unknown as { descriptionBlocks?: unknown[] })?.descriptionBlocks, [existing]);
+  const [initialBlocksState, setInitialBlocksState] = useState<unknown[] | undefined>(() => {
+    const fromExisting = (existing as unknown as { descriptionBlocks?: unknown[] })?.descriptionBlocks;
+    return Array.isArray(fromExisting) && fromExisting.length ? fromExisting : undefined;
+  });
 
   // Broadcast loading to topbar
   React.useEffect(()=>{
@@ -193,6 +196,8 @@ export default function EditTestPage() {
           personaId: firstPersonaId,
           device: deviceInitial,
         });
+        const blocks = (t as unknown as { descriptionBlocks?: unknown[] })?.descriptionBlocks;
+        setInitialBlocksState(Array.isArray(blocks) && blocks.length ? blocks : undefined);
         setExistingFiles(Array.isArray((t as any).files) ? (t as any).files as any[] : []);
         setInitialLoaded(true);
       })();
@@ -322,7 +327,11 @@ export default function EditTestPage() {
             <p className="text-xs text-muted-foreground mb-1">Describe the exact goal and steps. Replace the placeholder text inside each block, and add or remove blocks using the + button or typing &#34;/&#34; for commands.</p>
             <RichTextEditor
               ref={editorRef}
-              initialBlocks={Array.isArray(existingBlocks) && existingBlocks.length ? existingBlocks : undefined}
+              initialBlocks={initialBlocksState}
+              onPlainTextChange={(text)=>{
+                setForm((prev)=> ({...prev, description: text}));
+                if (text) setErrors((e)=> ({...e, description: undefined}));
+              }}
               className="rounded-lg overflow-hidden"
               invalid={!!errors.description}
             />

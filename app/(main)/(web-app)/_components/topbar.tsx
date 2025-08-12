@@ -39,6 +39,7 @@ export function Topbar() {
   const [editTestLoading, setEditTestLoading] = useState(false);
   const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
   const [createTestDirty, setCreateTestDirty] = useState(false);
+  const [editTestDirty, setEditTestDirty] = useState(false);
 
   // Billing info to determine feature availability
   const { summary, loading: billingLoading, allowed } = useBilling();
@@ -175,6 +176,13 @@ export function Topbar() {
     const form = document.getElementById('edit-test-form') as HTMLFormElement | null;
     form?.requestSubmit();
   };
+  const handleCancelEditTest = () => {
+    if (editTestDirty) {
+      setConfirmLeaveOpen(true);
+    } else {
+      router.back();
+    }
+  };
   const handleStartTest = () => {
     if (allowed({ featureId: 'credits', requiredBalance: 1 })) {
       setModalOpen(true);
@@ -289,9 +297,12 @@ export function Topbar() {
     }
   }, [pathname, editTestLoading]);
 
-  // Listen for edit test dirty state (optional for future Cancel in topbar on edit page)
+  // Listen for edit test dirty state
   useEffect(() => {
-    const listener = () => {};
+    const listener = (e: Event) => {
+      const custom = e as CustomEvent<boolean>;
+      setEditTestDirty(Boolean(custom.detail));
+    };
     window.addEventListener('edit-test-dirty', listener);
     return () => window.removeEventListener('edit-test-dirty', listener);
   }, []);
@@ -369,10 +380,13 @@ export function Topbar() {
           </section>
         )}
         {/^\/tests\/[^/]+\/edit$/.test(pathname) && (
-          <Button variant="default" onClick={handleSubmitEditTest} disabled={editTestLoading} className="flex items-center gap-2">
-            {editTestLoading && <Loader2 className="animate-spin size-4" />}
-            {editTestLoading ? 'Saving…' : 'Save changes'}
-          </Button>
+          <section className="flex flex-row items-center gap-2">
+            <Button type="button" variant="outline" onClick={handleCancelEditTest} className="flex items-center gap-2">Cancel</Button>
+            <Button variant="default" onClick={handleSubmitEditTest} disabled={editTestLoading} className="flex items-center gap-2">
+              {editTestLoading && <Loader2 className="animate-spin size-4" />}
+              {editTestLoading ? 'Saving…' : 'Save changes'}
+            </Button>
+          </section>
         )}
         {pathname === '/home/create' && (
           <Button variant="default" onClick={handleSubmitProject} disabled={createLoading} className="flex items-center gap-2">
