@@ -2,11 +2,10 @@
 import React, { forwardRef, useImperativeHandle, useRef } from "react";
 import "@blocknote/core/fonts/inter.css";
 import { useCreateBlockNote } from "@blocknote/react";
-import { BlockNoteSchema, defaultBlockSpecs, defaultInlineContentSpecs, type PartialBlock } from "@blocknote/core";
+import type { PartialBlock } from "@blocknote/core";
 import { BlockNoteView } from "@blocknote/shadcn";
 import "@blocknote/shadcn/style.css";
 import "./rich-text-editor.css";
-import { NameBlock, PersonaBlock, ProjectBlock, DeviceBlock, AttachmentsBlock } from "./custom-blocks";
 
 export type RichTextEditorHandle = {
   getPlainText: () => string;
@@ -63,53 +62,32 @@ function blocksToPlainText(blocks: BlockNode[]): string {
 }
 
 const DEFAULT_TEMPLATE = [
-  // Ensure a valid initial position, then our guided blocks
-  { type: "paragraph", content: [{ type: "text", text: "" }] },
-  { type: "nameBlock" },
-  { type: "personaBlock" },
-  { type: "projectBlock" },
-  { type: "deviceBlock" },
-  { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Goal" }] },
+  { type: "heading", content: [{ type: "text", text: "Goal" }] },
   {
     type: "paragraph",
     content: [
       { type: "text", text: "One concise sentence describing exactly what should be achieved." },
     ],
   },
-  { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Steps" }] },
+  { type: "heading", content: [{ type: "text", text: "Preconditions" }] },
+  { type: "bulletListItem", content: [{ type: "text", text: "Starting URL (if any)" }] },
+  { type: "bulletListItem", content: [{ type: "text", text: "Test account or credentials required?" }] },
+  { type: "heading", content: [{ type: "text", text: "Steps" }] },
   { type: "numberedListItem", content: [{ type: "text", text: "Open the page and…" }] },
   { type: "numberedListItem", content: [{ type: "text", text: "Click … and fill …" }] },
   { type: "numberedListItem", content: [{ type: "text", text: "Submit and verify …" }] },
-  { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Success criteria" }] },
+  { type: "heading", content: [{ type: "text", text: "Success criteria" }] },
   { type: "bulletListItem", content: [{ type: "text", text: "What confirms the task is done (e.g., dashboard visible)" }] },
-  { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Stop conditions" }] },
+  { type: "heading", content: [{ type: "text", text: "Stop conditions" }] },
   { type: "bulletListItem", content: [{ type: "text", text: "Stop immediately once success is confirmed" }] },
   { type: "bulletListItem", content: [{ type: "text", text: "If blocked after at most 2 retries, stop and summarize why" }] },
-  { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Edge cases" }] },
+  { type: "heading", content: [{ type: "text", text: "Edge cases" }] },
   { type: "bulletListItem", content: [{ type: "text", text: "Optional negative paths worth checking (if any)" }] },
-  { type: "attachmentsBlock" },
 ] as unknown as PartialBlock[];
 
 const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
   ({ className, onPlainTextChange }, ref) => {
-    const textOnlySchema = BlockNoteSchema.create({
-      blockSpecs: {
-        paragraph: defaultBlockSpecs.paragraph,
-        heading: defaultBlockSpecs.heading,
-        bulletListItem: defaultBlockSpecs.bulletListItem,
-        numberedListItem: defaultBlockSpecs.numberedListItem,
-        nameBlock: NameBlock,
-        personaBlock: PersonaBlock,
-        projectBlock: ProjectBlock,
-        deviceBlock: DeviceBlock,
-        attachmentsBlock: AttachmentsBlock,
-      },
-      inlineContentSpecs: defaultInlineContentSpecs,
-    });
-
-    // Cast for initialization; runtime structure matches BlockNote expectations
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const editor = useCreateBlockNote({ initialContent: DEFAULT_TEMPLATE as any, schema: textOnlySchema });
+    const editor = useCreateBlockNote({ initialContent: DEFAULT_TEMPLATE });
     const lastPlainTextRef = useRef<string>("");
 
     useImperativeHandle(
@@ -122,7 +100,7 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
     );
 
     return (
-      <div className={[className, "rte-surface max-w-[650px] w-full mx-auto"].filter(Boolean).join(" ") }>
+      <div className={[className, "rte-surface"].filter(Boolean).join(" ") }>
         <BlockNoteView
           editor={editor}
           theme="light"
@@ -137,7 +115,7 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
               } catch {}
             }
           }}
-          // Steer visual styles through scoped CSS class; let content size naturally
+          // Steer visual styles through scoped CSS class
         />
       </div>
     );

@@ -24,41 +24,6 @@
 
 .rte-surface :where(.bn-surface, .bn-container, .bn-editor, .bn-editor *),
 .rte-surface :where(.bn-toolbar, .bn-menu, .bn-popover) {
-  border-color: transparent !important;
-  outline: none !important;
-}
-
-/* Remove container borders/outline */
-.rte-surface .bn-container,
-.rte-surface .bn-surface,
-.rte-surface .bn-editor {
-  border: none !important;
-  box-shadow: none !important;
-}
-
-/* Hide Advanced and Media blocks in slash menu */
-.rte-surface [aria-label*="Code block" i],
-.rte-surface [aria-label*="Table" i],
-.rte-surface [aria-label*="Image" i],
-.rte-surface [aria-label*="Video" i],
-.rte-surface [aria-label*="Audio" i],
-.rte-surface [aria-label*="File" i] {
-  display: none !important;
-}
-
-/* Hide group headers if BlockNote exposes them with data attributes */
-.rte-surface [data-section-title="Advanced"],
-.rte-surface [data-section-title="Media"] {
-  display: none !important;
-}
-
-/* Fallback: hide section containers that contain only hidden items */
-.rte-surface .bn-slash-menu-section:has([aria-label*="Code block" i]),
-.rte-surface .bn-slash-menu-section:has([aria-label*="Image" i]),
-.rte-surface .bn-slash-menu-section:has([aria-label*="Video" i]),
-.rte-surface .bn-slash-menu-section:has([aria-label*="Audio" i]),
-.rte-surface .bn-slash-menu-section:has([aria-label*="File" i]),
-.rte-surface .bn-slash-menu-section:has([aria-label*="Table" i]) {
-  display: none !important;
+  border-color: hsl(var(--border)) !important;
 }
 
