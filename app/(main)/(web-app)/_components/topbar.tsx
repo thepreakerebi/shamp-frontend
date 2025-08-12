@@ -31,7 +31,7 @@ export function Topbar() {
   const [showPaywallPersona, setShowPaywallPersona] = useState(false);
   const [showPaywallRun, setShowPaywallRun] = useState(false);
   const [createLoading, setCreateLoading] = useState(false); // project
-  const [editLoading, setEditLoading] = useState(false); // project
+  // const [editLoading, setEditLoading] = useState(false); // project (moved to Bottombar)
   const [createPersonaLoading, setCreatePersonaLoading] = useState(false);
   const [editPersonaLoading, setEditPersonaLoading] = useState(false);
   const [createPersonaDirty, setCreatePersonaDirty] = useState(false);
@@ -47,8 +47,8 @@ export function Topbar() {
   const [editBatchTestDirty, setEditBatchTestDirty] = useState(false);
   const [createTestDirty, setCreateTestDirty] = useState(false);
   const [editTestDirty, setEditTestDirty] = useState(false);
-  const [createProjectDirty, setCreateProjectDirty] = useState(false);
-  const [editProjectDirty, setEditProjectDirty] = useState(false);
+  // const [createProjectDirty, setCreateProjectDirty] = useState(false);
+  // const [editProjectDirty, setEditProjectDirty] = useState(false);
 
   // Billing info to determine feature availability
   const { summary, loading: billingLoading, allowed } = useBilling();
@@ -201,17 +201,7 @@ export function Topbar() {
   };
 
   // Submit create-project form when on /home/create
-  const handleSubmitProject = () => {
-    const form = document.getElementById('create-project-form') as HTMLFormElement | null;
-    form?.requestSubmit();
-  };
-  const handleCancelCreateProject = () => {
-    if (createProjectDirty) {
-      setConfirmLeaveOpen(true);
-    } else {
-      router.back();
-    }
-  };
+  // Handlers moved to Bottombar for project create/edit
 
   // Listen for loading state broadcast from create-project page
   useEffect(() => {
@@ -223,35 +213,11 @@ export function Topbar() {
     return () => window.removeEventListener('create-project-loading', listener);
   }, []);
 
-  // Listen for create project dirty
-  useEffect(() => {
-    const listener = (e: Event) => {
-      const custom = e as CustomEvent<boolean>;
-      setCreateProjectDirty(Boolean(custom.detail));
-    };
-    window.addEventListener('create-project-dirty', listener);
-    return () => window.removeEventListener('create-project-dirty', listener);
-  }, []);
+  // Project dirty handled in Bottombar
 
-  // Listen for edit project dirty
-  useEffect(() => {
-    const listener = (e: Event) => {
-      const custom = e as CustomEvent<boolean>;
-      setEditProjectDirty(Boolean(custom.detail));
-    };
-    window.addEventListener('edit-project-dirty', listener);
-    return () => window.removeEventListener('edit-project-dirty', listener);
-  }, []);
+  // Project dirty handled in Bottombar
 
-  // Listen for edit project loading
-  useEffect(() => {
-    const listener = (e: Event) => {
-      const custom = e as CustomEvent<boolean>;
-      setEditLoading(custom.detail);
-    };
-    window.addEventListener('edit-project-loading', listener);
-    return () => window.removeEventListener('edit-project-loading', listener);
-  }, []);
+  // Edit project loading handled in Bottombar
 
   // Listen for create persona loading
   useEffect(() => {
@@ -530,33 +496,8 @@ export function Topbar() {
             </Button>
           </section>
         )}
-        {pathname === '/home/create' && (
-          <section className="flex flex-row items-center gap-2">
-            <Button type="button" variant="outline" onClick={handleCancelCreateProject} className="flex items-center gap-2">Cancel</Button>
-            <Button variant="default" onClick={handleSubmitProject} disabled={createLoading} className="flex items-center gap-2">
-              {createLoading && <Loader2 className="animate-spin size-4" />}
-              {createLoading ? 'Creating…' : 'Create project'}
-            </Button>
-          </section>
-        )}
-        {/^\/home\/[^/]+\/edit$/.test(pathname) && (
-          <section className="flex flex-row items-center gap-2">
-            <Button type="button" variant="outline" onClick={() => {
-              if (editProjectDirty) {
-                setConfirmLeaveOpen(true);
-              } else {
-                router.back();
-              }
-            }} className="flex items-center gap-2">Cancel</Button>
-            <Button variant="default" onClick={() => {
-              const form = document.getElementById('edit-project-form') as HTMLFormElement | null;
-              form?.requestSubmit();
-            }} disabled={editLoading} className="flex items-center gap-2">
-              {editLoading && <Loader2 className="animate-spin size-4" />}
-              {editLoading ? 'Saving…' : 'Save changes'}
-            </Button>
-          </section>
-        )}
+        {pathname === '/home/create' && null}
+        {/^\/home\/[^/]+\/edit$/.test(pathname) && null}
         {pathname === '/personas/create' && (
           <section className="flex flex-row items-center gap-2">
             <Button type="button" variant="outline" onClick={() => {

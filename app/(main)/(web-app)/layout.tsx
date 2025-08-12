@@ -6,6 +6,7 @@ import { BillingProvider } from '@/components/providers/billing-provider';
 import { AppSidebar } from './_components/sidebar';
 import { Toaster } from '@/components/ui/sonner';
 import { Topbar } from './_components/topbar';
+import { Bottombar } from './_components/bottombar';
 import { CreateProjectModalProvider } from './_components/create-project-modal';
 import { CreatePersonaModalProvider } from '@/app/(main)/(web-app)/personas/_components/create-persona-modal';
 import { CreateBatchPersonasModalProvider } from '@/app/(main)/(web-app)/personas/_components/create-batch-personas-modal';
@@ -33,6 +34,7 @@ export default function WebAppLayout({ children }: { children: React.ReactNode }
                     <section className="flex flex-col w-full h-full pt-16">
                       {children}
                     </section>
+                    <Bottombar />
                   </main>
                 </BillingProvider>
               </ProtectedRoute>
