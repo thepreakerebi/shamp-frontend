@@ -34,8 +34,8 @@ export function Topbar() {
   // const [editLoading, setEditLoading] = useState(false); // project (moved to Bottombar)
   const [createPersonaLoading, setCreatePersonaLoading] = useState(false);
   const [editPersonaLoading, setEditPersonaLoading] = useState(false);
-  const [createPersonaDirty, setCreatePersonaDirty] = useState(false);
-  const [editPersonaDirty, setEditPersonaDirty] = useState(false);
+  // const [createPersonaDirty, setCreatePersonaDirty] = useState(false); // handled in Bottombar
+  // const [editPersonaDirty, setEditPersonaDirty] = useState(false); // handled in Bottombar
   const [createBatchLoading, setCreateBatchLoading] = useState(false);
   const [createBatchPersonaDirty, setCreateBatchPersonaDirty] = useState(false);
   const [createTestLoading, setCreateTestLoading] = useState(false);
@@ -229,15 +229,7 @@ export function Topbar() {
     return () => window.removeEventListener('create-persona-loading', listener);
   }, []);
 
-  // Listen for create persona dirty
-  useEffect(() => {
-    const listener = (e: Event) => {
-      const custom = e as CustomEvent<boolean>;
-      setCreatePersonaDirty(Boolean(custom.detail));
-    };
-    window.addEventListener('create-persona-dirty', listener);
-    return () => window.removeEventListener('create-persona-dirty', listener);
-  }, []);
+  // Persona dirty handled in Bottombar
 
   // Listen for create test loading
   useEffect(() => {
@@ -278,15 +270,7 @@ export function Topbar() {
     return () => window.removeEventListener('edit-persona-loading', listener);
   }, []);
 
-  // Listen for edit persona dirty
-  useEffect(() => {
-    const listener = (e: Event) => {
-      const custom = e as CustomEvent<boolean>;
-      setEditPersonaDirty(Boolean(custom.detail));
-    };
-    window.addEventListener('edit-persona-dirty', listener);
-    return () => window.removeEventListener('edit-persona-dirty', listener);
-  }, []);
+  // Persona dirty handled in Bottombar
 
   // Create batch loading
   useEffect(() => {
@@ -498,24 +482,7 @@ export function Topbar() {
         )}
         {pathname === '/home/create' && null}
         {/^\/home\/[^/]+\/edit$/.test(pathname) && null}
-        {pathname === '/personas/create' && (
-          <section className="flex flex-row items-center gap-2">
-            <Button type="button" variant="outline" onClick={() => {
-              if (createPersonaDirty) {
-                setConfirmLeaveOpen(true);
-              } else {
-                router.back();
-              }
-            }} className="flex items-center gap-2">Cancel</Button>
-            <Button variant="default" onClick={() => {
-              const form = document.getElementById('create-persona-form') as HTMLFormElement | null;
-              form?.requestSubmit();
-            }} disabled={createPersonaLoading} className="flex items-center gap-2">
-              {createPersonaLoading && <Loader2 className="animate-spin size-4" />}
-              {createPersonaLoading ? 'Creating…' : 'Create persona'}
-            </Button>
-          </section>
-        )}
+        {pathname === '/personas/create' && null}
         {pathname === '/personas/batch/create' && (
           <section className="flex flex-row items-center gap-2">
             <Button type="button" variant="outline" onClick={() => {
@@ -534,24 +501,7 @@ export function Topbar() {
             </Button>
           </section>
         )}
-        {/^\/personas\/[^/]+\/edit$/.test(pathname) && (
-          <section className="flex flex-row items-center gap-2">
-            <Button type="button" variant="outline" onClick={() => {
-              if (editPersonaDirty) {
-                setConfirmLeaveOpen(true);
-              } else {
-                router.back();
-              }
-            }} className="flex items-center gap-2">Cancel</Button>
-            <Button variant="default" onClick={() => {
-              const form = document.getElementById('edit-persona-form') as HTMLFormElement | null;
-              form?.requestSubmit();
-            }} disabled={editPersonaLoading} className="flex items-center gap-2">
-              {editPersonaLoading && <Loader2 className="animate-spin size-4" />}
-              {editPersonaLoading ? 'Saving…' : 'Save changes'}
-            </Button>
-          </section>
-        )}
+        {/^\/personas\/[^/]+\/edit$/.test(pathname) && null}
         <StartTestRunModal open={modalOpen} onOpenChange={setModalOpen} />
         {showPaywallTest && (
           /* @ts-expect-error preview partial */

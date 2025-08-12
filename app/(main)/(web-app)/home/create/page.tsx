@@ -112,13 +112,7 @@ export default function CreateProjectPage() {
     }
   };
 
-  const handleCancelNavigation = () => {
-    if (isDirty) {
-      setConfirmLeaveOpen(true);
-    } else {
-      router.back();
-    }
-  };
+  // Cancel handled by Bottombar via create-project-dirty broadcast
 
   React.useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
@@ -137,7 +131,7 @@ export default function CreateProjectPage() {
   }, [isDirty]);
 
   return (
-    <main className="p-4 w-full max-w-[500px] mx-auto space-y-6">
+    <main className="p-4 w-full max-w-[500px] mx-auto space-y-6 pb-20">
       <h1 className="text-2xl font-semibold">Create Project</h1>
       <form
           onSubmit={handleSubmit}
