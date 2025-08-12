@@ -169,6 +169,120 @@ export default function DetailsSection({ test }: { test: Test }) {
 
   const showDeviceType = deviceType && !["free","hobby","hobby_annual"].includes((planName??"").toLowerCase());
 
+  // --- Render BlockNote descriptionBlocks using semantic tags only ---
+  const renderDescriptionBlocks = (blocks: unknown): React.ReactNode => {
+    if (!Array.isArray(blocks)) return null;
+
+    const elements: React.ReactNode[] = [];
+    let i = 0;
+
+    const readInline = (content: unknown): string => {
+      if (!Array.isArray(content)) return "";
+      return content
+        .map((n: unknown) => {
+          if (!n) return "";
+          if (typeof n === "string") return n;
+          if (typeof n === "object" && n && "text" in (n as { text?: unknown })) return String((n as { text?: unknown }).text || "");
+          if (typeof n === "object" && n && "content" in (n as { content?: unknown })) return readInline((n as { content?: unknown }).content);
+          return "";
+        })
+        .join("");
+    };
+
+    while (i < blocks.length) {
+      const b = blocks[i] as { type?: string; props?: Record<string, unknown>; content?: unknown };
+      const type = b?.type;
+
+      if (type === "bulletListItem" || type === "numberedListItem") {
+        const isOrdered = type === "numberedListItem";
+        const items: string[] = [];
+        let j = i;
+        while (
+          j < blocks.length &&
+          (blocks[j] as { type?: string })?.type === type
+        ) {
+          const t = readInline((blocks[j] as { content?: unknown }).content);
+          if (t) items.push(t);
+          j++;
+        }
+        i = j; // advance
+        if (items.length) {
+          elements.push(
+            isOrdered ? (
+              <ol key={`ol-${i}`} className="list-decimal pl-6 space-y-1">
+                {items.map((txt, idx) => (
+                  <li key={`oli-${idx}`}>{txt}</li>
+                ))}
+              </ol>
+            ) : (
+              <ul key={`ul-${i}`} className="list-disc pl-6 space-y-1">
+                {items.map((txt, idx) => (
+                  <li key={`uli-${idx}`}>{txt}</li>
+                ))}
+              </ul>
+            )
+          );
+        }
+        continue;
+      }
+
+      if (type === "heading") {
+          const lvlVal = (b?.props as { level?: number | { toString?: () => string } } | undefined)?.level;
+          const lvl = typeof lvlVal === 'number' ? lvlVal : Number(String(lvlVal ?? 3));
+        const text = readInline(b?.content);
+        if (text) {
+          if (lvl <= 3) {
+            elements.push(
+              <h3 key={`h3-${i}`} className="text-base font-semibold mt-4">
+                {text}
+              </h3>
+            );
+          } else if (lvl === 4) {
+            elements.push(
+              <h4 key={`h4-${i}`} className="text-sm font-semibold mt-4">
+                {text}
+              </h4>
+            );
+          } else {
+            elements.push(
+              <h5 key={`h5-${i}`} className="text-sm font-medium mt-4">
+                {text}
+              </h5>
+            );
+          }
+        }
+        i++;
+        continue;
+      }
+
+      if (type === "paragraph") {
+        const text = readInline(b?.content);
+        if (text) {
+          elements.push(
+            <p key={`p-${i}`} className="text-sm text-foreground/90">
+              {text}
+            </p>
+          );
+        }
+        i++;
+        continue;
+      }
+
+      // Fallback: try to read text content
+      const fallback = readInline(b?.content);
+      if (fallback) {
+        elements.push(
+          <p key={`pf-${i}`} className="text-sm text-foreground/90">
+            {fallback}
+          </p>
+        );
+      }
+      i++;
+    }
+
+    return <section className="space-y-2">{elements}</section>;
+  };
+
   return (
     <article className="p-4 space-y-6" aria-labelledby="test-details-heading">
       {/* Header */}
@@ -177,11 +291,6 @@ export default function DetailsSection({ test }: { test: Test }) {
           <h2 id="test-details-heading" className="text-xl font-semibold leading-tight truncate">
             {test.name}
           </h2>
-          {test.description && (
-            <p className="text-sm text-muted-foreground max-w-prose line-clamp-2">
-              {test.description}
-            </p>
-          )}
         </section>
         <section className="flex items-center gap-4 shrink-0">
           <RowActionsDropdown
@@ -323,6 +432,16 @@ export default function DetailsSection({ test }: { test: Test }) {
           </Badge>
         )}
       </footer>
+
+      <Separator />
+
+      {/* Structured Description */}
+      {Array.isArray((test as unknown as { descriptionBlocks?: unknown }).descriptionBlocks) && (
+        <section className="space-y-2" aria-labelledby="test-description-structured">
+          <h3 id="test-description-structured" className="sr-only">Test description</h3>
+          {renderDescriptionBlocks((test as unknown as { descriptionBlocks?: unknown }).descriptionBlocks)}
+        </section>
+      )}
     </article>
   );
 } 
