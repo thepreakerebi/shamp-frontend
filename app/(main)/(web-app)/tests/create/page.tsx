@@ -4,7 +4,7 @@ import FileUploader, { PendingFile } from "@/components/ui/file-uploader";
 import { fileToBase64 } from "@/lib/file-utils";
 import { Input } from "@/components/ui/input";
 // import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 // import { Loader2 } from "lucide-react";
 import { Laptop, Tablet, Smartphone } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -58,6 +58,13 @@ export default function CreateTestPage() {
     );
   }, [form, loading]);
 
+  // Broadcast dirty state to topbar
+  React.useEffect(()=>{
+    if(typeof window!=='undefined'){
+      window.dispatchEvent(new CustomEvent('create-test-dirty',{detail:isDirty}));
+    }
+  },[isDirty]);
+
   React.useEffect(()=>{
     const handler = (e: MouseEvent)=>{
       const anchor = (e.target as HTMLElement).closest('a[data-slot="breadcrumb-link"]') as HTMLAnchorElement|null;
@@ -72,9 +79,7 @@ export default function CreateTestPage() {
     return ()=> document.removeEventListener('click', handler, true);
   },[isDirty]);
 
-  const handleCancelNavigation = ()=>{
-    if(isDirty){ setConfirmLeaveOpen(true);} else { router.back(); }
-  };
+  // Cancel handled from Topbar
 
   const planName = summary?.products && Array.isArray(summary.products) && summary.products.length > 0
     ? ((summary.products[0] as { name?: string; id?: string }).name || (summary.products[0] as { id?: string }).id || '').toLowerCase()
@@ -265,10 +270,7 @@ export default function CreateTestPage() {
             <section>
               <FileUploader files={files} setFiles={setFiles} disabled={loading} />
             </section>
-            <section className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
-              {/* Topbar has the Create button */}
-            </section>
+            {/* Topbar has the Cancel and Create buttons */}
           </section>
 
             {/* Right: Rich text editor */}

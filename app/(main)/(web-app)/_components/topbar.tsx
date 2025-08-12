@@ -15,6 +15,7 @@ import { StartTestRunModal } from '@/app/(main)/(web-app)/test-runs/_components/
 import { useBilling } from '@/hooks/use-billing';
 import { Plus } from 'lucide-react';
 import CheckDialog from '@/components/autumn/check-dialog';
+import { UnsavedChangesDialog } from '@/components/ui/unsaved-changes-dialog';
 
 // Force dynamic rendering since this component includes Breadcrumbs that uses useSearchParams
 export const dynamic = 'force-dynamic';
@@ -36,6 +37,8 @@ export function Topbar() {
   const [createBatchLoading, setCreateBatchLoading] = useState(false);
   const [createTestLoading, setCreateTestLoading] = useState(false);
   const [editTestLoading, setEditTestLoading] = useState(false);
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
+  const [createTestDirty, setCreateTestDirty] = useState(false);
 
   // Billing info to determine feature availability
   const { summary, loading: billingLoading, allowed } = useBilling();
@@ -161,6 +164,13 @@ export function Topbar() {
     const form = document.getElementById('create-test-form') as HTMLFormElement | null;
     form?.requestSubmit();
   };
+  const handleCancelCreateTest = () => {
+    if (createTestDirty) {
+      setConfirmLeaveOpen(true);
+    } else {
+      router.back();
+    }
+  };
   const handleSubmitEditTest = () => {
     const form = document.getElementById('edit-test-form') as HTMLFormElement | null;
     form?.requestSubmit();
@@ -217,6 +227,15 @@ export function Topbar() {
     };
     window.addEventListener('create-test-loading', listener);
     return () => window.removeEventListener('create-test-loading', listener);
+  }, []);
+
+  useEffect(() => {
+    const listener = (e: Event) => {
+      const custom = e as CustomEvent<boolean>;
+      setCreateTestDirty(Boolean(custom.detail));
+    };
+    window.addEventListener('create-test-dirty', listener);
+    return () => window.removeEventListener('create-test-dirty', listener);
   }, []);
 
   // Listen for edit test loading
@@ -334,10 +353,13 @@ export function Topbar() {
           </Button>
         )}
         {pathname === '/tests/create' && (
-          <Button variant="default" onClick={handleSubmitCreateTest} disabled={createTestLoading} className="flex items-center gap-2">
-            {createTestLoading && <Loader2 className="animate-spin size-4" />}
-            {createTestLoading ? 'Creating…' : 'Create test'}
-          </Button>
+          <section className="flex flex-row items-center gap-2">
+            <Button type="button" variant="outline" onClick={handleCancelCreateTest} className="flex items-center gap-2">Cancel</Button>
+            <Button variant="default" onClick={handleSubmitCreateTest} disabled={createTestLoading} className="flex items-center gap-2">
+              {createTestLoading && <Loader2 className="animate-spin size-4" />}
+              {createTestLoading ? 'Creating…' : 'Create test'}
+            </Button>
+          </section>
         )}
         {/^\/tests\/[^/]+\/edit$/.test(pathname) && (
           <Button variant="default" onClick={handleSubmitEditTest} disabled={editTestLoading} className="flex items-center gap-2">
@@ -400,6 +422,14 @@ export function Topbar() {
           /* @ts-expect-error preview partial */
           <CheckDialog open={showPaywallRun} setOpen={setShowPaywallRun} preview={getCreditsRunPreview()} />
         )}
+        <UnsavedChangesDialog
+          open={confirmLeaveOpen}
+          onOpenChange={setConfirmLeaveOpen}
+          onDiscard={() => {
+            setConfirmLeaveOpen(false);
+            router.back();
+          }}
+        />
         {/* Add more buttons for other pages here as needed */}
       </section>
     </section>
