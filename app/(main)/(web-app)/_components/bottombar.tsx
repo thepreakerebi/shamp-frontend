@@ -84,7 +84,7 @@ export function Bottombar() {
           </section>
         )}
         {isEditProject && (
-          <section className="flex items-center justify-end gap-2">
+          <section className="flex items-center justify-end gap-3">
             <Button
               type="button"
               variant="outline"
