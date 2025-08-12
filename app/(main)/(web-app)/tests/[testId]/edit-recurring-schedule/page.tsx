@@ -36,14 +36,45 @@ export default function EditSchedulePage() {
         const store = (await import("@/lib/store/testSchedules")).useTestSchedulesStore;
         const s = store.getState().schedules?.find(sc => sc._id === scheduleId);
         if (!s) throw new Error("Schedule not found");
-        const dt = new Date(s.nextRun);
-        setRunDate(dt);
-        setRunHour(String(dt.getUTCHours()).padStart(2, "0"));
-        setRunMinute(String(dt.getUTCMinutes()).padStart(2, "0"));
-        const rr = (s.recurrenceRule || "").toLowerCase();
-        if (rr.includes("monthly")) setFreq("monthly");
-        else if (rr.includes("weekly")) setFreq("weekly");
-        else setFreq("daily");
+        // Prefer using anchorDate when available; fall back to friendly rule
+        const friendly = (s.recurrenceRule || "").toLowerCase();
+        if (s.anchorDate) {
+          const ad = new Date(s.anchorDate);
+          // Use local hours/minutes so UI matches what user selected at creation
+          setRunHour(String(ad.getHours()).padStart(2,"0"));
+          setRunMinute(String(ad.getMinutes()).padStart(2,"0"));
+          setRunDate(new Date(ad.getFullYear(), ad.getMonth(), ad.getDate(), ad.getHours(), ad.getMinutes(), 0, 0));
+          if (friendly.includes("monthly")) setFreq("monthly");
+          else if (friendly.includes("weekly")) setFreq("weekly");
+          else setFreq("daily");
+          return;
+        }
+        const timeMatch = friendly.match(/at\s+(\d{1,2}):(\d{2})/);
+        const parsedHour = timeMatch ? timeMatch[1].padStart(2, "0") : String(new Date(s.nextRun).getHours()).padStart(2, "0");
+        const parsedMinute = timeMatch ? timeMatch[2] : String(new Date(s.nextRun).getMinutes()).padStart(2, "0");
+        setRunHour(parsedHour);
+        setRunMinute(parsedMinute);
+
+        if (friendly.includes("monthly")) {
+          setFreq("monthly");
+          // Extract day-of-month from friendly string
+          const domMatch = friendly.match(/the\s+(\d{1,2})(st|nd|rd|th)/);
+          const dom = domMatch ? parseInt(domMatch[1], 10) : new Date(s.nextRun).getUTCDate();
+          const now = new Date();
+          // Build an anchor date at current month with DOM (or next month if passed)
+          const anchor = new Date(now.getFullYear(), now.getMonth(), dom, parseInt(parsedHour,10), parseInt(parsedMinute,10), 0, 0);
+          const finalDate = anchor.getTime() >= Date.now() ? anchor : new Date(now.getFullYear(), now.getMonth() + 1, dom, parseInt(parsedHour,10), parseInt(parsedMinute,10), 0, 0);
+          setRunDate(finalDate);
+        } else if (friendly.includes("weekly")) {
+          setFreq("weekly");
+          // For weekly, just show the upcoming occurrence (nextRun)
+          const dt = new Date(s.nextRun);
+          setRunDate(new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), parseInt(parsedHour,10), parseInt(parsedMinute,10)));
+        } else {
+          setFreq("daily");
+          const dt = new Date(s.nextRun);
+          setRunDate(new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), parseInt(parsedHour,10), parseInt(parsedMinute,10)));
+        }
       } catch {
         toast.error("Failed to load schedule");
         router.back();
@@ -79,8 +110,9 @@ export default function EditSchedulePage() {
         return;
       }
 
-      const min = parseInt(runMinute, 10);
-      const hr = parseInt(runHour, 10);
+      // Build cron with UTC hours/minutes to match backend's UTC cron parsing
+      const hr = dt.getUTCHours();
+      const min = dt.getUTCMinutes();
       let rule = `${min} ${hr} * * *`;
       if (freq === "weekly") {
         const dow = dt.getUTCDay();
@@ -90,10 +122,10 @@ export default function EditSchedulePage() {
         rule = `${min} ${hr} ${dom} * *`;
       }
 
-      await updateRecurringSchedule(scheduleId, rule);
+      await updateRecurringSchedule(scheduleId, rule, new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate(), dt.getUTCHours(), dt.getUTCMinutes(), 0, 0)).toISOString());
       // Avoid duplicate success toasts (socket + local). Delay navigation slightly.
       setTimeout(()=>router.push(`/tests?tab=schedules`), 0);
-      router.push(`/tests?tab=schedules`);
+      
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update schedule");
     } finally {

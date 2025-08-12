@@ -140,6 +140,8 @@ export default function ScheduleRunPage() {
           rule = `${min} ${hr} ${dom} * *`;
         }
         payload.recurrenceRule = rule;
+        // Send anchorDate so edit page can show what the user selected, not computed nextRun
+        payload.anchorDate = new Date(Date.UTC(dateTime.getUTCFullYear(), dateTime.getUTCMonth(), dateTime.getUTCDate(), hr, min, 0, 0)).toISOString();
         endpoint = "/testschedules/recurring";
       } else {
         payload.scheduledFor = dateTime.toISOString();
@@ -209,7 +211,18 @@ export default function ScheduleRunPage() {
     <main className="p-4 w-full max-w-md mx-auto space-y-6 pb-20">
       <h1 className="text-2xl font-semibold">Schedule Test Run</h1>
 
-      <form id="schedule-run-form" onSubmit={submit} className="space-y-6">
+      <form
+        id="schedule-run-form"
+        onSubmit={submit}
+        className="space-y-6"
+        onKeyDown={(e)=>{
+          if ((e.key === 'Enter' || e.key === 'Return') && e.target instanceof HTMLElement && e.target.tagName !== 'TEXTAREA'){
+            e.preventDefault();
+            const form = document.getElementById('schedule-run-form') as HTMLFormElement | null;
+            form?.requestSubmit();
+          }
+        }}
+      >
         {/* Persona select */}
         <section className="space-y-2">
           <label className="text-sm font-medium">Persona</label>

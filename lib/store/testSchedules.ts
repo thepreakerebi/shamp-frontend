@@ -8,6 +8,7 @@ export interface TestSchedule {
   projectName?: string;
   personaName?: string;
   nextRun: string;
+  anchorDate?: string;
   recurrenceRule?: string;
   trashed?: boolean;
   workspace?: string;
