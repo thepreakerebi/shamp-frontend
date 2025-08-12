@@ -89,6 +89,13 @@ export default function EditPersonaPage() {
     return false;
   }, [form, goals, frustrations, traits, preferredDevices, initialLoaded, loading]);
 
+  // Broadcast dirty state for topbar Cancel button
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('edit-persona-dirty', { detail: isDirty }));
+    }
+  }, [isDirty]);
+
   // Intercept breadcrumb link clicks
   React.useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -104,13 +111,7 @@ export default function EditPersonaPage() {
     return () => document.removeEventListener('click', handler, true);
   }, [isDirty]);
 
-  const handleCancelNavigation = () => {
-    if (isDirty) {
-      setConfirmLeaveOpen(true);
-    } else {
-      router.back();
-    }
-  };
+  // Cancel is handled by Topbar via edit-persona-dirty broadcast
 
   if (!initialLoaded) {
     return <EditPersonaFormSkeleton />;
@@ -377,11 +378,7 @@ export default function EditPersonaPage() {
           ))}
         </fieldset>
 
-        {/* Action buttons */}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" onClick={handleCancelNavigation} disabled={loading}>Cancel</Button>
-        </div>
-        {/* Note: submission triggered from Topbar */}
+        {/* Note: Cancel and submission are handled via Topbar */}
       </form>
 
       {/* Unsaved changes dialog */}

@@ -39,6 +39,13 @@ export default function CreatePersonaPage() {
     );
   }, [form, goals, frustrations, traits, preferredDevices, loading]);
 
+  // Broadcast dirty state to topbar
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('create-persona-dirty', { detail: isDirty }));
+    }
+  }, [isDirty]);
+
   React.useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
       const t = e.target as HTMLElement;
@@ -54,13 +61,7 @@ export default function CreatePersonaPage() {
     return () => document.removeEventListener('click', handleLinkClick, true);
   }, [isDirty]);
 
-  const handleCancelNavigation = () => {
-    if (isDirty) {
-      setConfirmLeaveOpen(true);
-    } else {
-      router.back();
-    }
-  };
+  // Cancel handled by Topbar via create-persona-dirty broadcast
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -325,11 +326,7 @@ export default function CreatePersonaPage() {
             ))}
           </div>
         </fieldset>
-        {/* Action buttons */}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
-        </div>
-        {/* Note: submission button now lives in Topbar */}
+        {/* Note: Cancel and submission buttons now live in Topbar */}
       </form>
       <UnsavedChangesDialog
         open={confirmLeaveOpen}
