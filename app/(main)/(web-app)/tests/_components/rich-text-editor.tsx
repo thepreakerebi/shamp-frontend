@@ -159,7 +159,15 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
     ].filter(Boolean).join(" ");
 
     return (
-      <section className={wrapperClass}>
+      <section
+        className={wrapperClass}
+        onKeyDown={(e) => {
+          // Allow new lines in editor without triggering form submit
+          if (e.key === 'Enter' || e.key === 'Return') {
+            e.stopPropagation();
+          }
+        }}
+      >
         <BlockNoteView
           editor={editor}
           theme="light"
