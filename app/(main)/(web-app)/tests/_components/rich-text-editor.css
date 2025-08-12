@@ -36,3 +36,29 @@
   box-shadow: none !important;
 }
 
+/* Hide Advanced and Media blocks in slash menu */
+.rte-surface [aria-label*="Code block" i],
+.rte-surface [aria-label*="Table" i],
+.rte-surface [aria-label*="Image" i],
+.rte-surface [aria-label*="Video" i],
+.rte-surface [aria-label*="Audio" i],
+.rte-surface [aria-label*="File" i] {
+  display: none !important;
+}
+
+/* Hide group headers if BlockNote exposes them with data attributes */
+.rte-surface [data-section-title="Advanced"],
+.rte-surface [data-section-title="Media"] {
+  display: none !important;
+}
+
+/* Fallback: hide section containers that contain only hidden items */
+.rte-surface .bn-slash-menu-section:has([aria-label*="Code block" i]),
+.rte-surface .bn-slash-menu-section:has([aria-label*="Image" i]),
+.rte-surface .bn-slash-menu-section:has([aria-label*="Video" i]),
+.rte-surface .bn-slash-menu-section:has([aria-label*="Audio" i]),
+.rte-surface .bn-slash-menu-section:has([aria-label*="File" i]),
+.rte-surface .bn-slash-menu-section:has([aria-label*="Table" i]) {
+  display: none !important;
+}
+
