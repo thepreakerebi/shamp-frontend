@@ -39,6 +39,10 @@ export function Bottombar() {
   const [editBatchTestLoading, setEditBatchTestLoading] = useState(false);
   const [createBatchTestDirty, setCreateBatchTestDirty] = useState(false);
   const [editBatchTestDirty, setEditBatchTestDirty] = useState(false);
+  const [scheduleRunLoading, setScheduleRunLoading] = useState(false);
+  const [editScheduleRunLoading, setEditScheduleRunLoading] = useState(false);
+  const [scheduleRunDirty, setScheduleRunDirty] = useState(false);
+  const [editScheduleRunDirty, setEditScheduleRunDirty] = useState(false);
 
   // Listen for broadcasts from pages
   useEffect(() => {
@@ -68,6 +72,10 @@ export function Bottombar() {
     window.addEventListener("edit-batch-test-loading", (e: Event) => setEditBatchTestLoading((e as CustomEvent<boolean>).detail));
     window.addEventListener("create-batch-test-dirty", (e: Event) => setCreateBatchTestDirty(Boolean((e as CustomEvent<boolean>).detail)));
     window.addEventListener("edit-batch-test-dirty", (e: Event) => setEditBatchTestDirty(Boolean((e as CustomEvent<boolean>).detail)));
+    window.addEventListener("schedule-run-loading", (e: Event) => setScheduleRunLoading((e as CustomEvent<boolean>).detail));
+    window.addEventListener("edit-schedule-run-loading", (e: Event) => setEditScheduleRunLoading((e as CustomEvent<boolean>).detail));
+    window.addEventListener("schedule-run-dirty", (e: Event) => setScheduleRunDirty(Boolean((e as CustomEvent<boolean>).detail)));
+    window.addEventListener("edit-schedule-run-dirty", (e: Event) => setEditScheduleRunDirty(Boolean((e as CustomEvent<boolean>).detail)));
     return () => {
       window.removeEventListener("create-project-loading", onCreateLoading);
       window.removeEventListener("edit-project-loading", onEditLoading);
@@ -87,6 +95,10 @@ export function Bottombar() {
       window.removeEventListener("edit-batch-test-loading", (e: Event) => setEditBatchTestLoading((e as CustomEvent<boolean>).detail));
       window.removeEventListener("create-batch-test-dirty", (e: Event) => setCreateBatchTestDirty(Boolean((e as CustomEvent<boolean>).detail)));
       window.removeEventListener("edit-batch-test-dirty", (e: Event) => setEditBatchTestDirty(Boolean((e as CustomEvent<boolean>).detail)));
+      window.removeEventListener("schedule-run-loading", (e: Event) => setScheduleRunLoading((e as CustomEvent<boolean>).detail));
+      window.removeEventListener("edit-schedule-run-loading", (e: Event) => setEditScheduleRunLoading((e as CustomEvent<boolean>).detail));
+      window.removeEventListener("schedule-run-dirty", (e: Event) => setScheduleRunDirty(Boolean((e as CustomEvent<boolean>).detail)));
+      window.removeEventListener("edit-schedule-run-dirty", (e: Event) => setEditScheduleRunDirty(Boolean((e as CustomEvent<boolean>).detail)));
     };
   }, []);
 
@@ -100,7 +112,13 @@ export function Bottombar() {
   const isEditTest = /^\/tests\/[^/]+\/edit$/.test(pathname);
   const isCreateBatchTest = pathname === "/tests/create-batch";
   const isEditBatchTest = pathname === "/tests/edit-batch";
-  const shouldShow = isCreateProject || isEditProject || isCreatePersona || isEditPersona || isCreateBatchPersonas || isCreateTest || isEditTest || isCreateBatchTest || isEditBatchTest;
+  const isScheduleRunCreate = /^\/tests\/[^/]+\/schedule-run$/.test(pathname);
+  const isScheduleRunEdit = (
+    /^\/tests\/[^/]+\/schedule-run\/[^/]+$/.test(pathname) ||
+    pathname === "/tests/edit-recurring-schedule" ||
+    /^\/tests\/[^/]+\/edit-recurring-schedule$/.test(pathname)
+  );
+  const shouldShow = isCreateProject || isEditProject || isCreatePersona || isEditPersona || isCreateBatchPersonas || isCreateTest || isEditTest || isCreateBatchTest || isEditBatchTest || isScheduleRunCreate || isScheduleRunEdit;
   const isNarrowForm =
     isCreateProject ||
     isEditProject ||
@@ -108,8 +126,10 @@ export function Bottombar() {
     isEditPersona ||
     isCreateBatchPersonas ||
     isCreateBatchTest ||
-    isEditBatchTest;
-  const maxWidthClass = isNarrowForm ? "max-w-[500px]" : "max-w-none";
+    isEditBatchTest ||
+    isScheduleRunCreate ||
+    isScheduleRunEdit;
+  const maxWidthClass = isScheduleRunCreate || isScheduleRunEdit ? "max-w-md" : (isNarrowForm ? "max-w-[500px]" : "max-w-none");
   if (!shouldShow) return null;
 
   return (
@@ -117,7 +137,7 @@ export function Bottombar() {
       className="fixed bottom-0 right-0 z-20 w-full bg-background"
       style={{ left, width }}
     >
-      <section className={`mx-auto w-full ${maxWidthClass} ${(isCreateProject || isEditProject || isCreateTest || isEditTest || isCreateBatchTest || isEditBatchTest) ? 'px-4' : ''}`}>
+      <section className={`mx-auto w-full ${maxWidthClass} ${(isCreateProject || isEditProject || isCreateTest || isEditTest || isCreateBatchTest || isEditBatchTest || isScheduleRunCreate || isScheduleRunEdit) ? 'px-4' : ''}`}>
         <section className="flex items-center justify-end gap-2 py-3">
         {isCreateProject && (
           <section className="flex items-center justify-end gap-3">
@@ -336,6 +356,54 @@ export function Bottombar() {
             >
               {editBatchTestLoading && <Loader2 className="animate-spin size-4" />}
               {editBatchTestLoading ? "Saving…" : "Save changes"}
+            </Button>
+          </section>
+        )}
+        {isScheduleRunCreate && (
+          <section className="flex items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { if (scheduleRunDirty) setConfirmLeaveOpen(true); else router.back(); }}
+              className="flex items-center gap-2"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => {
+                const form = document.getElementById("schedule-run-form") as HTMLFormElement | null;
+                form?.requestSubmit();
+              }}
+              disabled={scheduleRunLoading}
+              className="flex items-center gap-2"
+            >
+              {scheduleRunLoading && <Loader2 className="animate-spin size-4" />}
+              {scheduleRunLoading ? "Scheduling…" : "Schedule"}
+            </Button>
+          </section>
+        )}
+        {isScheduleRunEdit && (
+          <section className="flex items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { if (editScheduleRunDirty) setConfirmLeaveOpen(true); else router.back(); }}
+              className="flex items-center gap-2"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => {
+                const form = document.getElementById("edit-schedule-run-form") as HTMLFormElement | null;
+                form?.requestSubmit();
+              }}
+              disabled={editScheduleRunLoading}
+              className="flex items-center gap-2"
+            >
+              {editScheduleRunLoading && <Loader2 className="animate-spin size-4" />}
+              {editScheduleRunLoading ? "Saving…" : "Save changes"}
             </Button>
           </section>
         )}

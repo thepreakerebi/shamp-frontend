@@ -23,6 +23,7 @@ export function ScheduleCard({ schedule }: { schedule: TestSchedule }) {
   return (
     <section
       role="button"
+      data-test-id={schedule.testId}
       onClick={handleOpen}
       className={cn(
         "rounded-3xl border dark:border-0 bg-card/80 hover:bg-muted/50 transition-all cursor-pointer flex flex-col p-4 gap-3 relative"
@@ -46,6 +47,7 @@ export function ScheduleCard({ schedule }: { schedule: TestSchedule }) {
               testName={schedule.testName}
               actions={{ moveScheduleToTrash, deleteSchedule }}
               currentRule={schedule.recurrenceRule}
+              testId={schedule.testId}
             />
           </nav>
         )}

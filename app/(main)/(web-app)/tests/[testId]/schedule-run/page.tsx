@@ -11,7 +11,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from "@/components/ui/command";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { ChevronsUpDown, Check, Loader2 } from "lucide-react";
+import { ChevronsUpDown, Check } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -68,9 +68,12 @@ export default function ScheduleRunPage() {
     return ()=> document.removeEventListener('click', handler, true);
   }, [isDirty]);
 
-  const handleCancelNavigation = ()=>{
-    if(isDirty){ setConfirmLeaveOpen(true);} else { router.back(); }
-  };
+  // Broadcast dirty state for Bottombar
+  useEffect(()=>{
+    if(typeof window!=="undefined"){
+      window.dispatchEvent(new CustomEvent('schedule-run-dirty', { detail: isDirty }));
+    }
+  },[isDirty]);
 
   useEffect(() => {
     (async () => {
@@ -108,6 +111,7 @@ export default function ScheduleRunPage() {
     if (!selectedPersona || !runDate || runHour === "" || runMinute === "") return;
     try {
       setSubmitting(true);
+      if(typeof window!=="undefined") window.dispatchEvent(new CustomEvent('schedule-run-loading', { detail: true }));
       const payload: Record<string, unknown> = {
         testId,
         personaId: selectedPersona,
@@ -183,6 +187,7 @@ export default function ScheduleRunPage() {
       toast.error(err instanceof Error ? err.message : "Failed to schedule");
     } finally {
       setSubmitting(false);
+      if(typeof window!=="undefined") window.dispatchEvent(new CustomEvent('schedule-run-loading', { detail: false }));
     }
   };
 
@@ -201,10 +206,10 @@ export default function ScheduleRunPage() {
   }
 
   return (
-    <main className="p-4 w-full max-w-md mx-auto space-y-6">
+    <main className="p-4 w-full max-w-md mx-auto space-y-6 pb-20">
       <h1 className="text-2xl font-semibold">Schedule Test Run</h1>
 
-      <form onSubmit={submit} className="space-y-6">
+      <form id="schedule-run-form" onSubmit={submit} className="space-y-6">
         {/* Persona select */}
         <section className="space-y-2">
           <label className="text-sm font-medium">Persona</label>
@@ -321,14 +326,7 @@ export default function ScheduleRunPage() {
           )}
         </section>
 
-        {/* Actions */}
-        <section className="flex justify-end gap-2">
-          <Button variant="outline" type="button" onClick={handleCancelNavigation} disabled={submitting}>Cancel</Button>
-          <Button type="submit" disabled={submitting} variant="default">
-            {submitting && <Loader2 className="mr-2 size-4 animate-spin" />} 
-            {isRecurring?"Create schedule":"Schedule"}
-          </Button>
-        </section>
+        {/* Actions moved to Bottombar */}
       </form>
       <UnsavedChangesDialog
         open={confirmLeaveOpen}

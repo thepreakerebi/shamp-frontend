@@ -9,7 +9,10 @@ import { Button } from "@/components/ui/button";
 import { EllipsisVerticalIcon } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import React, { useState } from "react";
-import { EditScheduleModal } from "./edit-schedule-modal";
+// import { EditScheduleModal } from "./edit-schedule-modal";
+import { useRouter } from "next/navigation";
+// Editing is handled on a dedicated page. We simply navigate; the page
+// decides whether the id is a run id or a recurring schedule id.
 
 interface ActionFns {
   moveScheduleToTrash: (id: string) => Promise<unknown>;
@@ -22,19 +25,24 @@ interface Props {
   currentRule?: string;
   onEdit?: ()=>void;
   actions: ActionFns;
+  testId?: string;
 }
 
-export function ScheduleRowActionsDropdown({ scheduleId, testName, currentRule, onEdit, actions }: Props) {
+export function ScheduleRowActionsDropdown({ scheduleId, testName, onEdit, actions, testId }: Props) {
   const { moveScheduleToTrash, deleteSchedule } = actions;
   const [trashOpen, setTrashOpen] = useState(false);
   const [trashLoading, setTrashLoading] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
+  // const [editOpen, setEditOpen] = useState(false);
+  const router = useRouter();
 
   const handleEdit = () => {
     if (onEdit) { onEdit(); return; }
-    setEditOpen(true);
+    if (!testId) return;
+    // Navigate to the edit page and let it resolve whether this id is
+    // a scheduled run or a recurring schedule
+    router.push(`/tests/${testId}/edit-recurring-schedule?scheduleId=${scheduleId}`);
   };
 
   const confirmTrash = async () => {
@@ -94,7 +102,7 @@ export function ScheduleRowActionsDropdown({ scheduleId, testName, currentRule, 
         onConfirm={confirmDelete}
       />
 
-      <EditScheduleModal open={editOpen} setOpen={setEditOpen} scheduleId={scheduleId} currentRule={currentRule} />
+      {/** Modal intentionally disabled; using edit page instead */}
     </>
   );
 } 
