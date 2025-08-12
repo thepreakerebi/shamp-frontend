@@ -107,6 +107,29 @@ export function useTests() {
       // Handle paginated response - extract tests from data.data array
       const tests = data.data || data;
       store.setTests(Array.isArray(tests) ? tests : []);
+
+      // Background enrich: fetch full records for items missing structured description
+      try {
+        const list = (Array.isArray(tests) ? tests : []) as Test[];
+        const missing = list.filter((t) => !(t as unknown as { descriptionBlocks?: unknown[] }).descriptionBlocks);
+        const limit = 8; // avoid spamming the API
+        const toFetch = missing.slice(0, limit).map((t) => t._id);
+        if (toFetch.length) {
+          // fire-and-forget; do not block initial render
+          (async () => {
+            await Promise.allSettled(
+              toFetch.map(async (id) => {
+                try {
+                  const r = await apiFetch(`/tests/${id}`, { workspaceId: currentWorkspaceId });
+                  if (!r.ok) return;
+                  const full = (await r.json()) as Test;
+                  useTestsStore.getState().updateTestInList(full);
+                } catch {}
+              })
+            );
+          })();
+        }
+      } catch {}
     } catch (err: unknown) {
       if (err instanceof Error) {
         store.setTestsError(err.message);
@@ -427,6 +450,26 @@ export function useTests() {
       // Only apply results if this is the latest in-flight search (prevents older unfiltered fetches from overwriting newer filtered ones)
       if (mySeq === currentSearchSeq) {
         setTests(arrayResults);
+        // Background enrich structured description for search results too
+        try {
+          const missing = arrayResults.filter((t) => !(t as unknown as { descriptionBlocks?: unknown[] }).descriptionBlocks);
+          const limit = 8;
+          const toFetch = missing.slice(0, limit).map((t) => t._id);
+          if (toFetch.length) {
+            (async () => {
+              await Promise.allSettled(
+                toFetch.map(async (id) => {
+                  try {
+                    const r = await apiFetch(`/tests/${id}`, { workspaceId: currentWorkspaceId });
+                    if (!r.ok) return;
+                    const full = (await r.json()) as Test;
+                    useTestsStore.getState().updateTestInList(full);
+                  } catch {}
+                })
+              );
+            })();
+          }
+        } catch {}
       }
       const queryStr = typeof query === 'string' ? query : JSON.stringify(query);
       return { query: queryStr, results: arrayResults, loading: false, error: null };
