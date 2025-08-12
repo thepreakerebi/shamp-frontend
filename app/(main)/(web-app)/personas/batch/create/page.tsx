@@ -120,7 +120,7 @@ export default function CreateBatchPersonaPage() {
   };
 
   return (
-    <section className="mx-auto max-w-lg py-10">
+    <section className="mx-auto w-full max-w-[500px] py-10 pb-20">
       <LoadingBenefitsModal />
       <h1 className="text-2xl font-semibold mb-6">Create Batch Personas</h1>
       {error && <div className="text-destructive text-sm mb-4">{error}</div>}

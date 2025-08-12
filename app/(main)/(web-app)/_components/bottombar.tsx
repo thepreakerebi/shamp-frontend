@@ -29,6 +29,8 @@ export function Bottombar() {
   const [editPersonaLoading, setEditPersonaLoading] = useState(false);
   const [createPersonaDirty, setCreatePersonaDirty] = useState(false);
   const [editPersonaDirty, setEditPersonaDirty] = useState(false);
+  const [createBatchPersonaLoading, setCreateBatchPersonaLoading] = useState(false);
+  const [createBatchPersonaDirty, setCreateBatchPersonaDirty] = useState(false);
 
   // Listen for broadcasts from pages
   useEffect(() => {
@@ -48,6 +50,8 @@ export function Bottombar() {
     window.addEventListener("edit-persona-loading", onEditPersonaLoading);
     window.addEventListener("create-persona-dirty", onCreatePersonaDirty);
     window.addEventListener("edit-persona-dirty", onEditPersonaDirty);
+    window.addEventListener("create-batch-persona-loading", (e: Event) => setCreateBatchPersonaLoading((e as CustomEvent<boolean>).detail));
+    window.addEventListener("create-batch-persona-dirty", (e: Event) => setCreateBatchPersonaDirty(Boolean((e as CustomEvent<boolean>).detail)));
     return () => {
       window.removeEventListener("create-project-loading", onCreateLoading);
       window.removeEventListener("edit-project-loading", onEditLoading);
@@ -57,6 +61,8 @@ export function Bottombar() {
       window.removeEventListener("edit-persona-loading", onEditPersonaLoading);
       window.removeEventListener("create-persona-dirty", onCreatePersonaDirty);
       window.removeEventListener("edit-persona-dirty", onEditPersonaDirty);
+      window.removeEventListener("create-batch-persona-loading", (e: Event) => setCreateBatchPersonaLoading((e as CustomEvent<boolean>).detail));
+      window.removeEventListener("create-batch-persona-dirty", (e: Event) => setCreateBatchPersonaDirty(Boolean((e as CustomEvent<boolean>).detail)));
     };
   }, []);
 
@@ -65,7 +71,8 @@ export function Bottombar() {
   const isEditProject = /^\/home\/.+\/edit$/.test(pathname);
   const isCreatePersona = pathname === "/personas/create";
   const isEditPersona = /^\/personas\/.+\/edit$/.test(pathname);
-  const shouldShow = isCreateProject || isEditProject || isCreatePersona || isEditPersona;
+  const isCreateBatchPersonas = pathname === "/personas/batch/create";
+  const shouldShow = isCreateProject || isEditProject || isCreatePersona || isEditPersona || isCreateBatchPersonas;
   const maxWidthClass = "max-w-[500px]";
   if (!shouldShow) return null;
 
@@ -173,6 +180,30 @@ export function Bottombar() {
             >
               {editPersonaLoading && <Loader2 className="animate-spin size-4" />}
               {editPersonaLoading ? "Saving…" : "Save changes"}
+            </Button>
+          </section>
+        )}
+        {isCreateBatchPersonas && (
+          <section className="flex items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { if (createBatchPersonaDirty) setConfirmLeaveOpen(true); else router.back(); }}
+              className="flex items-center gap-2"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => {
+                const form = document.getElementById("create-batch-persona-form") as HTMLFormElement | null;
+                form?.requestSubmit();
+              }}
+              disabled={createBatchPersonaLoading}
+              className="flex items-center gap-2"
+            >
+              {createBatchPersonaLoading && <Loader2 className="animate-spin size-4" />}
+              {createBatchPersonaLoading ? "Creating…" : "Create batch"}
             </Button>
           </section>
         )}

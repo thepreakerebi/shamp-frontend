@@ -37,7 +37,7 @@ export function Topbar() {
   // const [createPersonaDirty, setCreatePersonaDirty] = useState(false); // handled in Bottombar
   // const [editPersonaDirty, setEditPersonaDirty] = useState(false); // handled in Bottombar
   const [createBatchLoading, setCreateBatchLoading] = useState(false);
-  const [createBatchPersonaDirty, setCreateBatchPersonaDirty] = useState(false);
+  // const [createBatchPersonaDirty, setCreateBatchPersonaDirty] = useState(false); // handled in Bottombar
   const [createTestLoading, setCreateTestLoading] = useState(false);
   const [editTestLoading, setEditTestLoading] = useState(false);
   const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
@@ -282,15 +282,7 @@ export function Topbar() {
     return () => window.removeEventListener('create-batch-persona-loading', listener);
   }, []);
 
-  // Create batch dirty
-  useEffect(() => {
-    const listener = (e: Event) => {
-      const custom = e as CustomEvent<boolean>;
-      setCreateBatchPersonaDirty(Boolean(custom.detail));
-    };
-    window.addEventListener('create-batch-persona-dirty', listener);
-    return () => window.removeEventListener('create-batch-persona-dirty', listener);
-  }, []);
+  // Create batch dirty handled in Bottombar
 
   // Reset loading when navigating away after submission
   useEffect(() => {
@@ -483,24 +475,7 @@ export function Topbar() {
         {pathname === '/home/create' && null}
         {/^\/home\/[^/]+\/edit$/.test(pathname) && null}
         {pathname === '/personas/create' && null}
-        {pathname === '/personas/batch/create' && (
-          <section className="flex flex-row items-center gap-2">
-            <Button type="button" variant="outline" onClick={() => {
-              if (createBatchPersonaDirty) {
-                setConfirmLeaveOpen(true);
-              } else {
-                router.back();
-              }
-            }} className="flex items-center gap-2">Cancel</Button>
-            <Button variant="default" onClick={() => {
-              const form = document.getElementById('create-batch-persona-form') as HTMLFormElement | null;
-              form?.requestSubmit();
-            }} disabled={createBatchLoading} className="flex items-center gap-2">
-              {createBatchLoading && <Loader2 className="animate-spin size-4" />}
-              {createBatchLoading ? 'Creating…' : 'Create batch'}
-            </Button>
-          </section>
-        )}
+        {pathname === '/personas/batch/create' && null}
         {/^\/personas\/[^/]+\/edit$/.test(pathname) && null}
         <StartTestRunModal open={modalOpen} onOpenChange={setModalOpen} />
         {showPaywallTest && (
