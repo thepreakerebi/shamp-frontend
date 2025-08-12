@@ -38,15 +38,15 @@ export function Topbar() {
   // const [editPersonaDirty, setEditPersonaDirty] = useState(false); // handled in Bottombar
   const [createBatchLoading, setCreateBatchLoading] = useState(false);
   // const [createBatchPersonaDirty, setCreateBatchPersonaDirty] = useState(false); // handled in Bottombar
-  const [createTestLoading, setCreateTestLoading] = useState(false);
-  const [editTestLoading, setEditTestLoading] = useState(false);
+  // const [createTestLoading, setCreateTestLoading] = useState(false);
+  // const [editTestLoading, setEditTestLoading] = useState(false);
   const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
   const [createBatchTestLoading, setCreateBatchTestLoading] = useState(false);
   const [editBatchTestLoading, setEditBatchTestLoading] = useState(false);
   const [createBatchTestDirty, setCreateBatchTestDirty] = useState(false);
   const [editBatchTestDirty, setEditBatchTestDirty] = useState(false);
-  const [createTestDirty, setCreateTestDirty] = useState(false);
-  const [editTestDirty, setEditTestDirty] = useState(false);
+  // const [createTestDirty, setCreateTestDirty] = useState(false);
+  // const [editTestDirty, setEditTestDirty] = useState(false);
   // const [createProjectDirty, setCreateProjectDirty] = useState(false);
   // const [editProjectDirty, setEditProjectDirty] = useState(false);
 
@@ -170,28 +170,7 @@ export function Topbar() {
   };
   const handleBatchTests = () => router.push('/tests/create-batch');
 
-  const handleSubmitCreateTest = () => {
-    const form = document.getElementById('create-test-form') as HTMLFormElement | null;
-    form?.requestSubmit();
-  };
-  const handleCancelCreateTest = () => {
-    if (createTestDirty) {
-      setConfirmLeaveOpen(true);
-    } else {
-      router.back();
-    }
-  };
-  const handleSubmitEditTest = () => {
-    const form = document.getElementById('edit-test-form') as HTMLFormElement | null;
-    form?.requestSubmit();
-  };
-  const handleCancelEditTest = () => {
-    if (editTestDirty) {
-      setConfirmLeaveOpen(true);
-    } else {
-      router.back();
-    }
-  };
+  // Moved create/edit test actions to Bottombar
   const handleStartTest = () => {
     if (allowed({ featureId: 'credits', requiredBalance: 1 })) {
       setModalOpen(true);
@@ -231,34 +210,7 @@ export function Topbar() {
 
   // Persona dirty handled in Bottombar
 
-  // Listen for create test loading
-  useEffect(() => {
-    const listener = (e: Event) => {
-      const custom = e as CustomEvent<boolean>;
-      setCreateTestLoading(custom.detail);
-    };
-    window.addEventListener('create-test-loading', listener);
-    return () => window.removeEventListener('create-test-loading', listener);
-  }, []);
-
-  useEffect(() => {
-    const listener = (e: Event) => {
-      const custom = e as CustomEvent<boolean>;
-      setCreateTestDirty(Boolean(custom.detail));
-    };
-    window.addEventListener('create-test-dirty', listener);
-    return () => window.removeEventListener('create-test-dirty', listener);
-  }, []);
-
-  // Listen for edit test loading
-  useEffect(() => {
-    const listener = (e: Event) => {
-      const custom = e as CustomEvent<boolean>;
-      setEditTestLoading(custom.detail);
-    };
-    window.addEventListener('edit-test-loading', listener);
-    return () => window.removeEventListener('edit-test-loading', listener);
-  }, []);
+  // Test create/edit loading and dirty are handled in Bottombar now
 
   // Listen for edit persona loading
   useEffect(() => {
@@ -291,19 +243,7 @@ export function Topbar() {
     }
   }, [pathname, createLoading]);
 
-  // Reset create test loading when navigating away
-  useEffect(() => {
-    if (pathname !== '/tests/create' && createTestLoading) {
-      setCreateTestLoading(false);
-    }
-  }, [pathname, createTestLoading]);
-
-  // Reset edit test loading when navigating away
-  useEffect(() => {
-    if (!/^\/tests\/[^/]+\/edit$/.test(pathname) && editTestLoading) {
-      setEditTestLoading(false);
-    }
-  }, [pathname, editTestLoading]);
+  // Reset test loading moved to Bottombar context
 
   // Listen for create-batch test loading
   useEffect(() => {
@@ -345,15 +285,7 @@ export function Topbar() {
     return () => window.removeEventListener('edit-batch-test-dirty', listener);
   }, []);
 
-  // Listen for edit test dirty state
-  useEffect(() => {
-    const listener = (e: Event) => {
-      const custom = e as CustomEvent<boolean>;
-      setEditTestDirty(Boolean(custom.detail));
-    };
-    window.addEventListener('edit-test-dirty', listener);
-    return () => window.removeEventListener('edit-test-dirty', listener);
-  }, []);
+  // Test dirty handled in Bottombar
 
   // Reset persona loading when navigating away
   useEffect(() => {
@@ -454,24 +386,8 @@ export function Topbar() {
             Run test
           </Button>
         )}
-        {pathname === '/tests/create' && (
-          <section className="flex flex-row items-center gap-2">
-            <Button type="button" variant="outline" onClick={handleCancelCreateTest} className="flex items-center gap-2">Cancel</Button>
-            <Button variant="default" onClick={handleSubmitCreateTest} disabled={createTestLoading} className="flex items-center gap-2">
-              {createTestLoading && <Loader2 className="animate-spin size-4" />}
-              {createTestLoading ? 'Creating…' : 'Create test'}
-            </Button>
-          </section>
-        )}
-        {/^\/tests\/[^/]+\/edit$/.test(pathname) && (
-          <section className="flex flex-row items-center gap-2">
-            <Button type="button" variant="outline" onClick={handleCancelEditTest} className="flex items-center gap-2">Cancel</Button>
-            <Button variant="default" onClick={handleSubmitEditTest} disabled={editTestLoading} className="flex items-center gap-2">
-              {editTestLoading && <Loader2 className="animate-spin size-4" />}
-              {editTestLoading ? 'Saving…' : 'Save changes'}
-            </Button>
-          </section>
-        )}
+        {pathname === '/tests/create' && null}
+        {/^\/tests\/[^/]+\/edit$/.test(pathname) && null}
         {pathname === '/home/create' && null}
         {/^\/home\/[^/]+\/edit$/.test(pathname) && null}
         {pathname === '/personas/create' && null}

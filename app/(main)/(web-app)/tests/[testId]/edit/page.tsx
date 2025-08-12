@@ -270,7 +270,7 @@ export default function EditTestPage() {
   }
 
   return (
-    <main className="p-4 w-full mx-auto space-y-6">
+    <main className="p-4 pb-20 w-full mx-auto space-y-6">
       <form onSubmit={handleSubmit} id="edit-test-form" onKeyDown={(e)=>{if((e.key==='Enter'||e.key==='Return') && e.target instanceof HTMLElement && e.target.tagName!=='TEXTAREA'){e.preventDefault(); const form=document.getElementById('edit-test-form') as HTMLFormElement|null; form?.requestSubmit();}}}>
         <section className="grid grid-cols-1 md:grid-cols-[400px_1fr] gap-8 items-start">
           {/* Left: inputs (sticky) */}

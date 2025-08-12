@@ -216,7 +216,7 @@ export default function CreateTestPage() {
   };
 
   return (
-    <main className="p-4 w-full mx-auto space-y-6">
+    <main className="p-4 pb-20 w-full mx-auto space-y-6">
       <form onSubmit={handleSubmit} id="create-test-form" onKeyDown={(e)=>{if((e.key==='Enter'||e.key==='Return') && e.target instanceof HTMLElement && e.target.tagName!=='TEXTAREA'){e.preventDefault();const form=document.getElementById('create-test-form') as HTMLFormElement|null;form?.requestSubmit();}}}>
         <section className="grid grid-cols-1 md:grid-cols-[400px_1fr] gap-8 items-start">
           {/* Left: other inputs */}

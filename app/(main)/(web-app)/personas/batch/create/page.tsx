@@ -165,7 +165,7 @@ export default function CreateBatchPersonaPage() {
         <section>
           <label htmlFor="description" className="block text-sm font-medium mb-1">Description</label>
           <span className="block text-xs text-muted-foreground mb-1">Describe the overall purpose or theme for these personas.</span>
-          <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.description} aria-describedby={fieldErrors.description ? 'description-error' : undefined} required />
+          <Textarea id="description" name="description" value={form.description} className="min-h-28" onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.description} aria-describedby={fieldErrors.description ? 'description-error' : undefined} required />
           {fieldErrors.description && (
             <div id="description-error" className="text-destructive text-xs mt-1">
               {fieldErrors.description}
@@ -214,7 +214,7 @@ export default function CreateBatchPersonaPage() {
         <section>
           <label htmlFor="additionalContext" className="block text-sm font-medium mb-1">Additional Context <span className="text-muted-foreground">(optional)</span></label>
           <span className="block text-xs text-muted-foreground mb-1">Any extra guidance you want the AI to consider.</span>
-          <Textarea id="additionalContext" name="additionalContext" value={form.additionalContext} onChange={handleChange} disabled={loading} />
+          <Textarea id="additionalContext" className="min-h-28" name="additionalContext" value={form.additionalContext} onChange={handleChange} disabled={loading} />
         </section>
 
         {/* Note: Cancel and submission buttons are handled in Topbar */}

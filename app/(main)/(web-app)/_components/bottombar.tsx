@@ -31,6 +31,10 @@ export function Bottombar() {
   const [editPersonaDirty, setEditPersonaDirty] = useState(false);
   const [createBatchPersonaLoading, setCreateBatchPersonaLoading] = useState(false);
   const [createBatchPersonaDirty, setCreateBatchPersonaDirty] = useState(false);
+  const [createTestLoading, setCreateTestLoading] = useState(false);
+  const [editTestLoading, setEditTestLoading] = useState(false);
+  const [createTestDirty, setCreateTestDirty] = useState(false);
+  const [editTestDirty, setEditTestDirty] = useState(false);
 
   // Listen for broadcasts from pages
   useEffect(() => {
@@ -52,6 +56,10 @@ export function Bottombar() {
     window.addEventListener("edit-persona-dirty", onEditPersonaDirty);
     window.addEventListener("create-batch-persona-loading", (e: Event) => setCreateBatchPersonaLoading((e as CustomEvent<boolean>).detail));
     window.addEventListener("create-batch-persona-dirty", (e: Event) => setCreateBatchPersonaDirty(Boolean((e as CustomEvent<boolean>).detail)));
+    window.addEventListener("create-test-loading", (e: Event) => setCreateTestLoading((e as CustomEvent<boolean>).detail));
+    window.addEventListener("edit-test-loading", (e: Event) => setEditTestLoading((e as CustomEvent<boolean>).detail));
+    window.addEventListener("create-test-dirty", (e: Event) => setCreateTestDirty(Boolean((e as CustomEvent<boolean>).detail)));
+    window.addEventListener("edit-test-dirty", (e: Event) => setEditTestDirty(Boolean((e as CustomEvent<boolean>).detail)));
     return () => {
       window.removeEventListener("create-project-loading", onCreateLoading);
       window.removeEventListener("edit-project-loading", onEditLoading);
@@ -63,6 +71,10 @@ export function Bottombar() {
       window.removeEventListener("edit-persona-dirty", onEditPersonaDirty);
       window.removeEventListener("create-batch-persona-loading", (e: Event) => setCreateBatchPersonaLoading((e as CustomEvent<boolean>).detail));
       window.removeEventListener("create-batch-persona-dirty", (e: Event) => setCreateBatchPersonaDirty(Boolean((e as CustomEvent<boolean>).detail)));
+      window.removeEventListener("create-test-loading", (e: Event) => setCreateTestLoading((e as CustomEvent<boolean>).detail));
+      window.removeEventListener("edit-test-loading", (e: Event) => setEditTestLoading((e as CustomEvent<boolean>).detail));
+      window.removeEventListener("create-test-dirty", (e: Event) => setCreateTestDirty(Boolean((e as CustomEvent<boolean>).detail)));
+      window.removeEventListener("edit-test-dirty", (e: Event) => setEditTestDirty(Boolean((e as CustomEvent<boolean>).detail)));
     };
   }, []);
 
@@ -72,8 +84,11 @@ export function Bottombar() {
   const isCreatePersona = pathname === "/personas/create";
   const isEditPersona = /^\/personas\/.+\/edit$/.test(pathname);
   const isCreateBatchPersonas = pathname === "/personas/batch/create";
-  const shouldShow = isCreateProject || isEditProject || isCreatePersona || isEditPersona || isCreateBatchPersonas;
-  const maxWidthClass = "max-w-[500px]";
+  const isCreateTest = pathname === "/tests/create";
+  const isEditTest = /^\/tests\/[^/]+\/edit$/.test(pathname);
+  const shouldShow = isCreateProject || isEditProject || isCreatePersona || isEditPersona || isCreateBatchPersonas || isCreateTest || isEditTest;
+  const isNarrowForm = isCreateProject || isEditProject || isCreatePersona || isEditPersona || isCreateBatchPersonas;
+  const maxWidthClass = isNarrowForm ? "max-w-[500px]" : "max-w-none";
   if (!shouldShow) return null;
 
   return (
@@ -81,7 +96,7 @@ export function Bottombar() {
       className="fixed bottom-0 right-0 z-20 w-full bg-background"
       style={{ left, width }}
     >
-      <section className={`mx-auto w-full ${maxWidthClass} ${(isCreateProject || isEditProject) ? 'px-4' : ''}`}>
+      <section className={`mx-auto w-full ${maxWidthClass} ${(isCreateProject || isEditProject || isCreateTest || isEditTest) ? 'px-4' : ''}`}>
         <section className="flex items-center justify-end gap-2 py-3">
         {isCreateProject && (
           <section className="flex items-center justify-end gap-3">
@@ -204,6 +219,54 @@ export function Bottombar() {
             >
               {createBatchPersonaLoading && <Loader2 className="animate-spin size-4" />}
               {createBatchPersonaLoading ? "Creating…" : "Create batch"}
+            </Button>
+          </section>
+        )}
+        {isCreateTest && (
+          <section className="flex items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { if (createTestDirty) setConfirmLeaveOpen(true); else router.back(); }}
+              className="flex items-center gap-2"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => {
+                const form = document.getElementById("create-test-form") as HTMLFormElement | null;
+                form?.requestSubmit();
+              }}
+              disabled={createTestLoading}
+              className="flex items-center gap-2"
+            >
+              {createTestLoading && <Loader2 className="animate-spin size-4" />}
+              {createTestLoading ? "Creating…" : "Create test"}
+            </Button>
+          </section>
+        )}
+        {isEditTest && (
+          <section className="flex items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { if (editTestDirty) setConfirmLeaveOpen(true); else router.back(); }}
+              className="flex items-center gap-2"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => {
+                const form = document.getElementById("edit-test-form") as HTMLFormElement | null;
+                form?.requestSubmit();
+              }}
+              disabled={editTestLoading}
+              className="flex items-center gap-2"
+            >
+              {editTestLoading && <Loader2 className="animate-spin size-4" />}
+              {editTestLoading ? "Saving…" : "Save changes"}
             </Button>
           </section>
         )}
