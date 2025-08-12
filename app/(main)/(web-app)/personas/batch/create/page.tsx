@@ -37,6 +37,13 @@ export default function CreateBatchPersonaPage() {
     );
   }, [form, diversity, loading]);
 
+  // Broadcast dirty state for topbar Cancel button
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('create-batch-persona-dirty', { detail: isDirty }));
+    }
+  }, [isDirty]);
+
   React.useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
       const t = e.target as HTMLElement;
@@ -52,13 +59,7 @@ export default function CreateBatchPersonaPage() {
     return () => document.removeEventListener('click', handleLinkClick, true);
   }, [isDirty]);
 
-  const handleCancelNavigation = () => {
-    if (isDirty) {
-      setConfirmLeaveOpen(true);
-    } else {
-      router.back();
-    }
-  };
+  // Cancel handled by Topbar via create-batch-persona-dirty broadcast
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -209,10 +210,7 @@ export default function CreateBatchPersonaPage() {
           <Textarea id="additionalContext" name="additionalContext" value={form.additionalContext} onChange={handleChange} disabled={loading} />
         </section>
 
-        {/* Action buttons */}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
-        </div>
+        {/* Note: Cancel and submission buttons are handled in Topbar */}
       </form>
 
       <UnsavedChangesDialog
