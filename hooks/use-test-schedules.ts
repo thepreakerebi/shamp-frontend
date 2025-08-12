@@ -95,7 +95,8 @@ export function useTestSchedules() {
           removeScheduleFromList(payload._id);
         }
       }
-      fetchTrashedSchedules();
+      // Don't immediately re-fetch trashed list to avoid flicker add/remove/add
+      setTimeout(fetchTrashedSchedules, 50);
     });
     socket.on("schedule:deleted", ({ _id, workspace }: { _id: string; workspace?: string }) => {
       if (!workspace || workspace === currentWorkspaceId) {
