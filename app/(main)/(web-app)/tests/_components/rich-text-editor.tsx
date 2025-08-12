@@ -62,26 +62,23 @@ function blocksToPlainText(blocks: BlockNode[]): string {
 }
 
 const DEFAULT_TEMPLATE = [
-  { type: "heading", content: [{ type: "text", text: "Goal" }] },
+  { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Goal" }] },
   {
     type: "paragraph",
     content: [
       { type: "text", text: "One concise sentence describing exactly what should be achieved." },
     ],
   },
-  { type: "heading", content: [{ type: "text", text: "Preconditions" }] },
-  { type: "bulletListItem", content: [{ type: "text", text: "Starting URL (if any)" }] },
-  { type: "bulletListItem", content: [{ type: "text", text: "Test account or credentials required?" }] },
-  { type: "heading", content: [{ type: "text", text: "Steps" }] },
+  { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Steps" }] },
   { type: "numberedListItem", content: [{ type: "text", text: "Open the page and…" }] },
   { type: "numberedListItem", content: [{ type: "text", text: "Click … and fill …" }] },
   { type: "numberedListItem", content: [{ type: "text", text: "Submit and verify …" }] },
-  { type: "heading", content: [{ type: "text", text: "Success criteria" }] },
+  { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Success criteria" }] },
   { type: "bulletListItem", content: [{ type: "text", text: "What confirms the task is done (e.g., dashboard visible)" }] },
-  { type: "heading", content: [{ type: "text", text: "Stop conditions" }] },
+  { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Stop conditions" }] },
   { type: "bulletListItem", content: [{ type: "text", text: "Stop immediately once success is confirmed" }] },
   { type: "bulletListItem", content: [{ type: "text", text: "If blocked after at most 2 retries, stop and summarize why" }] },
-  { type: "heading", content: [{ type: "text", text: "Edge cases" }] },
+  { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Edge cases" }] },
   { type: "bulletListItem", content: [{ type: "text", text: "Optional negative paths worth checking (if any)" }] },
 ] as unknown as PartialBlock[];
 
