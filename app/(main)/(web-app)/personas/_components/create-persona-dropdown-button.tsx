@@ -5,7 +5,7 @@ import {
   CustomDropdownMenuItem,
 } from "@/components/ui/custom-dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, Upload, User, ChevronDown } from "lucide-react";
+import { Plus, Users, /* Upload, */ User, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface CreateDropdownButtonProps {
@@ -14,7 +14,7 @@ interface CreateDropdownButtonProps {
   onImportFile?: () => void;
 }
 
-export function CreateDropdownButton({ onSinglePersona, onBatchPersonas, onImportFile }: CreateDropdownButtonProps) {
+export function CreateDropdownButton({ onSinglePersona, onBatchPersonas }: CreateDropdownButtonProps) {
   const router = useRouter();
   return (
     <CustomDropdownMenu>
@@ -35,11 +35,15 @@ export function CreateDropdownButton({ onSinglePersona, onBatchPersonas, onImpor
         }}>
           <Users className="size-4 mr-2" /> Batch personas
         </CustomDropdownMenuItem>
-        <CustomDropdownMenuItem onSelect={() => {
-          if (onImportFile) onImportFile();
-        }}>
-          <Upload className="size-4 mr-2" /> Import file
-        </CustomDropdownMenuItem>
+        {/**
+         * Temporarily disabled per request: comment out Import file option.
+         *
+         * <CustomDropdownMenuItem onSelect={() => {
+         *   if (onImportFile) onImportFile();
+         * }}>
+         *   <Upload className="size-4 mr-2" /> Import file
+         * </CustomDropdownMenuItem>
+         */}
       </CustomDropdownMenuContent>
     </CustomDropdownMenu>
   );

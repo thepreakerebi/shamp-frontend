@@ -6,7 +6,7 @@ import { CreateProjectButton } from './create-project-button';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSidebar } from '@/components/ui/sidebar';
 import { CreateDropdownButton } from './create-persona-dropdown-button';
-import { useImportPersonasModal } from '@/app/(main)/(web-app)/personas/_components/import-personas-modal';
+// import { useImportPersonasModal } from '@/app/(main)/(web-app)/personas/_components/import-personas-modal';
 import { CreateTestDropdownButton } from '@/app/(main)/(web-app)/tests/_components/create-test-dropdown-button';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -25,7 +25,7 @@ export function Topbar() {
   const router = useRouter();
   const { state, isMobile } = useSidebar();
   // const { setOpen: setBatchModalOpen } = useCreateBatchPersonasModal();
-  const { setOpen: setImportModalOpen } = useImportPersonasModal();
+  // const { setOpen: setImportModalOpen } = useImportPersonasModal();
   const [modalOpen, setModalOpen] = useState(false);
   const [showPaywallTest, setShowPaywallTest] = useState(false);
   const [showPaywallPersona, setShowPaywallPersona] = useState(false);
@@ -397,7 +397,7 @@ export function Topbar() {
             <CreateDropdownButton
               onSinglePersona={handleSinglePersona}
               onBatchPersonas={() => router.push('/personas/batch/create')}
-              onImportFile={() => setImportModalOpen(true)}
+              // onImportFile={() => setImportModalOpen(true)}
             />
           )
         )}
