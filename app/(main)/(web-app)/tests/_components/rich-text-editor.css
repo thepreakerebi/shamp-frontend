@@ -27,3 +27,17 @@
   border-color: hsl(var(--border)) !important;
 }
 
+/* Make headings a bit smaller inside the editor */
+.rte-surface .bn-editor h1 {
+  font-size: 1rem !important; /* ~16px */
+  line-height: 1.35 !important;
+}
+.rte-surface .bn-editor h2 {
+  font-size: 0.975rem !important; /* ~15.6px */
+  line-height: 1.35 !important;
+}
+.rte-surface .bn-editor h3 {
+  font-size: 0.95rem !important; /* ~15.2px */
+  line-height: 1.35 !important;
+}
+
