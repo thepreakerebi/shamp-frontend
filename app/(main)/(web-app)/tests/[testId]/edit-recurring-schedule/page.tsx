@@ -91,7 +91,8 @@ export default function EditSchedulePage() {
       }
 
       await updateRecurringSchedule(scheduleId, rule);
-      toast.success("Schedule updated");
+      // Avoid duplicate success toasts (socket + local). Delay navigation slightly.
+      setTimeout(()=>router.push(`/tests?tab=schedules`), 0);
       router.push(`/tests?tab=schedules`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update schedule");
