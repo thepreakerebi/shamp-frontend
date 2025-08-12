@@ -90,7 +90,7 @@ export default function CreateBatchTestPage() {
     <main className="p-4 w-full max-w-[500px] mx-auto space-y-6">
       <h1 className="text-2xl font-semibold">Create Batch Test</h1>
       <p className="text-sm text-muted-foreground">
-        Create a batch test to run a test on a batch of personas at once.
+        Create a batch test to run a test on a batch of personas at once for a test.
       </p>
       <form onSubmit={handleSubmit} id="create-batch-test-form" className="space-y-4">
         <section>

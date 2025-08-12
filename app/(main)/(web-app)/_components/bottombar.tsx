@@ -35,6 +35,10 @@ export function Bottombar() {
   const [editTestLoading, setEditTestLoading] = useState(false);
   const [createTestDirty, setCreateTestDirty] = useState(false);
   const [editTestDirty, setEditTestDirty] = useState(false);
+  const [createBatchTestLoading, setCreateBatchTestLoading] = useState(false);
+  const [editBatchTestLoading, setEditBatchTestLoading] = useState(false);
+  const [createBatchTestDirty, setCreateBatchTestDirty] = useState(false);
+  const [editBatchTestDirty, setEditBatchTestDirty] = useState(false);
 
   // Listen for broadcasts from pages
   useEffect(() => {
@@ -60,6 +64,10 @@ export function Bottombar() {
     window.addEventListener("edit-test-loading", (e: Event) => setEditTestLoading((e as CustomEvent<boolean>).detail));
     window.addEventListener("create-test-dirty", (e: Event) => setCreateTestDirty(Boolean((e as CustomEvent<boolean>).detail)));
     window.addEventListener("edit-test-dirty", (e: Event) => setEditTestDirty(Boolean((e as CustomEvent<boolean>).detail)));
+    window.addEventListener("create-batch-test-loading", (e: Event) => setCreateBatchTestLoading((e as CustomEvent<boolean>).detail));
+    window.addEventListener("edit-batch-test-loading", (e: Event) => setEditBatchTestLoading((e as CustomEvent<boolean>).detail));
+    window.addEventListener("create-batch-test-dirty", (e: Event) => setCreateBatchTestDirty(Boolean((e as CustomEvent<boolean>).detail)));
+    window.addEventListener("edit-batch-test-dirty", (e: Event) => setEditBatchTestDirty(Boolean((e as CustomEvent<boolean>).detail)));
     return () => {
       window.removeEventListener("create-project-loading", onCreateLoading);
       window.removeEventListener("edit-project-loading", onEditLoading);
@@ -75,6 +83,10 @@ export function Bottombar() {
       window.removeEventListener("edit-test-loading", (e: Event) => setEditTestLoading((e as CustomEvent<boolean>).detail));
       window.removeEventListener("create-test-dirty", (e: Event) => setCreateTestDirty(Boolean((e as CustomEvent<boolean>).detail)));
       window.removeEventListener("edit-test-dirty", (e: Event) => setEditTestDirty(Boolean((e as CustomEvent<boolean>).detail)));
+      window.removeEventListener("create-batch-test-loading", (e: Event) => setCreateBatchTestLoading((e as CustomEvent<boolean>).detail));
+      window.removeEventListener("edit-batch-test-loading", (e: Event) => setEditBatchTestLoading((e as CustomEvent<boolean>).detail));
+      window.removeEventListener("create-batch-test-dirty", (e: Event) => setCreateBatchTestDirty(Boolean((e as CustomEvent<boolean>).detail)));
+      window.removeEventListener("edit-batch-test-dirty", (e: Event) => setEditBatchTestDirty(Boolean((e as CustomEvent<boolean>).detail)));
     };
   }, []);
 
@@ -86,8 +98,17 @@ export function Bottombar() {
   const isCreateBatchPersonas = pathname === "/personas/batch/create";
   const isCreateTest = pathname === "/tests/create";
   const isEditTest = /^\/tests\/[^/]+\/edit$/.test(pathname);
-  const shouldShow = isCreateProject || isEditProject || isCreatePersona || isEditPersona || isCreateBatchPersonas || isCreateTest || isEditTest;
-  const isNarrowForm = isCreateProject || isEditProject || isCreatePersona || isEditPersona || isCreateBatchPersonas;
+  const isCreateBatchTest = pathname === "/tests/create-batch";
+  const isEditBatchTest = pathname === "/tests/edit-batch";
+  const shouldShow = isCreateProject || isEditProject || isCreatePersona || isEditPersona || isCreateBatchPersonas || isCreateTest || isEditTest || isCreateBatchTest || isEditBatchTest;
+  const isNarrowForm =
+    isCreateProject ||
+    isEditProject ||
+    isCreatePersona ||
+    isEditPersona ||
+    isCreateBatchPersonas ||
+    isCreateBatchTest ||
+    isEditBatchTest;
   const maxWidthClass = isNarrowForm ? "max-w-[500px]" : "max-w-none";
   if (!shouldShow) return null;
 
@@ -96,7 +117,7 @@ export function Bottombar() {
       className="fixed bottom-0 right-0 z-20 w-full bg-background"
       style={{ left, width }}
     >
-      <section className={`mx-auto w-full ${maxWidthClass} ${(isCreateProject || isEditProject || isCreateTest || isEditTest) ? 'px-4' : ''}`}>
+      <section className={`mx-auto w-full ${maxWidthClass} ${(isCreateProject || isEditProject || isCreateTest || isEditTest || isCreateBatchTest || isEditBatchTest) ? 'px-4' : ''}`}>
         <section className="flex items-center justify-end gap-2 py-3">
         {isCreateProject && (
           <section className="flex items-center justify-end gap-3">
@@ -267,6 +288,54 @@ export function Bottombar() {
             >
               {editTestLoading && <Loader2 className="animate-spin size-4" />}
               {editTestLoading ? "Saving…" : "Save changes"}
+            </Button>
+          </section>
+        )}
+        {isCreateBatchTest && (
+          <section className="flex items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { if (createBatchTestDirty) setConfirmLeaveOpen(true); else router.back(); }}
+              className="flex items-center gap-2"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => {
+                const form = document.getElementById("create-batch-test-form") as HTMLFormElement | null;
+                form?.requestSubmit();
+              }}
+              disabled={createBatchTestLoading}
+              className="flex items-center gap-2"
+            >
+              {createBatchTestLoading && <Loader2 className="animate-spin size-4" />}
+              {createBatchTestLoading ? "Creating…" : "Create batch test"}
+            </Button>
+          </section>
+        )}
+        {isEditBatchTest && (
+          <section className="flex items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { if (editBatchTestDirty) setConfirmLeaveOpen(true); else router.back(); }}
+              className="flex items-center gap-2"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => {
+                const form = document.getElementById("edit-batch-test-form") as HTMLFormElement | null;
+                form?.requestSubmit();
+              }}
+              disabled={editBatchTestLoading}
+              className="flex items-center gap-2"
+            >
+              {editBatchTestLoading && <Loader2 className="animate-spin size-4" />}
+              {editBatchTestLoading ? "Saving…" : "Save changes"}
             </Button>
           </section>
         )}
