@@ -270,7 +270,7 @@ export default function CreateTestPage() {
                   <section>
                     <p className="font-medium">Steps (optional)</p>
                     <ul className="list-disc list-inside text-muted-foreground">
-                      <li>Open the page and…</li>
+                      <li>Go to the page and…</li>
                       <li>Click … and fill …</li>
                       <li>Submit and verify …</li>
                     </ul>
@@ -285,7 +285,7 @@ export default function CreateTestPage() {
                     <p className="font-medium">Stop conditions (optional)</p>
                     <ul className="list-disc list-inside text-muted-foreground">
                       <li>Stop immediately once success is confirmed</li>
-                      <li>If blocked after at most 2 retries, stop and summarize why</li>
+                      <li>If blocked after at most 3 retries, stop and summarize why</li>
                     </ul>
                   </section>
                   <section>

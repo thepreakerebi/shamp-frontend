@@ -369,7 +369,7 @@ export default function EditTestPage() {
                     <p className="font-medium">Stop conditions (optional)</p>
                     <ul className="list-disc list-inside text-muted-foreground">
                       <li>Stop immediately once success is confirmed</li>
-                      <li>If blocked after at most 2 retries, stop and summarize why</li>
+                      <li>If blocked after at most 3 retries, stop and summarize why</li>
                     </ul>
                   </section>
                   <section>
