@@ -272,10 +272,10 @@ export default function EditTestPage() {
   return (
     <main className="p-4 pb-20 w-full mx-auto space-y-6">
       <form onSubmit={handleSubmit} id="edit-test-form" onKeyDown={(e)=>{if((e.key==='Enter'||e.key==='Return') && e.target instanceof HTMLElement && e.target.tagName!=='TEXTAREA'){e.preventDefault(); const form=document.getElementById('edit-test-form') as HTMLFormElement|null; form?.requestSubmit();}}}>
-        <section className="grid grid-cols-1 md:grid-cols-[400px_1fr] gap-8 items-start">
+        <h1 className="text-2xl sticky top-[76px] font-semibold">Edit Test</h1>
+        <section className="grid grid-cols-1 md:grid-cols-[minmax(260px,300px)_1fr] gap-8 items-start">
           {/* Left: inputs (sticky) */}
-          <section className="space-y-4 md:max-w-[400px] w-full md:sticky self-start" style={{ top: stickyTopPx }}>
-            <h1 className="text-2xl font-semibold">Edit Test</h1>
+          <section className="space-y-4 w-full md:sticky self-start" style={{ top: stickyTopPx }}>
             <section>
               <label htmlFor="name" className="block text-sm font-medium">Name</label>
               <Input id="name" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} aria-invalid={!!errors.name} />
@@ -337,23 +337,68 @@ export default function EditTestPage() {
             <FileUploader files={pendingFiles} setFiles={setPendingFiles} disabled={saving} />
           </section>
 
-          {/* Right: Rich text editor */}
-          <section className="space-y-2 min-w-0 w-full">
-            <h1 className="text-2xl font-semibold invisible select-none pointer-events-none">Edit Test</h1>
-            <label className="block text-sm font-medium">Description</label>
-            <p className="text-xs text-muted-foreground mb-1">Describe the exact goal and steps. Replace the placeholder text inside each block, and add or remove blocks using the + button or typing &#34;/&#34; for commands.</p>
-            <RichTextEditor
-              key={editorKey}
-              ref={editorRef}
-              initialBlocks={initialBlocksState}
-              onPlainTextChange={(text)=>{
-                setForm((prev)=> ({...prev, description: text}));
-                if (text) setErrors((e)=> ({...e, description: undefined}));
-              }}
-              className="rounded-lg overflow-hidden"
-              invalid={!!errors.description}
-            />
-            {errors.description && <p className="text-destructive text-xs mt-1">{errors.description}</p>}
+          {/* Right: Guide + Rich text editor */}
+          <section className="flex gap-6 w-full items-start">
+            {/* Guide panel on the left */}
+            <aside className="hidden lg:block lg:w-[320px] shrink-0 sticky" style={{ top: Math.max(0, stickyTopPx) }}>
+              <section className="border-l p-4 space-y-4 bg-background">
+                <section>
+                  <h2 className="text-sm font-semibold">Guide</h2>
+                  <p className="text-xs text-muted-foreground">At minimum, include a clear <span className="font-medium">Goal</span>. Other sections are optional. Add headings in the editor with <code>/heading</code>.</p>
+                </section>
+                <section className="space-y-3 text-xs">
+                  <section>
+                    <p className="font-medium">Goal (required)</p>
+                    <p className="text-muted-foreground">One concise sentence describing exactly what should be achieved.</p>
+                  </section>
+                  <section>
+                    <p className="font-medium">Steps (optional)</p>
+                    <ul className="list-disc list-inside text-muted-foreground">
+                      <li>Open the page and…</li>
+                      <li>Click … and fill …</li>
+                      <li>Submit and verify …</li>
+                    </ul>
+                  </section>
+                  <section>
+                    <p className="font-medium">Success criteria (optional)</p>
+                    <ul className="list-disc list-inside text-muted-foreground">
+                      <li>What confirms the task is done (e.g., dashboard visible)</li>
+                    </ul>
+                  </section>
+                  <section>
+                    <p className="font-medium">Stop conditions (optional)</p>
+                    <ul className="list-disc list-inside text-muted-foreground">
+                      <li>Stop immediately once success is confirmed</li>
+                      <li>If blocked after at most 2 retries, stop and summarize why</li>
+                    </ul>
+                  </section>
+                  <section>
+                    <p className="font-medium">Edge cases (optional)</p>
+                    <ul className="list-disc list-inside text-muted-foreground">
+                      <li>Optional negative paths worth checking (if any)</li>
+                    </ul>
+                  </section>
+                </section>
+              </section>
+            </aside>
+
+            {/* Editor on the right */}
+            <section className="flex-1 min-w-0 space-y-2">
+              <label className="block text-sm font-medium">Description</label>
+              <p className="text-xs text-muted-foreground mb-1">Provide at least a clear <span className="font-medium">Goal</span>. Optionally add <code>Steps</code>, <code>Success criteria</code>, <code>Stop conditions</code>, and <code>Edge cases</code>. Use the + button or type <code>/</code> for commands.</p>
+              <RichTextEditor
+                key={editorKey}
+                ref={editorRef}
+                initialBlocks={initialBlocksState}
+                onPlainTextChange={(text)=>{
+                  setForm((prev)=> ({...prev, description: text}));
+                  if (text) setErrors((e)=> ({...e, description: undefined}));
+                }}
+                className="rounded-lg overflow-hidden"
+                invalid={!!errors.description}
+              />
+              {errors.description && <p className="text-destructive text-xs mt-1">{errors.description}</p>}
+            </section>
           </section>
         </section>
       </form>
