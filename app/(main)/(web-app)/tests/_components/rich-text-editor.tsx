@@ -96,19 +96,31 @@ function sanitizeBlocksForSave(blocks: unknown[]): unknown[] {
       })
       .join('');
   };
-  const out: unknown[] = [];
-  for (const raw of (Array.isArray(blocks) ? blocks : []) as unknown[]) {
-    if (isHeading(raw)) {
-      out.push(raw);
-      continue;
-    }
+  const src = Array.isArray(blocks) ? (blocks as unknown[]) : [];
+  // Pass 1: keep headings and non-empty/non-placeholder blocks; drop empties
+  const prelim: unknown[] = [];
+  for (const raw of src) {
+    if (isHeading(raw)) { prelim.push(raw); continue; }
     const text = readInline((raw as { content?: unknown }).content).trim();
-    if (!text) continue; // drop empty
-    if (PLACEHOLDER_SET.has(text)) continue; // drop placeholders
-    // keep
-    out.push(raw);
+    if (!text) continue;
+    if (PLACEHOLDER_SET.has(text)) continue;
+    prelim.push(raw);
   }
-  return out;
+  // Pass 2: keep a heading only if followed by at least one non-heading before the next heading
+  const kept: unknown[] = [];
+  for (let i = 0; i < prelim.length; i++) {
+    const b = prelim[i] as { type?: string; content?: unknown };
+    const heading = isHeading(b);
+    if (!heading) { kept.push(b); continue; }
+    let hasContent = false;
+    for (let j = i + 1; j < prelim.length; j++) {
+      const nb = prelim[j] as { type?: string };
+      if (isHeading(nb)) break;
+      hasContent = true; break;
+    }
+    if (hasContent) kept.push(b);
+  }
+  return kept;
 }
 
 // Provide default section headings with placeholders and spacing for better UX
