@@ -344,7 +344,7 @@ export default function EditTestPage() {
               <section className="border-l p-4 space-y-4 bg-background">
                 <section>
                   <h2 className="text-sm font-semibold">How to write a good test</h2>
-                  <p className="text-xs text-muted-foreground">Start by writing a clear <span className="font-medium">Goal</span> (required). Then, optionally document <span className="font-medium">Steps</span>, <span className="font-medium">Success criteria</span>, <span className="font-medium">Stop conditions</span>, and <span className="font-medium">Edge cases</span>.</p>
+                  <p className="text-xs text-muted-foreground">Start with a clear <span className="font-medium">Goal</span> (required). Add details in <span className="font-medium">Steps</span>, <span className="font-medium">Success criteria</span>, <span className="font-medium">Stop conditions</span>, and <span className="font-medium">Edge cases</span> as needed. You can also add your own sections (e.g., <span className="font-medium">Preconditions</span>, <span className="font-medium">Constraints</span>, <span className="font-medium">Notes</span>) — they’ll be used as extra context. Use the <span className="font-medium">+</span> button or type <code>/heading</code> and list items.</p>
                 </section>
                 <section className="space-y-3 text-xs">
                   <section>
@@ -385,7 +385,7 @@ export default function EditTestPage() {
             {/* Editor on the right */}
             <section className="flex-1 min-w-0 space-y-2">
               <label className="block text-sm font-medium">Description</label>
-              <p className="text-xs text-muted-foreground mb-1">Provide a clear <span className="font-medium">Goal</span> (required). Then, optionally fill in the other sections. Use the + button or type <code>/</code> for commands.</p>
+              <p className="text-xs text-muted-foreground mb-1">Provide a clear <span className="font-medium">Goal</span> (required). Fill in other sections as needed, and feel free to add your own headings for additional context. Use the + button or type <code>/</code> for commands.</p>
               <RichTextEditor
                 key={editorKey}
                 ref={editorRef}
