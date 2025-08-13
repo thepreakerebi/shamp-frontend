@@ -119,11 +119,11 @@ export function Bottombar() {
     /^\/tests\/[^/]+\/edit-recurring-schedule$/.test(pathname)
   );
   const shouldShow = isCreateProject || isEditProject || isCreatePersona || isEditPersona || isCreateBatchPersonas || isCreateTest || isEditTest || isCreateBatchTest || isEditBatchTest || isScheduleRunCreate || isScheduleRunEdit;
+  // Forms that intentionally use a narrow max width.
+  // Persona create/edit uses a full-width layout with a guide + editor, so exclude them here.
   const isNarrowForm =
     isCreateProject ||
     isEditProject ||
-    isCreatePersona ||
-    isEditPersona ||
     isCreateBatchPersonas ||
     isCreateBatchTest ||
     isEditBatchTest ||
@@ -137,7 +137,7 @@ export function Bottombar() {
       className="fixed bottom-0 right-0 z-20 w-full bg-background"
       style={{ left, width }}
     >
-      <section className={`mx-auto w-full ${maxWidthClass} ${(isCreateProject || isEditProject || isCreateTest || isEditTest || isCreateBatchTest || isEditBatchTest || isScheduleRunCreate || isScheduleRunEdit) ? 'px-4' : ''}`}>
+      <section className={`mx-auto w-full ${maxWidthClass} ${(isCreateProject || isEditProject || isCreateTest || isEditTest || isCreateBatchTest || isEditBatchTest || isScheduleRunCreate || isScheduleRunEdit || isCreatePersona || isEditPersona) ? 'px-4' : ''}`}>
         <section className="flex items-center justify-end gap-2 py-3">
         {isCreateProject && (
           <section className="flex items-center justify-end gap-3">

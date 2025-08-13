@@ -231,7 +231,7 @@ const PersonaRichTextEditor = forwardRef<PersonaRichTextEditorHandle, PersonaRic
 
     const wrapperClass = [
       className,
-      "rte-surface border border-border rounded-lg overflow-hidden pt-3 min-h-[480px]",
+      "rte-surface overflow-hidden pt-3 min-h-[480px]",
     ].filter(Boolean).join(" ");
 
     return (
