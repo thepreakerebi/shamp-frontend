@@ -113,9 +113,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const userData = await res.json();
             setUser(userData);
             
-            // Set current workspace if not set or if user doesn't have access to current workspace
+            // Set current workspace: prefer last used from localStorage if still accessible
             if (!currentWorkspaceId || !userData.workspaces?.find((ws: { _id: string }) => ws._id === currentWorkspaceId)) {
-              const newWorkspaceId = userData.currentWorkspace?._id || userData.defaultWorkspace?._id || userData.workspaces?.[0]?._id;
+              let newWorkspaceId: string | undefined;
+              try {
+                const lastWs = typeof window !== 'undefined' ? localStorage.getItem('currentWorkspaceId') : null;
+                const hasLastWs = lastWs && Array.isArray(userData.workspaces) && userData.workspaces.some((ws: { _id: string }) => ws._id === lastWs);
+                if (hasLastWs) newWorkspaceId = lastWs as string;
+              } catch {}
+              if (!newWorkspaceId) newWorkspaceId = userData.currentWorkspace?._id || userData.defaultWorkspace?._id || userData.workspaces?.[0]?._id;
               if (newWorkspaceId) {
                 setCurrentWorkspaceId(newWorkspaceId);
                 localStorage.setItem('currentWorkspaceId', newWorkspaceId);
@@ -200,8 +206,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const userData = await userRes.json();
     setUser(userData);
     
-    // Set initial workspace
-    const initialWorkspaceId = userData.currentWorkspace?._id || userData.defaultWorkspace?._id || userData.workspaces?.[0]?._id;
+    // Set initial workspace: prefer last used (from localStorage) if it's still accessible
+    let initialWorkspaceId = undefined as string | undefined;
+    try {
+      const lastWs = typeof window !== 'undefined' ? localStorage.getItem('currentWorkspaceId') : null;
+      const hasLastWs = lastWs && Array.isArray(userData.workspaces) && userData.workspaces.some((ws: { _id: string }) => ws._id === lastWs);
+      if (hasLastWs) initialWorkspaceId = lastWs as string;
+    } catch {}
+    if (!initialWorkspaceId) {
+      initialWorkspaceId = userData.currentWorkspace?._id || userData.defaultWorkspace?._id || userData.workspaces?.[0]?._id;
+    }
     if (initialWorkspaceId) {
       setCurrentWorkspaceId(initialWorkspaceId);
       localStorage.setItem('currentWorkspaceId', initialWorkspaceId);
