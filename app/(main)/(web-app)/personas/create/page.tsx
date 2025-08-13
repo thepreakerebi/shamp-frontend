@@ -39,6 +39,13 @@ export default function CreatePersonaPage() {
     );
   }, [form, goals, frustrations, traits, preferredDevices, loading]);
 
+  // Broadcast dirty state to topbar
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('create-persona-dirty', { detail: isDirty }));
+    }
+  }, [isDirty]);
+
   React.useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
       const t = e.target as HTMLElement;
@@ -54,13 +61,7 @@ export default function CreatePersonaPage() {
     return () => document.removeEventListener('click', handleLinkClick, true);
   }, [isDirty]);
 
-  const handleCancelNavigation = () => {
-    if (isDirty) {
-      setConfirmLeaveOpen(true);
-    } else {
-      router.back();
-    }
-  };
+  // Cancel handled by Topbar via create-persona-dirty broadcast
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -121,7 +122,7 @@ export default function CreatePersonaPage() {
   };
 
   return (
-    <section className="mx-auto max-w-lg py-10">
+    <section className="mx-auto w-full max-w-[500px] py-10 pb-20">
       <LoadingBenefitsModal />
       <h1 className="text-2xl font-semibold mb-6">Create Persona</h1>
       {error && <div className="text-destructive text-sm mb-4">{error}</div>}
@@ -159,7 +160,7 @@ export default function CreatePersonaPage() {
           <span className="block text-xs text-muted-foreground mb-1">
             Briefly explain who this persona is and what drives them (1–2 sentences).
           </span>
-          <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.description} aria-describedby={fieldErrors.description ? "description-error" : undefined} />
+          <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.description} aria-describedby={fieldErrors.description ? "description-error" : undefined} className="min-h-28" />
           {fieldErrors.description && (
             <div id="description-error" className="text-destructive text-xs mt-1">
               {fieldErrors.description}
@@ -174,7 +175,7 @@ export default function CreatePersonaPage() {
           <span className="block text-xs text-muted-foreground mb-1">
             Include demographic or professional context that shapes their perspective.
           </span>
-          <Textarea id="background" name="background" value={form.background} onChange={handleChange} disabled={loading} />
+          <Textarea id="background" name="background" value={form.background} onChange={handleChange} disabled={loading} className="min-h-28" />
         </section>
         {/* Gender */}
         <section>
@@ -325,11 +326,7 @@ export default function CreatePersonaPage() {
             ))}
           </div>
         </fieldset>
-        {/* Action buttons */}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
-        </div>
-        {/* Note: submission button now lives in Topbar */}
+        {/* Note: Cancel and submission buttons now live in Topbar */}
       </form>
       <UnsavedChangesDialog
         open={confirmLeaveOpen}

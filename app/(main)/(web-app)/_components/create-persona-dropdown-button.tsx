@@ -7,7 +7,7 @@ import {
   CustomDropdownMenuItem,
 } from "@/components/ui/custom-dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, Upload, User, ChevronDown } from "lucide-react";
+import { Plus, Users, /* Upload, */ User, ChevronDown } from "lucide-react";
 import { useBilling } from "@/hooks/use-billing";
 import CheckDialog from "@/components/autumn/check-dialog";
 import { useState } from "react";
@@ -15,10 +15,10 @@ import { useState } from "react";
 interface CreateDropdownButtonProps {
   onSinglePersona?: () => void;
   onBatchPersonas?: () => void;
-  onImportFile?: () => void;
+  // onImportFile?: () => void; // disabled
 }
 
-export function CreateDropdownButton({ onSinglePersona, onBatchPersonas, onImportFile }: CreateDropdownButtonProps) {
+export function CreateDropdownButton({ onSinglePersona, onBatchPersonas /*, onImportFile*/ }: CreateDropdownButtonProps) {
   const { summary, loading: billingLoading, allowed } = useBilling();
   const [showPaywallPersona, setShowPaywallPersona] = useState(false);
 
@@ -86,9 +86,13 @@ export function CreateDropdownButton({ onSinglePersona, onBatchPersonas, onImpor
             <Users className="size-4 mr-2" /> Batch personas
           </CustomDropdownMenuItem>
         )}
-        <CustomDropdownMenuItem onSelect={onImportFile}>
-          <Upload className="size-4 mr-2" /> Import file
-        </CustomDropdownMenuItem>
+        {/**
+         * Temporarily disabled per request: comment out Import file option.
+         *
+         * <CustomDropdownMenuItem onSelect={onImportFile}>
+         *   <Upload className="size-4 mr-2" /> Import file
+         * </CustomDropdownMenuItem>
+         */}
       </CustomDropdownMenuContent>
     </CustomDropdownMenu>
     {showPaywallPersona && (

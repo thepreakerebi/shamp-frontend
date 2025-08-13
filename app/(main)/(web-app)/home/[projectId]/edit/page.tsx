@@ -47,6 +47,13 @@ export default function EditProjectPage() {
     }
   }, [loading]);
 
+  // Broadcast dirty state to topbar Cancel button
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('edit-project-dirty', { detail: isDirty }));
+    }
+  }, [isDirty]);
+
   // Initialize form once when project first loads to avoid wiping user input on store updates
   const initializedRef = useRef(false);
   useEffect(() => {
@@ -163,13 +170,7 @@ export default function EditProjectPage() {
     }
   };
 
-  const handleCancelNavigation = () => {
-    if (isDirty) {
-      setConfirmLeaveOpen(true);
-    } else {
-      router.back();
-    }
-  };
+  // Cancel handled by Topbar via edit-project-dirty broadcast
 
   return (
     <main className="p-4 w-full max-w-[500px] mx-auto space-y-6">
@@ -321,10 +322,7 @@ export default function EditProjectPage() {
             ))}
           </fieldset> */}
 
-          {/* Action buttons */}
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
-          </div>
+          {/* Note: Cancel and Submission are handled in Topbar */}
         </form>
 
       {/* Unsaved changes confirmation */}

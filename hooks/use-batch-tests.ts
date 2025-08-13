@@ -13,7 +13,7 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
 export interface BatchTest {
   _id: string;
   project: string | { _id: string; name?: string };
-  test: string | { _id: string; name?: string; description?: string };
+  test: string | { _id: string; name?: string; description?: string; descriptionBlocks?: unknown };
   batchPersona?: string | { _id: string; name?: string };
   testruns?: string[];
   testrunsCount?: number;

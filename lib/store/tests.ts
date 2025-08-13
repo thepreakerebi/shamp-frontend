@@ -55,7 +55,7 @@ export const useTestsStore = create<TestsState>((set, get) => ({
   setCountError: (countError) => set({ countError }),
   updateTestInList: (test) =>
     set((state) => ({
-      tests: state.tests ? state.tests.map((t) => (t._id === test._id ? test : t)) : [test],
+      tests: state.tests ? state.tests.map((t) => (t._id === test._id ? { ...t, ...test } : t)) : [test],
     })),
   removeTestFromList: (id) =>
     set((state) => ({

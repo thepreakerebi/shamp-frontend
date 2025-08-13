@@ -6,15 +6,16 @@ import { CreateProjectButton } from './create-project-button';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSidebar } from '@/components/ui/sidebar';
 import { CreateDropdownButton } from './create-persona-dropdown-button';
-import { useImportPersonasModal } from '@/app/(main)/(web-app)/personas/_components/import-personas-modal';
+// import { useImportPersonasModal } from '@/app/(main)/(web-app)/personas/_components/import-personas-modal';
 import { CreateTestDropdownButton } from '@/app/(main)/(web-app)/tests/_components/create-test-dropdown-button';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+// import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { StartTestRunModal } from '@/app/(main)/(web-app)/test-runs/_components/start-test-run-modal';
 import { useBilling } from '@/hooks/use-billing';
 import { Plus } from 'lucide-react';
 import CheckDialog from '@/components/autumn/check-dialog';
+import { UnsavedChangesDialog } from '@/components/ui/unsaved-changes-dialog';
 
 // Force dynamic rendering since this component includes Breadcrumbs that uses useSearchParams
 export const dynamic = 'force-dynamic';
@@ -24,18 +25,30 @@ export function Topbar() {
   const router = useRouter();
   const { state, isMobile } = useSidebar();
   // const { setOpen: setBatchModalOpen } = useCreateBatchPersonasModal();
-  const { setOpen: setImportModalOpen } = useImportPersonasModal();
+  // const { setOpen: setImportModalOpen } = useImportPersonasModal();
   const [modalOpen, setModalOpen] = useState(false);
   const [showPaywallTest, setShowPaywallTest] = useState(false);
   const [showPaywallPersona, setShowPaywallPersona] = useState(false);
   const [showPaywallRun, setShowPaywallRun] = useState(false);
   const [createLoading, setCreateLoading] = useState(false); // project
-  const [editLoading, setEditLoading] = useState(false); // project
+  // const [editLoading, setEditLoading] = useState(false); // project (moved to Bottombar)
   const [createPersonaLoading, setCreatePersonaLoading] = useState(false);
   const [editPersonaLoading, setEditPersonaLoading] = useState(false);
+  // const [createPersonaDirty, setCreatePersonaDirty] = useState(false); // handled in Bottombar
+  // const [editPersonaDirty, setEditPersonaDirty] = useState(false); // handled in Bottombar
   const [createBatchLoading, setCreateBatchLoading] = useState(false);
-  const [createTestLoading, setCreateTestLoading] = useState(false);
-  const [editTestLoading, setEditTestLoading] = useState(false);
+  // const [createBatchPersonaDirty, setCreateBatchPersonaDirty] = useState(false); // handled in Bottombar
+  // const [createTestLoading, setCreateTestLoading] = useState(false);
+  // const [editTestLoading, setEditTestLoading] = useState(false);
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
+  // const [createBatchTestLoading, setCreateBatchTestLoading] = useState(false);
+  // const [editBatchTestLoading, setEditBatchTestLoading] = useState(false);
+  // const [createBatchTestDirty, setCreateBatchTestDirty] = useState(false);
+  // const [editBatchTestDirty, setEditBatchTestDirty] = useState(false);
+  // const [createTestDirty, setCreateTestDirty] = useState(false);
+  // const [editTestDirty, setEditTestDirty] = useState(false);
+  // const [createProjectDirty, setCreateProjectDirty] = useState(false);
+  // const [editProjectDirty, setEditProjectDirty] = useState(false);
 
   // Billing info to determine feature availability
   const { summary, loading: billingLoading, allowed } = useBilling();
@@ -157,14 +170,7 @@ export function Topbar() {
   };
   const handleBatchTests = () => router.push('/tests/create-batch');
 
-  const handleSubmitCreateTest = () => {
-    const form = document.getElementById('create-test-form') as HTMLFormElement | null;
-    form?.requestSubmit();
-  };
-  const handleSubmitEditTest = () => {
-    const form = document.getElementById('edit-test-form') as HTMLFormElement | null;
-    form?.requestSubmit();
-  };
+  // Moved create/edit test actions to Bottombar
   const handleStartTest = () => {
     if (allowed({ featureId: 'credits', requiredBalance: 1 })) {
       setModalOpen(true);
@@ -174,10 +180,7 @@ export function Topbar() {
   };
 
   // Submit create-project form when on /home/create
-  const handleSubmitProject = () => {
-    const form = document.getElementById('create-project-form') as HTMLFormElement | null;
-    form?.requestSubmit();
-  };
+  // Handlers moved to Bottombar for project create/edit
 
   // Listen for loading state broadcast from create-project page
   useEffect(() => {
@@ -189,15 +192,11 @@ export function Topbar() {
     return () => window.removeEventListener('create-project-loading', listener);
   }, []);
 
-  // Listen for edit project loading
-  useEffect(() => {
-    const listener = (e: Event) => {
-      const custom = e as CustomEvent<boolean>;
-      setEditLoading(custom.detail);
-    };
-    window.addEventListener('edit-project-loading', listener);
-    return () => window.removeEventListener('edit-project-loading', listener);
-  }, []);
+  // Project dirty handled in Bottombar
+
+  // Project dirty handled in Bottombar
+
+  // Edit project loading handled in Bottombar
 
   // Listen for create persona loading
   useEffect(() => {
@@ -209,25 +208,9 @@ export function Topbar() {
     return () => window.removeEventListener('create-persona-loading', listener);
   }, []);
 
-  // Listen for create test loading
-  useEffect(() => {
-    const listener = (e: Event) => {
-      const custom = e as CustomEvent<boolean>;
-      setCreateTestLoading(custom.detail);
-    };
-    window.addEventListener('create-test-loading', listener);
-    return () => window.removeEventListener('create-test-loading', listener);
-  }, []);
+  // Persona dirty handled in Bottombar
 
-  // Listen for edit test loading
-  useEffect(() => {
-    const listener = (e: Event) => {
-      const custom = e as CustomEvent<boolean>;
-      setEditTestLoading(custom.detail);
-    };
-    window.addEventListener('edit-test-loading', listener);
-    return () => window.removeEventListener('edit-test-loading', listener);
-  }, []);
+  // Test create/edit loading and dirty are handled in Bottombar now
 
   // Listen for edit persona loading
   useEffect(() => {
@@ -239,6 +222,8 @@ export function Topbar() {
     return () => window.removeEventListener('edit-persona-loading', listener);
   }, []);
 
+  // Persona dirty handled in Bottombar
+
   // Create batch loading
   useEffect(() => {
     const listener = (e: Event) => {
@@ -249,6 +234,8 @@ export function Topbar() {
     return () => window.removeEventListener('create-batch-persona-loading', listener);
   }, []);
 
+  // Create batch dirty handled in Bottombar
+
   // Reset loading when navigating away after submission
   useEffect(() => {
     if (pathname !== '/home/create' && createLoading) {
@@ -256,19 +243,11 @@ export function Topbar() {
     }
   }, [pathname, createLoading]);
 
-  // Reset create test loading when navigating away
-  useEffect(() => {
-    if (pathname !== '/tests/create' && createTestLoading) {
-      setCreateTestLoading(false);
-    }
-  }, [pathname, createTestLoading]);
+  // Reset test loading moved to Bottombar context
 
-  // Reset edit test loading when navigating away
-  useEffect(() => {
-    if (!/^\/tests\/[^/]+\/edit$/.test(pathname) && editTestLoading) {
-      setEditTestLoading(false);
-    }
-  }, [pathname, editTestLoading]);
+  // Batch test loading/dirty handled in Bottombar
+
+  // Test dirty handled in Bottombar
 
   // Reset persona loading when navigating away
   useEffect(() => {
@@ -312,10 +291,11 @@ export function Topbar() {
             <CreateDropdownButton
               onSinglePersona={handleSinglePersona}
               onBatchPersonas={() => router.push('/personas/batch/create')}
-              onImportFile={() => setImportModalOpen(true)}
+              // onImportFile={() => setImportModalOpen(true)}
             />
           )
         )}
+        {pathname === '/tests/create-batch' && null}
         {pathname === '/tests' && (
           isFreeOrHobby ? (
             <Button variant="outline" className="gap-2" onClick={handleSingleTest}>
@@ -328,65 +308,19 @@ export function Topbar() {
             />
           )
         )}
+        {pathname === '/tests/edit-batch' && null}
         {pathname === '/test-runs' && (
           <Button variant="secondary" onClick={handleStartTest}>
             Run test
           </Button>
         )}
-        {pathname === '/tests/create' && (
-          <Button variant="default" onClick={handleSubmitCreateTest} disabled={createTestLoading} className="flex items-center gap-2">
-            {createTestLoading && <Loader2 className="animate-spin size-4" />}
-            {createTestLoading ? 'Creating…' : 'Create test'}
-          </Button>
-        )}
-        {/^\/tests\/[^/]+\/edit$/.test(pathname) && (
-          <Button variant="default" onClick={handleSubmitEditTest} disabled={editTestLoading} className="flex items-center gap-2">
-            {editTestLoading && <Loader2 className="animate-spin size-4" />}
-            {editTestLoading ? 'Saving…' : 'Save changes'}
-          </Button>
-        )}
-        {pathname === '/home/create' && (
-          <Button variant="default" onClick={handleSubmitProject} disabled={createLoading} className="flex items-center gap-2">
-            {createLoading && <Loader2 className="animate-spin size-4" />}
-            {createLoading ? 'Creating…' : 'Create project'}
-          </Button>
-        )}
-        {/^\/home\/[^/]+\/edit$/.test(pathname) && (
-          <Button variant="default" onClick={() => {
-            const form = document.getElementById('edit-project-form') as HTMLFormElement | null;
-            form?.requestSubmit();
-          }} disabled={editLoading} className="flex items-center gap-2">
-            {editLoading && <Loader2 className="animate-spin size-4" />}
-            {editLoading ? 'Saving…' : 'Save changes'}
-          </Button>
-        )}
-        {pathname === '/personas/create' && (
-          <Button variant="default" onClick={() => {
-            const form = document.getElementById('create-persona-form') as HTMLFormElement | null;
-            form?.requestSubmit();
-          }} disabled={createPersonaLoading} className="flex items-center gap-2">
-            {createPersonaLoading && <Loader2 className="animate-spin size-4" />}
-            {createPersonaLoading ? 'Creating…' : 'Create persona'}
-          </Button>
-        )}
-        {pathname === '/personas/batch/create' && (
-          <Button variant="default" onClick={() => {
-            const form = document.getElementById('create-batch-persona-form') as HTMLFormElement | null;
-            form?.requestSubmit();
-          }} disabled={createBatchLoading} className="flex items-center gap-2">
-            {createBatchLoading && <Loader2 className="animate-spin size-4" />}
-            {createBatchLoading ? 'Creating…' : 'Create batch'}
-          </Button>
-        )}
-        {/^\/personas\/[^/]+\/edit$/.test(pathname) && (
-          <Button variant="default" onClick={() => {
-            const form = document.getElementById('edit-persona-form') as HTMLFormElement | null;
-            form?.requestSubmit();
-          }} disabled={editPersonaLoading} className="flex items-center gap-2">
-            {editPersonaLoading && <Loader2 className="animate-spin size-4" />}
-            {editPersonaLoading ? 'Saving…' : 'Save changes'}
-          </Button>
-        )}
+        {pathname === '/tests/create' && null}
+        {/^\/tests\/[^/]+\/edit$/.test(pathname) && null}
+        {pathname === '/home/create' && null}
+        {/^\/home\/[^/]+\/edit$/.test(pathname) && null}
+        {pathname === '/personas/create' && null}
+        {pathname === '/personas/batch/create' && null}
+        {/^\/personas\/[^/]+\/edit$/.test(pathname) && null}
         <StartTestRunModal open={modalOpen} onOpenChange={setModalOpen} />
         {showPaywallTest && (
           /* @ts-expect-error preview partial */
@@ -400,6 +334,14 @@ export function Topbar() {
           /* @ts-expect-error preview partial */
           <CheckDialog open={showPaywallRun} setOpen={setShowPaywallRun} preview={getCreditsRunPreview()} />
         )}
+        <UnsavedChangesDialog
+          open={confirmLeaveOpen}
+          onOpenChange={setConfirmLeaveOpen}
+          onDiscard={() => {
+            setConfirmLeaveOpen(false);
+            router.back();
+          }}
+        />
         {/* Add more buttons for other pages here as needed */}
       </section>
     </section>

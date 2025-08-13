@@ -33,7 +33,7 @@ type BatchPersonaPayload = {
   name: string;
   description: string;
   targetAudience?: string;
-  diversity?: string;
+  diversity?: Record<string, boolean>;
   requiredFields?: string[];
   additionalContext?: string;
 };

@@ -23,6 +23,7 @@ export function ScheduleCard({ schedule }: { schedule: TestSchedule }) {
   return (
     <section
       role="button"
+      data-test-id={schedule.testId}
       onClick={handleOpen}
       className={cn(
         "rounded-3xl border dark:border-0 bg-card/80 hover:bg-muted/50 transition-all cursor-pointer flex flex-col p-4 gap-3 relative"
@@ -46,6 +47,7 @@ export function ScheduleCard({ schedule }: { schedule: TestSchedule }) {
               testName={schedule.testName}
               actions={{ moveScheduleToTrash, deleteSchedule }}
               currentRule={schedule.recurrenceRule}
+              testId={schedule.testId}
             />
           </nav>
         )}
@@ -57,13 +59,35 @@ export function ScheduleCard({ schedule }: { schedule: TestSchedule }) {
         {schedule.projectName && <ProjectBadge name={schedule.projectName} />}
         {schedule.personaName && <PersonaBadge name={schedule.personaName} />}
         {schedule.recurrenceRule && (
-          <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-primary/10 text-primary-foreground dark:text-primary whitespace-nowrap">
-            {schedule.recurrenceRule}
-          </Badge>
+          (() => {
+            const label = (() => {
+              const rule = (schedule.recurrenceRule || '').toLowerCase();
+              const dt = schedule.anchorDate ? new Date(schedule.anchorDate) : (schedule.nextRun ? new Date(schedule.nextRun) : null);
+              const timeStr = dt ? `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}` : '';
+              if (rule.startsWith('weekly on')) {
+                // keep the day name from server, replace time
+                const dayPart = rule.replace(/\s+at\s+.*/, '');
+                return `${dayPart.replace('utc','').trim()} at ${timeStr}`;
+              }
+              if (rule.startsWith('monthly on')) {
+                const dayPart = rule.replace(/\s+at\s+.*/, '');
+                return `${dayPart.replace('utc','').trim()} at ${timeStr}`;
+              }
+              if (rule.startsWith('daily at')) {
+                return `Daily at ${timeStr}`;
+              }
+              return schedule.recurrenceRule;
+            })();
+            return (
+              <Badge variant="secondary" className="px-1.5 py-0 text-xs bg-primary/10 text-primary-foreground dark:text-primary whitespace-nowrap">
+                {label}
+              </Badge>
+            );
+          })()
         )}
         {schedule.nextRun && (
           <Badge variant="outline" className="text-xs whitespace-nowrap">
-            Next run: {format(new Date(schedule.nextRun), "PPP p")}
+            {(() => { const dt = new Date(schedule.nextRun); return `Next run: ${format(dt, 'PPP')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`; })()}
           </Badge>
         )}
       </section>

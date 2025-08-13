@@ -89,6 +89,13 @@ export default function EditPersonaPage() {
     return false;
   }, [form, goals, frustrations, traits, preferredDevices, initialLoaded, loading]);
 
+  // Broadcast dirty state for topbar Cancel button
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('edit-persona-dirty', { detail: isDirty }));
+    }
+  }, [isDirty]);
+
   // Intercept breadcrumb link clicks
   React.useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -104,13 +111,7 @@ export default function EditPersonaPage() {
     return () => document.removeEventListener('click', handler, true);
   }, [isDirty]);
 
-  const handleCancelNavigation = () => {
-    if (isDirty) {
-      setConfirmLeaveOpen(true);
-    } else {
-      router.back();
-    }
-  };
+  // Cancel is handled by Topbar via edit-persona-dirty broadcast
 
   if (!initialLoaded) {
     return <EditPersonaFormSkeleton />;
@@ -175,7 +176,7 @@ export default function EditPersonaPage() {
   };
 
   return (
-    <div className="mx-auto max-w-lg py-10">
+    <section className="mx-auto w-full max-w-[500px] py-10 pb-20">
       <h1 className="text-2xl font-semibold mb-6">Edit Persona</h1>
       {error && <div className="text-destructive text-sm mb-4">{error}</div>}
       <form
@@ -212,7 +213,7 @@ export default function EditPersonaPage() {
           <span className="block text-xs text-muted-foreground mb-1">
             Briefly explain who this persona is and what drives them (1–2 sentences).
           </span>
-          <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.description} aria-describedby={fieldErrors.description ? "description-error" : undefined} required />
+          <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.description} aria-describedby={fieldErrors.description ? "description-error" : undefined} required className="min-h-28" />
           {fieldErrors.description && (
             <div id="description-error" className="text-destructive text-xs mt-1">
               {fieldErrors.description}
@@ -227,7 +228,7 @@ export default function EditPersonaPage() {
           <span className="block text-xs text-muted-foreground mb-1">
             Include demographic or professional context that shapes their perspective.
           </span>
-          <Textarea id="background" name="background" value={form.background} onChange={handleChange} disabled={loading} />
+          <Textarea id="background" name="background" value={form.background} onChange={handleChange} disabled={loading} className="min-h-28" />
         </section>
         {/* Gender */}
         <section>
@@ -377,11 +378,7 @@ export default function EditPersonaPage() {
           ))}
         </fieldset>
 
-        {/* Action buttons */}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" onClick={handleCancelNavigation} disabled={loading}>Cancel</Button>
-        </div>
-        {/* Note: submission triggered from Topbar */}
+        {/* Note: Cancel and submission are handled via Topbar */}
       </form>
 
       {/* Unsaved changes dialog */}
@@ -397,6 +394,6 @@ export default function EditPersonaPage() {
           }
         }}
       />
-    </div>
+    </section>
   );
 } 

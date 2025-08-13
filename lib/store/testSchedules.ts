@@ -8,6 +8,7 @@ export interface TestSchedule {
   projectName?: string;
   personaName?: string;
   nextRun: string;
+  anchorDate?: string;
   recurrenceRule?: string;
   trashed?: boolean;
   workspace?: string;
@@ -51,14 +52,10 @@ export const useTestSchedulesStore = create<TestSchedulesState>((set) => ({
   setTrashedSchedulesError: (trashedSchedulesError) => set({ trashedSchedulesError }),
   updateScheduleInList: (schedule) =>
     set((state) => {
-      if (!state.schedules) {
-        return { schedules: [schedule] };
-      }
+      if (!state.schedules) return { schedules: state.schedules };
       const exists = state.schedules.some((s) => s._id === schedule._id);
       return {
-        schedules: exists
-          ? state.schedules.map((s) => (s._id === schedule._id ? schedule : s))
-          : [schedule, ...state.schedules],
+        schedules: exists ? state.schedules.map((s) => (s._id === schedule._id ? schedule : s)) : state.schedules,
       };
     }),
   removeScheduleFromList: (id) =>

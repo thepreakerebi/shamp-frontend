@@ -17,9 +17,10 @@ interface PersonaCardDropdownProps {
   onDelete?: () => void;
   showOpen?: boolean;
   personaId?: string;
+  href?: string; // optional navigation target to preserve context (e.g., ?batch=...)
 }
 
-export function PersonaCardDropdown({ onOpen, onEdit, onDelete, showOpen = true, personaId }: PersonaCardDropdownProps) {
+export function PersonaCardDropdown({ onOpen, onEdit, onDelete, showOpen = true, personaId, href }: PersonaCardDropdownProps) {
   const router = useRouter();
   const { user } = useAuth();
 
@@ -31,13 +32,15 @@ export function PersonaCardDropdown({ onOpen, onEdit, onDelete, showOpen = true,
   const handleOpen = () => {
     if (onOpen) onOpen();
     if (personaId) {
-      router.push(`/personas/${personaId}`);
+      const to = href || `/personas/${personaId}`;
+      router.push(to);
     }
   };
 
   const handleEdit = () => {
     if (onEdit) onEdit();
     if (personaId) {
+      // Editing does not need batch context; go to edit page directly
       router.push(`/personas/${personaId}/edit`);
     }
   };

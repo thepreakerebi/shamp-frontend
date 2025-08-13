@@ -208,7 +208,25 @@ export function usePersonas() {
   const deletePersona = async (id: string) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
     const res = await apiFetch(`/personas/${id}`, { workspaceId: currentWorkspaceId, method: 'DELETE' });
-    if (!res.ok) throw new Error("Failed to delete persona");
+    if (!res.ok) {
+      // Try to surface backend error message
+      try {
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await res.json();
+          const msg = (data && (data.error || data.message)) ? (data.error || data.message) : 'Failed to delete persona';
+          throw new Error(msg);
+        }
+        const text = await res.text();
+        throw new Error(text || 'Failed to delete persona');
+      } catch (e) {
+        // If parsing fails, fall back to generic
+        if (e instanceof Error && e.message && e.message !== 'Failed to delete persona') {
+          throw e;
+        }
+        throw new Error('Failed to delete persona');
+      }
+    }
     store.removePersonaFromList(id);
     // Decrement count just like the socket handler would
     store.setCount(Math.max(0, store.count - 1));

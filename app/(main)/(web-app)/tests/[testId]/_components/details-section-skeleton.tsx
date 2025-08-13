@@ -8,7 +8,6 @@ export function DetailsSectionSkeleton() {
       {/* Header */}
       <header className="space-y-2">
         <Skeleton className="h-6 w-2/3 rounded" />
-        <Skeleton className="h-4 w-full max-w-md rounded" />
       </header>
 
       <Separator />
@@ -37,6 +36,41 @@ export function DetailsSectionSkeleton() {
           <Skeleton key={i} className="h-6 w-20 rounded" />
         ))}
       </footer>
+
+      <Separator />
+
+      {/* Structured Description */}
+      <section className="space-y-3">
+        {/* Goal heading */}
+        <Skeleton className="h-5 w-24 rounded" />
+        {/* Goal paragraph */}
+        <Skeleton className="h-4 w-3/4 rounded" />
+
+        {/* Steps heading */}
+        <Skeleton className="h-5 w-28 rounded" />
+        {/* Steps list items */}
+        <section className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={`step-${i}`} className="h-4 w-2/3 rounded" />
+          ))}
+        </section>
+
+        {/* Success criteria heading */}
+        <Skeleton className="h-5 w-40 rounded" />
+        <Skeleton className="h-4 w-3/4 rounded" />
+
+        {/* Stop conditions heading */}
+        <Skeleton className="h-5 w-36 rounded" />
+        <section className="space-y-2">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <Skeleton key={`stop-${i}`} className="h-4 w-5/6 rounded" />
+          ))}
+        </section>
+
+        {/* Edge cases heading */}
+        <Skeleton className="h-5 w-28 rounded" />
+        <Skeleton className="h-4 w-1/2 rounded" />
+      </section>
     </article>
   );
 } 

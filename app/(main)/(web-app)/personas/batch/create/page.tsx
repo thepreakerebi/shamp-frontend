@@ -22,6 +22,7 @@ export default function CreateBatchPersonaPage() {
     targetAudience: "",
     additionalContext: "",
   });
+  // Keep a simple array of strings for UX, but convert to map on submit to satisfy backend schema
   const [diversity, setDiversity] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -36,6 +37,13 @@ export default function CreateBatchPersonaPage() {
       form.name || form.description || form.targetAudience || form.additionalContext || diversity.some(d=>d.trim())
     );
   }, [form, diversity, loading]);
+
+  // Broadcast dirty state for topbar Cancel button
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('create-batch-persona-dirty', { detail: isDirty }));
+    }
+  }, [isDirty]);
 
   React.useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
@@ -52,13 +60,7 @@ export default function CreateBatchPersonaPage() {
     return () => document.removeEventListener('click', handleLinkClick, true);
   }, [isDirty]);
 
-  const handleCancelNavigation = () => {
-    if (isDirty) {
-      setConfirmLeaveOpen(true);
-    } else {
-      router.back();
-    }
-  };
+  // Cancel handled by Topbar via create-batch-persona-dirty broadcast
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -104,7 +106,13 @@ export default function CreateBatchPersonaPage() {
         name: form.name,
         description: form.description,
         targetAudience: form.targetAudience || undefined,
-        diversity: diversity.filter((d) => d.trim()).length ? diversity.filter((d) => d.trim()).join(',') : undefined,
+        diversity: (() => {
+          const keys = diversity.map((d) => d.trim()).filter(Boolean);
+          if (!keys.length) return undefined;
+          const map: Record<string, boolean> = {};
+          keys.forEach((k) => { map[k] = true; });
+          return map;
+        })(),
         additionalContext: form.additionalContext || undefined,
       });
       toast.success("New batch personas created!");
@@ -119,7 +127,7 @@ export default function CreateBatchPersonaPage() {
   };
 
   return (
-    <section className="mx-auto max-w-lg py-10">
+    <section className="mx-auto w-full max-w-[500px] py-10 pb-20">
       <LoadingBenefitsModal />
       <h1 className="text-2xl font-semibold mb-6">Create Batch Personas</h1>
       {error && <div className="text-destructive text-sm mb-4">{error}</div>}
@@ -157,7 +165,7 @@ export default function CreateBatchPersonaPage() {
         <section>
           <label htmlFor="description" className="block text-sm font-medium mb-1">Description</label>
           <span className="block text-xs text-muted-foreground mb-1">Describe the overall purpose or theme for these personas.</span>
-          <Textarea id="description" name="description" value={form.description} onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.description} aria-describedby={fieldErrors.description ? 'description-error' : undefined} required />
+          <Textarea id="description" name="description" value={form.description} className="min-h-28" onChange={handleChange} disabled={loading} aria-invalid={!!fieldErrors.description} aria-describedby={fieldErrors.description ? 'description-error' : undefined} required />
           {fieldErrors.description && (
             <div id="description-error" className="text-destructive text-xs mt-1">
               {fieldErrors.description}
@@ -206,13 +214,10 @@ export default function CreateBatchPersonaPage() {
         <section>
           <label htmlFor="additionalContext" className="block text-sm font-medium mb-1">Additional Context <span className="text-muted-foreground">(optional)</span></label>
           <span className="block text-xs text-muted-foreground mb-1">Any extra guidance you want the AI to consider.</span>
-          <Textarea id="additionalContext" name="additionalContext" value={form.additionalContext} onChange={handleChange} disabled={loading} />
+          <Textarea id="additionalContext" className="min-h-28" name="additionalContext" value={form.additionalContext} onChange={handleChange} disabled={loading} />
         </section>
 
-        {/* Action buttons */}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
-        </div>
+        {/* Note: Cancel and submission buttons are handled in Topbar */}
       </form>
 
       <UnsavedChangesDialog

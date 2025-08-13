@@ -56,7 +56,11 @@ export default function BatchPersonaPage() {
           {(batchPersona.personas as Persona[])
             .filter((p) => typeof p === "object" && p !== null && "_id" in p)
             .map((persona) => (
-              <PersonaCard key={(persona as Persona)._id} persona={persona as Persona} />
+              <PersonaCard
+                key={(persona as Persona)._id}
+                persona={persona as Persona}
+                href={`/personas/${(persona as Persona)._id}?batch=${batchPersona._id}`}
+              />
             ))}
         </section>
       )}

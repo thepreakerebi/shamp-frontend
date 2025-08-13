@@ -7,19 +7,21 @@ import React from "react";
 
 interface PersonaCardProps {
   persona: Persona;
+  href?: string; // Optional explicit navigation target
   onEdit?: () => void;
   onOpen?: () => void;
   onDelete?: () => void;
 }
 
-export function PersonaCard({ persona, onEdit, onOpen, onDelete }: PersonaCardProps) {
+export function PersonaCard({ persona, href, onEdit, onOpen, onDelete }: PersonaCardProps) {
   const router = useRouter();
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Ignore clicks coming from the dropdown menu area
     const target = e.target as HTMLElement;
     if (target.closest('[data-persona-card-dropdown]')) return;
-    router.push(`/personas/${persona._id}`);
+    const to = href || `/personas/${persona._id}`;
+    router.push(to);
   };
 
   return (
@@ -60,6 +62,7 @@ export function PersonaCard({ persona, onEdit, onOpen, onDelete }: PersonaCardPr
           onEdit={onEdit}
           onDelete={onDelete}
           personaId={persona._id}
+          href={href}
         />
       </nav>
     </section>

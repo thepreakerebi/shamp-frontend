@@ -37,6 +37,12 @@ export default function CreateProjectPage() {
     // No cleanup needed
   }, [loading]);
 
+  // Broadcast dirty state for topbar Cancel button
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('create-project-dirty', { detail: isDirty }));
+  }, [isDirty]);
+
   // Simple client-side URL validation
   function validateUrl(url: string): boolean {
     try {
@@ -106,13 +112,7 @@ export default function CreateProjectPage() {
     }
   };
 
-  const handleCancelNavigation = () => {
-    if (isDirty) {
-      setConfirmLeaveOpen(true);
-    } else {
-      router.back();
-    }
-  };
+  // Cancel handled by Bottombar via create-project-dirty broadcast
 
   React.useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
@@ -131,7 +131,7 @@ export default function CreateProjectPage() {
   }, [isDirty]);
 
   return (
-    <main className="p-4 w-full max-w-[500px] mx-auto space-y-6">
+    <main className="p-4 w-full max-w-[500px] mx-auto space-y-6 pb-20">
       <h1 className="text-2xl font-semibold">Create Project</h1>
       <form
           onSubmit={handleSubmit}
@@ -280,11 +280,7 @@ export default function CreateProjectPage() {
             ))}
           </fieldset> */}
 
-          {/* Action buttons */}
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={handleCancelNavigation}>Cancel</Button>
-          </div>
-          {/* Note: Submission is triggered from Topbar button */}
+          {/* Note: Cancel and Submission are handled in Topbar */}
         </form>
       <UnsavedChangesDialog
         open={confirmLeaveOpen}

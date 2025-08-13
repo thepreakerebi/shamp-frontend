@@ -95,7 +95,8 @@ export function useTestSchedules() {
           removeScheduleFromList(payload._id);
         }
       }
-      fetchTrashedSchedules();
+      // Don't immediately re-fetch trashed list to avoid flicker add/remove/add
+      setTimeout(fetchTrashedSchedules, 50);
     });
     socket.on("schedule:deleted", ({ _id, workspace }: { _id: string; workspace?: string }) => {
       if (!workspace || workspace === currentWorkspaceId) {
@@ -196,10 +197,10 @@ export function useTestSchedules() {
 
   // Update recurring schedule
   const updateRecurringSchedule = useCallback(
-    async (id: string, recurrenceRule: string) => {
+    async (id: string, recurrenceRule: string, anchorDate?: string) => {
       if (!currentWorkspaceId) throw new Error("No workspace context");
       try {
-        const res = await apiFetch(`/testschedules/recurring/${id}`, { workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recurrenceRule }) });
+        const res = await apiFetch(`/testschedules/recurring/${id}`, { workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recurrenceRule, anchorDate }) });
         if (!res.ok) {
           const errTxt = await res.text().catch(()=>"Failed");
           throw new Error(errTxt || "Failed to update schedule");
