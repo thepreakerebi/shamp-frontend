@@ -16,6 +16,13 @@ export function WorkspaceGreetingHeader() {
   const { user, loading, currentWorkspaceId } = useAuth();
   const currentWs = user?.workspaces?.find((w) => w._id === currentWorkspaceId);
 
+  // Capitalize each word within the string, preserving punctuation
+  const titleCase = (value?: string): string => {
+    if (!value) return "";
+    const lower = value.toLocaleLowerCase();
+    return lower.replace(/\p{L}+/gu, (word) => word.charAt(0).toLocaleUpperCase() + word.slice(1));
+  };
+
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
@@ -53,7 +60,7 @@ export function WorkspaceGreetingHeader() {
           <Skeleton className="h-6 w-48" />
         ) : (
           <span className="text-2xl w-full font-semibold">
-            {greeting}, {user?.firstName || ""} {user?.lastName || ""}
+            {greeting}, {titleCase(user?.firstName)} {titleCase(user?.lastName)}
           </span>
         )}
       </section>
