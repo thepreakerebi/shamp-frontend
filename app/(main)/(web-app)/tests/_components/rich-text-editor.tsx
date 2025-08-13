@@ -28,7 +28,17 @@ type BlockNode = {
   children?: BlockNode[];
 };
 
-const DEFAULT_GOAL_HINT = "One concise sentence describing exactly what should be achieved.";
+const DEFAULT_GOAL_HINT = "Enter goal here";
+
+const PLACEHOLDERS: Record<string, string> = {
+  Goal: "Enter goal here",
+  Steps: "Enter steps here",
+  "Success criteria": "Enter success criteria here",
+  "Stop conditions": "Enter stop conditions here",
+  "Edge cases": "Enter edge cases here",
+};
+
+const PLACEHOLDER_SET = new Set<string>(Object.values(PLACEHOLDERS));
 
 function blocksToPlainText(blocks: BlockNode[]): string {
   const lines: string[] = [];
@@ -54,11 +64,13 @@ function blocksToPlainText(blocks: BlockNode[]): string {
       if (type?.includes("heading")) {
         // skip headings
       } else if (type === "bulletListItem" || type === "numberedListItem" || type === "checkboxItem") {
-        if (text) {
+        if (text && !PLACEHOLDER_SET.has(text.trim())) {
           lines.push(`- ${text}`.trim());
         }
       } else if (text) {
-        lines.push(text.trim());
+        if (!PLACEHOLDER_SET.has(text.trim())) {
+          lines.push(text.trim());
+        }
       }
       if (Array.isArray(b.children) && b.children.length) walk(b.children as BlockNode[]);
     }
@@ -68,10 +80,59 @@ function blocksToPlainText(blocks: BlockNode[]): string {
   return lines.join("\n").trim();
 }
 
-// Minimal starting document to satisfy BlockNote's non-empty requirement
-const MINIMAL_INITIAL: PartialBlock[] = [
+// Sanitize blocks for saving: remove placeholder-only and empty paragraphs
+function sanitizeBlocksForSave(blocks: unknown[]): unknown[] {
+  const isHeading = (b: unknown) => ((b as { type?: string })?.type ?? '').includes('heading');
+  const readInline = (content: unknown): string => {
+    if (!Array.isArray(content)) return '';
+    return (content as unknown[])
+      .map((n) => {
+        if (!n) return '';
+        if (typeof n === 'string') return n as string;
+        const maybe = n as { text?: string; content?: unknown[]; type?: string };
+        if (typeof maybe.text === 'string') return maybe.text;
+        if (Array.isArray(maybe.content)) return readInline(maybe.content);
+        return '';
+      })
+      .join('');
+  };
+  const out: unknown[] = [];
+  for (const raw of (Array.isArray(blocks) ? blocks : []) as unknown[]) {
+    if (isHeading(raw)) {
+      out.push(raw);
+      continue;
+    }
+    const text = readInline((raw as { content?: unknown }).content).trim();
+    if (!text) continue; // drop empty
+    if (PLACEHOLDER_SET.has(text)) continue; // drop placeholders
+    // keep
+    out.push(raw);
+  }
+  return out;
+}
+
+// Provide default section headings with placeholders and spacing for better UX
+const DEFAULT_INITIAL: PartialBlock[] = [
+  { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Goal" }] },
+  { type: "paragraph", content: [{ type: "text", text: PLACEHOLDERS["Goal"] }] },
   { type: "paragraph", content: [] },
-];
+
+  { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Steps" }] },
+  { type: "paragraph", content: [{ type: "text", text: PLACEHOLDERS["Steps"] }] },
+  { type: "paragraph", content: [] },
+
+  { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Success criteria" }] },
+  { type: "paragraph", content: [{ type: "text", text: PLACEHOLDERS["Success criteria"] }] },
+  { type: "paragraph", content: [] },
+
+  { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Stop conditions" }] },
+  { type: "paragraph", content: [{ type: "text", text: PLACEHOLDERS["Stop conditions"] }] },
+  { type: "paragraph", content: [] },
+
+  { type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Edge cases" }] },
+  { type: "paragraph", content: [{ type: "text", text: PLACEHOLDERS["Edge cases"] }] },
+  { type: "paragraph", content: [] },
+] as unknown as PartialBlock[];
 
 const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
   ({ className, onPlainTextChange, initialBlocks }, ref) => {
@@ -91,8 +152,8 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
       if (Array.isArray(initialBlocks) && initialBlocks.length) {
         return initialBlocks as unknown as PartialBlock[];
       }
-      // Start with a minimal empty paragraph to satisfy BlockNote
-      return MINIMAL_INITIAL as unknown as PartialBlock[];
+      // Start with headings, placeholders, and spacing
+      return DEFAULT_INITIAL as unknown as PartialBlock[];
     }, [initialBlocks]);
 
     // Initialize editor with restricted schema
@@ -104,7 +165,7 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
       ref,
       () => ({
         getPlainText: () => blocksToPlainText(editor.document as BlockNode[]),
-        getBlocks: () => editor.document as BlockNode[],
+        getBlocks: () => sanitizeBlocksForSave(editor.document as unknown[]) as unknown as BlockNode[],
         getHasValidGoal: () => {
           const blocks = editor.document as BlockNode[];
           const isHeading = (b: BlockNode) => (b.type ?? "").includes("heading");
@@ -155,6 +216,45 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
                 }
               } catch {}
             }
+            // Remove placeholder text from blocks as soon as user starts typing beyond it
+            try {
+              type BN = { type?: string; content?: unknown; children?: unknown[] };
+              const blocks = editor.document as unknown as BN[];
+              const extract = (content: unknown): string => {
+                if (!Array.isArray(content)) return "";
+                return content
+                  .map((n: unknown) => (typeof n === 'string' ? n : (n as { text?: string })?.text ?? ''))
+                  .join("");
+              };
+              let mutated = false;
+              const clone: BN[] = (blocks as unknown[]).map((b) => {
+                const bb = b as BN;
+                const nextContent = Array.isArray(bb.content) ? [...(bb.content as unknown[])] : bb.content;
+                return { ...bb, content: nextContent };
+              });
+              for (let i = 0; i < clone.length; i++) {
+                const b = clone[i];
+                const type = (b?.type ?? '') as string;
+                if (type.includes('heading')) continue;
+                const text = extract(b?.content).trim();
+                if (!text) continue;
+                if (PLACEHOLDER_SET.has(text)) continue;
+                for (const ph of PLACEHOLDER_SET) {
+                  if (text.includes(ph)) {
+                    const cleaned = text.replace(ph, '').trimStart();
+                    (b as { content?: unknown }).content = cleaned ? ([{ type: 'text', text: cleaned }] as unknown) : ([] as unknown);
+                    mutated = true;
+                    break;
+                  }
+                }
+              }
+              if (mutated) {
+                const e = editor as unknown as { replaceDocument?: (doc: PartialBlock[]) => void };
+                if (e && typeof e.replaceDocument === 'function') {
+                  e.replaceDocument(clone as unknown as PartialBlock[]);
+                }
+              }
+            } catch {}
           }}
           // Steer visual styles through scoped CSS class
         />

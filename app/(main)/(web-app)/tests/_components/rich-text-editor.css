@@ -41,3 +41,47 @@
   line-height: 1.35 !important;
 }
 
+/* Placeholder paragraphs after each heading */
+.rte-surface .bn-editor h3 + p:empty::before {
+  content: "Enter goal here";
+  color: hsl(var(--muted-foreground));
+}
+
+/* Ensure our intended placeholders show meaningful hints per section */
+.rte-surface .bn-editor h3 + p:empty {
+  position: relative;
+}
+
+/* Following sections */
+.rte-surface .bn-editor h3 + p:empty + p:empty + h3 + p:empty::before {
+  content: "Enter steps here";
+  color: hsl(var(--muted-foreground));
+}
+.rte-surface .bn-editor h3 + p:empty + p:empty + h3 + p:empty {
+  position: relative;
+}
+
+.rte-surface .bn-editor h3 + p:empty + p:empty + h3 + p:empty + p:empty + h3 + p:empty::before {
+  content: "Enter success criteria here";
+  color: hsl(var(--muted-foreground));
+}
+.rte-surface .bn-editor h3 + p:empty + p:empty + h3 + p:empty + p:empty + h3 + p:empty {
+  position: relative;
+}
+
+.rte-surface .bn-editor h3 + p:empty + p:empty + h3 + p:empty + p:empty + h3 + p:empty + p:empty + h3 + p:empty::before {
+  content: "Enter stop conditions here";
+  color: hsl(var(--muted-foreground));
+}
+.rte-surface .bn-editor h3 + p:empty + p:empty + h3 + p:empty + p:empty + h3 + p:empty + p:empty + h3 + p:empty {
+  position: relative;
+}
+
+.rte-surface .bn-editor h3 + p:empty + p:empty + h3 + p:empty + p:empty + h3 + p:empty + p:empty + h3 + p:empty + p:empty + h3 + p:empty::before {
+  content: "Enter edge cases here";
+  color: hsl(var(--muted-foreground));
+}
+.rte-surface .bn-editor h3 + p:empty + p:empty + h3 + p:empty + p:empty + h3 + p:empty + p:empty + h3 + p:empty + p:empty + h3 + p:empty {
+  position: relative;
+}
+

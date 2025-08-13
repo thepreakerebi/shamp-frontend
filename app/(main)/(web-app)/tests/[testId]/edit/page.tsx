@@ -343,8 +343,8 @@ export default function EditTestPage() {
             <aside className="hidden lg:block lg:w-[320px] shrink-0 sticky" style={{ top: Math.max(0, stickyTopPx) }}>
               <section className="border-l p-4 space-y-4 bg-background">
                 <section>
-                  <h2 className="text-sm font-semibold">Guide</h2>
-                  <p className="text-xs text-muted-foreground">At minimum, include a clear <span className="font-medium">Goal</span>. Other sections are optional. Add headings in the editor with <code>/heading</code>.</p>
+                  <h2 className="text-sm font-semibold">How to write a good test</h2>
+                  <p className="text-xs text-muted-foreground">Start by writing a clear <span className="font-medium">Goal</span> (required). Then, optionally document <span className="font-medium">Steps</span>, <span className="font-medium">Success criteria</span>, <span className="font-medium">Stop conditions</span>, and <span className="font-medium">Edge cases</span>.</p>
                 </section>
                 <section className="space-y-3 text-xs">
                   <section>
@@ -385,7 +385,7 @@ export default function EditTestPage() {
             {/* Editor on the right */}
             <section className="flex-1 min-w-0 space-y-2">
               <label className="block text-sm font-medium">Description</label>
-              <p className="text-xs text-muted-foreground mb-1">Provide at least a clear <span className="font-medium">Goal</span>. Optionally add <code>Steps</code>, <code>Success criteria</code>, <code>Stop conditions</code>, and <code>Edge cases</code>. Use the + button or type <code>/</code> for commands.</p>
+              <p className="text-xs text-muted-foreground mb-1">Provide a clear <span className="font-medium">Goal</span> (required). Then, optionally fill in the other sections. Use the + button or type <code>/</code> for commands.</p>
               <RichTextEditor
                 key={editorKey}
                 ref={editorRef}
