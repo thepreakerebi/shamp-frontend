@@ -114,6 +114,25 @@ export default function TestRunCanvasPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testRunId, run, currentWorkspaceId]);
 
+  // Fallback polling while run is in progress (in case sockets are unavailable)
+  useEffect(() => {
+    if (!testRunId) return;
+    if (!currentWorkspaceId) return;
+    const inProgress = run && !['finished','stopped','cancelled'].includes((run.browserUseStatus ?? '').toLowerCase());
+    if (!inProgress) return;
+    const id = setInterval(async () => {
+      try {
+        const latest = await getTestRunStatus(testRunId);
+        setRun(prev => {
+          if (!prev) return latest;
+          return { ...prev, ...latest } as TestRunStatus;
+        });
+        buildNodes(latest as TestRunStatus);
+      } catch {/* ignore */}
+    }, 5000);
+    return () => clearInterval(id);
+  }, [testRunId, currentWorkspaceId, run?.browserUseStatus]);
+
   // Memoised live run from store
   const liveRun = useMemo(() => {
     if (!testRunId) return null;
