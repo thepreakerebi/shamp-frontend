@@ -384,20 +384,20 @@ export default function EditTestPage() {
 
             {/* Editor on the right */}
             <section className="flex-1 min-w-0 space-y-2">
-              <label className="block text-sm font-medium">Description</label>
+            <label className="block text-sm font-medium">Description</label>
               <p className="text-xs text-muted-foreground mb-1">Provide a clear <span className="font-medium">Goal</span> (required). Fill in other sections as needed, and feel free to add your own headings for additional context. Use the + button or type <code>/</code> for commands.</p>
-              <RichTextEditor
-                key={editorKey}
-                ref={editorRef}
-                initialBlocks={initialBlocksState}
-                onPlainTextChange={(text)=>{
-                  setForm((prev)=> ({...prev, description: text}));
-                  if (text) setErrors((e)=> ({...e, description: undefined}));
-                }}
-                className="rounded-lg overflow-hidden"
-                invalid={!!errors.description}
-              />
-              {errors.description && <p className="text-destructive text-xs mt-1">{errors.description}</p>}
+            <RichTextEditor
+              key={editorKey}
+              ref={editorRef}
+              initialBlocks={initialBlocksState}
+              onPlainTextChange={(text)=>{
+                setForm((prev)=> ({...prev, description: text}));
+                if (text) setErrors((e)=> ({...e, description: undefined}));
+              }}
+              className="rounded-lg overflow-hidden"
+              invalid={!!errors.description}
+            />
+            {errors.description && <p className="text-destructive text-xs mt-1">{errors.description}</p>}
             </section>
           </section>
         </section>
