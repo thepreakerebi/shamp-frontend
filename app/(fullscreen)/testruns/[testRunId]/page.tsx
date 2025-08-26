@@ -52,8 +52,14 @@ export default function TestRunCanvasPage() {
         position: { x: col * COL_SPACING, y: row * ROW_SPACING },
         data: {
           screenshot: s.screenshot,
-          description: (s.step as Record<string, unknown>)?.evaluation_previous_goal as string ?? "",
-          nextGoal: (s.step as Record<string, unknown>)?.next_goal as string ?? "",
+          description:
+            ((s.step as Record<string, unknown>)?.evaluationPreviousGoal as string) ??
+            ((s.step as Record<string, unknown>)?.evaluation_previous_goal as string) ??
+            "",
+          nextGoal:
+            ((s.step as Record<string, unknown>)?.nextGoal as string) ??
+            ((s.step as Record<string, unknown>)?.next_goal as string) ??
+            "",
         },
       } as Node;
     });
