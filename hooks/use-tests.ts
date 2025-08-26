@@ -319,7 +319,23 @@ export function useTests() {
   const createTest = async (payload: TestPayload) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
     const res = await apiFetch('/tests', { workspaceId: currentWorkspaceId, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if (!res.ok) throw new Error("Failed to create test");
+    if (!res.ok) {
+      try {
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await res.json();
+          const msg = (data && (data.error || data.message)) ? (data.error || data.message) : 'Failed to create test';
+          throw new Error(msg);
+        }
+        const text = await res.text();
+        throw new Error(text || 'Failed to create test');
+      } catch (e) {
+        if (e instanceof Error && e.message && e.message !== 'Failed to create test') {
+          throw e;
+        }
+        throw new Error('Failed to create test');
+      }
+    }
     const test = await res.json();
     // Let Socket.IO handle the store update
     return test;
@@ -340,7 +356,23 @@ export function useTests() {
   const updateTest = async (id: string, payload: TestPayload) => {
     if (!currentWorkspaceId) throw new Error("No workspace context");
     const res = await apiFetch(`/tests/${id}`, { workspaceId: currentWorkspaceId, method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if (!res.ok) throw new Error("Failed to update test");
+    if (!res.ok) {
+      try {
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await res.json();
+          const msg = (data && (data.error || data.message)) ? (data.error || data.message) : 'Failed to update test';
+          throw new Error(msg);
+        }
+        const text = await res.text();
+        throw new Error(text || 'Failed to update test');
+      } catch (e) {
+        if (e instanceof Error && e.message && e.message !== 'Failed to update test') {
+          throw e;
+        }
+        throw new Error('Failed to update test');
+      }
+    }
     const test = await res.json();
     // Let Socket.IO handle the store update
     return test;
