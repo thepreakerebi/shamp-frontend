@@ -5,11 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-// import { Separator } from '@/components/ui/separator';
+import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth, EmailNotVerifiedError } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
-// import { CreateAccountWithGoogleButton } from './_components/google-button';
+import { CreateAccountWithGoogleButton } from './_components/google-button';
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic';
@@ -114,19 +114,19 @@ export default function LoginPage() {
               Log in to your account to continue.
             </p>
           </section>
-          {/* <p className="text-sm w-full text-center">
+          <p className="text-sm w-full text-center">
             Don&apos;t have an account?{' '}
             <Link href="/create-account" className="text-secondary font-medium hover:underline">Create one</Link>
-          </p> */}
+          </p>
         </header>
-        {/* <nav aria-label="Login options" className="mb-4">
+        <nav aria-label="Login options" className="mb-4">
           <CreateAccountWithGoogleButton mode="login" />
         </nav>
         <section className="flex items-center gap-2 mb-4" role="presentation">
           <Separator className="flex-1" />
           <p className="text-xs text-muted-foreground">or with email</p>
           <Separator className="flex-1" />
-        </section> */}
+        </section>
         <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on" noValidate>
           <section className="w-full flex flex-col gap-2">
             <Label htmlFor="email">Email</Label>
